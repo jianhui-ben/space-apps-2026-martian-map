@@ -1,0 +1,37 @@
+README.md
+  s_10ff77521b063e::t_e31e5d4bc16f84 47-50,69-85,152
+docs/BUILDABLE_TERRAIN_REQUIREMENTS.md
+  s_10ff77521b063e::t_ddda7fcf7b108b 1-191
+docs/GROUND_AND_ICE_REQUIREMENTS.md
+  s_10ff77521b063e::t_a0a155a86d4c5d 1-153
+docs/INVESTIGATION_ROUTES_REQUIREMENTS.md
+  s_10ff77521b063e::t_f03cf58f3303e6 1-165
+docs/PROJECT_PLAN.md
+  s_10ff77521b063e::t_3cfc0b96566d1b 9-13,29-30,43-44,57-58,71-72,85-86,108
+docs/REFERENCE_FACILITY.md
+  s_10ff77521b063e::t_5c7e986c5b7bb0 1-132
+docs/SOLAR_CONDITIONS_REQUIREMENTS.md
+  s_10ff77521b063e::t_806b1e6920642c 1-156
+docs/THERMAL_CONDITIONS_REQUIREMENTS.md
+  s_10ff77521b063e::t_56f2064168bc85 1-160
+docs/assets/requirements/IMAGE_PROMPTS.md
+  s_10ff77521b063e::t_518a22248cfbc1 1-28
+docs/reference/METRIC_DATA_AVAILABILITY.md
+  s_10ff77521b063e::t_b016f8ae48cfea 1-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b8f8ba301e03b3a09dbd08a2938b35fce2c582bd",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
