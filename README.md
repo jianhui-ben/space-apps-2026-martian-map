@@ -37,6 +37,33 @@ Moon and planetary maps. You can pick a past, future or no specific time
 frame. You can add point-of-view imagery from surface missions. You can also
 plan for rovers or for crews working in pairs.
 
+## Our project: Mars data center site investigation
+
+We are focusing the challenge on one question: where on Mars could a future
+data center be built, and what would astronauts need to check on the ground
+to find out? The full plan is in [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
+
+In short, we will build a map based on NASA data. It will help astronauts
+compare candidate sites for a hypothetical AI-training facility near an
+assumed future Mars base. The first version of the map covers five connected
+factors:
+
+1. **Buildable terrain:** usable area, slope, roughness and obstacles for the whole facility layout.
+2. **Ground and ice evidence:** geological units, loose deposits, buried ice and what would need probing.
+3. **Solar conditions:** illumination, terrain shadows, seasons and dust effects on power.
+4. **Thermal conditions:** observed surface temperatures and where cooling equipment could go.
+5. **Investigation routes:** routes from the base, measurement stops and return options.
+
+The goal is an evidence-backed comparison of the sites and a practical
+investigation plan: where to go, what to measure and which uncertainties each
+measurement could resolve. Every layer will separate observations from
+estimates, models and assumptions. Sites are compared by which requirements
+they meet, which they fail and which questions are still open, not by a single
+averaged score. The facility's size, power, cooling and other requirements
+are still assumptions, and no ranking thresholds have been agreed yet. Site
+suitability also does not show that a Mars data center would be commercially
+viable.
+
 ## What this repo does today
 
 - `martian_map.trek`: a small client for Mars Trek's public, key-less WMTS tile services. It reads a layer's capabilities, checks the tile grid, and downloads the tile that covers a given point. Three layers are built in, one per data kind:
@@ -103,7 +130,7 @@ pytest --run-network      # also runs the live Mars Trek test (marked @pytest.ma
 │   └── trek.py          # Mars Trek WMTS client (injectable HTTP session)
 ├── tests/               # pytest suite + recorded WMTS capabilities fixtures
 ├── data/                # downloaded tiles and caches (not committed; see data/README.md)
-├── docs/                # notes on data sources and design
+├── docs/                # project plan, data-source and design notes
 ├── notebooks/           # exploration notebooks (optional)
 ├── pyproject.toml
 ├── requirements.txt
