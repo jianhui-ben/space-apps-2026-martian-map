@@ -1,0 +1,21 @@
+README.md
+  s_10ff77521b063e::t_699026f11c6cc8 40-66,133
+docs/PROJECT_PLAN.md
+  s_10ff77521b063e::t_699026f11c6cc8 1-106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2304149747c362cfcb1cf08ae7b9dafea135bf19",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
