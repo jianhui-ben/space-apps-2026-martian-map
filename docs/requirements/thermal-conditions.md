@@ -4,13 +4,13 @@
 
 Characterize thermal conditions at candidate plots and identify where observations and tests are needed to assess the proposed facility's heat rejection, cold protection and thermal interaction with the ground. This initially supports investigation planning; a temperature map alone cannot establish cooling feasibility.
 
-Use the [reference facility](REFERENCE_FACILITY.md): 60/150/250 kW IT states and 100/225/350 kW total facility allocations. Allocate heat among subsystems before thermal sizing. The 350 kW envelope is an initial whole-facility accounting assumption, not a verified single-loop load. The proposed 1,400–3,500 m² emitting-area sensitivity and 3,000–6,000 m² plot reserve remain unvalidated.
+Use the [reference facility](../reference-facility.md): 60/150/250 kW IT states and 100/225/350 kW total facility allocations. Allocate heat among subsystems before thermal sizing. The 350 kW envelope is an initial whole-facility accounting assumption, not a verified single-loop load. The proposed 1,400–3,500 m² emitting-area sensitivity and 3,000–6,000 m² plot reserve remain unvalidated.
 
 **Baseline** means the minimum condition for the stated thermal scenario; **ideal** adds useful margin. **D** denotes a limit from equipment or engineering design. **P** denotes an adjustable project preference. All numerical ideal margins below are proposed preferences, not NASA limits. A missing temperature limit, heat load, or validated environmental model leaves the relevant result unresolved.
 
 ## Illustration
 
-![Comparison of open and monitored radiator placement with an obstructed, dusty layout near other heat sources](assets/requirements/thermal.png)
+![Comparison of open and monitored radiator placement with an obstructed, dusty layout near other heat sources](images/thermal.png)
 
 Panels represent heat-rejection equipment, not photovoltaic arrays. Arrows show conceptual heat transfer, not a measured flux or visible plume. The more favorable layout still requires thermal calculations. A cold surface does not establish cold air, an effective radiation sink, or sufficient cooling capacity.
 
@@ -115,7 +115,7 @@ TC-10 shares the ground document's GI-07 underlying calculation and must not be 
 
 **Map output:** Coolant-route alternatives, support/insulation assumptions, thermal influence volumes and ground-monitoring points.
 
-**Field measurements:** Ground profiles, thermal properties and route geometry; cross-reference [ground and ice requirements](GROUND_AND_ICE_REQUIREMENTS.md).
+**Field measurements:** Ground profiles, thermal properties and route geometry; cross-reference [ground and ice requirements](ground-and-ice.md).
 
 ## 6. Monitoring and model verification
 
@@ -155,6 +155,6 @@ A candidate does not become better simply because its surface is colder. No aver
 - [THEMIS fact sheet](https://themis.asu.edu/factsheet): surface thermal sensing and infrared resolution; no equipment cooling-capacity guarantee.
 - [NASA Mars power and heating overview](https://science.nasa.gov/wp-content/uploads/2024/02/mars-power-heating.pdf): environmental and thermal-control context.
 - [NASA Mars science objectives](https://science.nasa.gov/planetary-science/programs/mars-exploration/mars-science-objectives/): ground/ice and environmental context.
-- [Image prompts and provenance](assets/requirements/IMAGE_PROMPTS.md): built-in image-generation tool, conceptual illustration.
+- [Image prompts and provenance](images/image-prompts.md): built-in image-generation tool, conceptual illustration.
 
 The design ratios, heat-load scenarios and ideal margins are project assessment choices, not published acceptance criteria for a Mars data center.

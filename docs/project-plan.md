@@ -8,7 +8,7 @@ Develop a NASA-data-informed map that helps future astronauts investigate and co
 
 For the first demonstration, assess a modular computing and data-storage facility supporting an established hypothetical Mars base. Services include base operations, scientific processing, robotics support, archives, and optional AI workloads. Safety-critical equipment retains independent local control.
 
-The [reference facility scenario](REFERENCE_FACILITY.md) proposes a 50-person, data-intensive base; low/expected/peak IT allocations of 60/150/250 kW; six equipment/support modules; and separate solar, cooling, and service areas. A roughly 2–4 hectare precinct is a preliminary search envelope, not a derived land requirement. These numbers are adjustable scenario assumptions, not validated demand or user-approved engineering limits. Workload validation and comparison with a smaller base-integrated installation determine whether the dedicated facility is justified.
+The [reference facility scenario](reference-facility.md) proposes a 50-person, data-intensive base; low/expected/peak IT allocations of 60/150/250 kW; six equipment/support modules; and separate solar, cooling, and service areas. A roughly 2–4 hectare precinct is a preliminary search envelope, not a derived land requirement. These numbers are adjustable scenario assumptions, not validated demand or user-approved engineering limits. Workload validation and comparison with a smaller base-integrated installation determine whether the dedicated facility is justified.
 
 The initial scenario supersedes the earlier AI-training-only pilot. Facility dimensions, power and cooling allocations, reliability, cargo, and supporting infrastructure require engineering validation before site suitability can be established.
 
@@ -26,7 +26,7 @@ For this assessment, an ideal site is one that meets the assumed facility requir
 
 ### 1. Buildable terrain
 
-Detailed specification: [Buildable Terrain Requirements](BUILDABLE_TERRAIN_REQUIREMENTS.md), covering six terrain subfactors, 21 metric definitions, baseline and ideal screening benchmarks, evidence requirements, and field-verification needs. Numerical project targets are provisional; design-dependent construction limits remain to be established.
+Detailed specification: [Buildable Terrain Requirements](requirements/buildable-terrain.md), covering six terrain subfactors, 21 metric definitions, baseline and ideal screening benchmarks, evidence requirements, and field-verification needs. Numerical project targets are provisional; design-dependent construction limits remain to be established.
 
 **Why it matters:** The site must accommodate the building and supporting infrastructure: power equipment, energy storage, cooling equipment, cables, access paths, and future expansion. Slopes and obstacles affect leveling, excavation, transportation, and maintenance. A flat patch large enough for a building may still be unsuitable for the complete facility.
 
@@ -40,7 +40,7 @@ Detailed specification: [Buildable Terrain Requirements](BUILDABLE_TERRAIN_REQUI
 
 ### 2. Ground and ice evidence
 
-Detailed specification: [Ground and Ice Evidence Requirements](GROUND_AND_ICE_REQUIREMENTS.md), with a comparison illustration, six subfactors, 12 metrics, baseline/ideal benchmarks, and local verification needs.
+Detailed specification: [Ground and Ice Evidence Requirements](requirements/ground-and-ice.md), with a comparison illustration, six subfactors, 12 metrics, baseline/ideal benchmarks, and local verification needs.
 
 **Why it matters:** Foundations, heavy equipment, trenches, and vehicle traffic require suitable ground. Weak or uneven materials may settle, while hard or fractured materials affect excavation and anchoring. Buried ice may be a resource, but disturbance or heating may affect the stability of ice-bearing ground.
 
@@ -54,7 +54,7 @@ Detailed specification: [Ground and Ice Evidence Requirements](GROUND_AND_ICE_RE
 
 ### 3. Solar conditions
 
-Detailed specification: [Solar Conditions Requirements](SOLAR_CONDITIONS_REQUIREMENTS.md), with a comparison illustration, six subfactors, 13 metrics, time-dependent energy criteria, and stated dust scenarios.
+Detailed specification: [Solar Conditions Requirements](requirements/solar-conditions.md), with a comparison illustration, six subfactors, 13 metrics, time-dependent energy criteria, and stated dust scenarios.
 
 **Why it matters:** If solar energy contributes to the power supply, local illumination, terrain shadows, seasons, and dust affect generation and the need for storage or backup. Strong midday sunlight does not establish reliable energy availability over the operating period.
 
@@ -68,7 +68,7 @@ Detailed specification: [Solar Conditions Requirements](SOLAR_CONDITIONS_REQUIRE
 
 ### 4. Thermal conditions
 
-Detailed specification: [Thermal Conditions Requirements](THERMAL_CONDITIONS_REQUIREMENTS.md), with a comparison illustration, six subfactors, 12 metrics, thermal-design dependencies, and monitoring requirements.
+Detailed specification: [Thermal Conditions Requirements](requirements/thermal-conditions.md), with a comparison illustration, six subfactors, 12 metrics, thermal-design dependencies, and monitoring requirements.
 
 **Why it matters:** Operating servers generate heat that the cooling system must reject, while equipment also needs protection from cold and temperature cycling. Cold surroundings do not automatically provide effective cooling in Mars's thin atmosphere. Surface-temperature observations alone do not establish cooling capacity.
 
@@ -82,7 +82,7 @@ Detailed specification: [Thermal Conditions Requirements](THERMAL_CONDITIONS_REQ
 
 ### 5. Investigation routes
 
-Detailed specification: [Investigation Routes Requirements](INVESTIGATION_ROUTES_REQUIREMENTS.md), with a comparison illustration, six subfactors, 14 metrics, investigation objectives, resource budgets, and return/contingency requirements.
+Detailed specification: [Investigation Routes Requirements](requirements/investigation-routes.md), with a comparison illustration, six subfactors, 14 metrics, investigation objectives, resource budgets, and return/contingency requirements.
 
 **Why it matters:** Crews or robots must reach candidate sites, collect useful evidence, and return within operational limits. Route design affects both investigation effort and the ability to resolve uncertainties. Accessibility also informs potential future servicing, but does not establish suitability of the ground or facility.
 

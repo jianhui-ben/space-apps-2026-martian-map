@@ -15,7 +15,7 @@ These labels describe potential availability, not a claim that all inputs have b
 
 ## 1. Buildable terrain
 
-Source requirements: [Buildable Terrain Requirements](../BUILDABLE_TERRAIN_REQUIREMENTS.md). Existing imagery and elevation models are strongest for large-scale geometry. HiRISE terrain models commonly have 1–2 m grid spacing; they cannot automatically resolve small steps or foundation-contact surfaces. [HiRISE documentation](https://www.uahirise.org/dtm/about.php)
+Source requirements: [Buildable Terrain Requirements](buildable-terrain.md). Existing imagery and elevation models are strongest for large-scale geometry. HiRISE terrain models commonly have 1–2 m grid spacing; they cannot automatically resolve small steps or foundation-contact surfaces. [HiRISE documentation](https://www.uahirise.org/dtm/about.php)
 
 | Metric | What we measure or calculate | Available today? | What local fieldwork would add |
 |---|---|---|---|
@@ -45,7 +45,7 @@ Substantial terrain screening can begin today. The main gaps are small-scale geo
 
 ## 2. Ground and ice evidence
 
-Source requirements: [Ground and Ice Evidence Requirements](../GROUND_AND_ICE_REQUIREMENTS.md). Remote evidence helps identify where to investigate, but usually cannot establish foundation properties. The cited SWIM products include approximately 3-km ice-consistency pixels, far larger than a module foundation. [USGS ice-mapping study](https://www.usgs.gov/publications/refined-mapping-subsurface-water-ice-mars-support-future-missions)
+Source requirements: [Ground and Ice Evidence Requirements](ground-and-ice.md). Remote evidence helps identify where to investigate, but usually cannot establish foundation properties. The cited SWIM products include approximately 3-km ice-consistency pixels, far larger than a module foundation. [USGS ice-mapping study](https://www.usgs.gov/publications/refined-mapping-subsurface-water-ice-mars-support-future-missions)
 
 | Metric | What we measure or calculate | Available today? | What local fieldwork would add |
 |---|---|---|---|
@@ -66,7 +66,7 @@ This factor provides a strong justification for local investigation. Astronauts 
 
 ## 3. Solar conditions
 
-Source requirements: [Solar Conditions Requirements](../SOLAR_CONDITIONS_REQUIREMENTS.md). Many solar metrics can be modeled today, but a proposed array's actual performance is not an existing observation. Local dust deposition, maintenance performance, and validation remain important gaps.
+Source requirements: [Solar Conditions Requirements](solar-conditions.md). Many solar metrics can be modeled today, but a proposed array's actual performance is not an existing observation. Local dust deposition, maintenance performance, and validation remain important gaps.
 
 | Metric | What we measure or calculate | Available today? | What local fieldwork would add |
 |---|---|---|---|
@@ -88,7 +88,7 @@ Astronauts can deploy and service monitoring equipment. They are not needed to c
 
 ## 4. Thermal conditions
 
-Source requirements: [Thermal Conditions Requirements](../THERMAL_CONDITIONS_REQUIREMENTS.md). Existing surface-temperature observations are useful context, not measurements of air temperature or a future cooling system. THEMIS infrared observations are approximately 100 m/pixel, limiting their usefulness for distinguishing conditions within the core compound. [THEMIS fact sheet](https://themis.asu.edu/factsheet)
+Source requirements: [Thermal Conditions Requirements](thermal-conditions.md). Existing surface-temperature observations are useful context, not measurements of air temperature or a future cooling system. THEMIS infrared observations are approximately 100 m/pixel, limiting their usefulness for distinguishing conditions within the core compound. [THEMIS fact sheet](https://themis.asu.edu/factsheet)
 
 | Metric | What we measure or calculate | Available today? | What local fieldwork would add |
 |---|---|---|---|
@@ -109,7 +109,7 @@ TC-10 and GI-07 share the same underlying ground-deformation assessment. They ar
 
 ## 5. Investigation routes
 
-Source requirements: [Investigation Routes Requirements](../INVESTIGATION_ROUTES_REQUIREMENTS.md). Most route metrics are planning calculations. Terrain evidence supplies part of the input; suit, vehicle, instrument, and mission assumptions supply the rest. NASA EVA decision-support research treats timelines and consumables as modeled quantities updated as an excursion progresses. [NASA-hosted research](https://ntrs.nasa.gov/api/citations/20230007488/downloads/ICES%202023%20PersEIDS.pdf)
+Source requirements: [Investigation Routes Requirements](investigation-routes.md). Most route metrics are planning calculations. Terrain evidence supplies part of the input; suit, vehicle, instrument, and mission assumptions supply the rest. NASA EVA decision-support research treats timelines and consumables as modeled quantities updated as an excursion progresses. [NASA-hosted research](https://ntrs.nasa.gov/api/citations/20230007488/downloads/ICES%202023%20PersEIDS.pdf)
 
 | Metric | What we measure or calculate | Available today? | What local fieldwork would add |
 |---|---|---|---|

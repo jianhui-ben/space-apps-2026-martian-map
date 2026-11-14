@@ -2,7 +2,7 @@
 
 ## Purpose and benchmark status
 
-Evaluate how terrain, illumination, atmosphere and dust affect the supplemental solar system for the [reference facility](REFERENCE_FACILITY.md). Determine useful energy, time-dependent shortages, maintenance needs, and measurements required to compare candidate array plots.
+Evaluate how terrain, illumination, atmosphere and dust affect the supplemental solar system for the [reference facility](../reference-facility.md). Determine useful energy, time-dependent shortages, maintenance needs, and measurements required to compare candidate array plots.
 
 The reference facility proposes 100/225/350 kW low/expected/peak total loads, a firm base-power connection, and a 100 kW average solar sensitivity target. These are assumptions, not validated demand or available capacity. Essential load, firm allocation and storage are unresolved. Solar alone is not assumed to supply the facility continuously.
 
@@ -10,7 +10,7 @@ The reference facility proposes 100/225/350 kW low/expected/peak total loads, a 
 
 ## Illustration
 
-![Concept comparison of an accessible open-horizon solar plot and a shadowed dusty plot, with atmospheric dust and night-time power considerations](assets/requirements/solar.png)
+![Concept comparison of an accessible open-horizon solar plot and a shadowed dusty plot, with atmospheric dust and night-time power considerations](images/solar.png)
 
 The main panels compare placement, not actual weather at two sites. Atmospheric dust can affect both sites; an open horizon is not protection from a regional storm. The night inset represents the need for storage or firm supply, not a prescribed electrical topology or enough storage for every outage.
 
@@ -151,6 +151,6 @@ Evaluate identical scenarios across candidates. No annual energy score may hide 
 - [NASA Mars surface-power considerations](https://www.nasa.gov/wp-content/uploads/2024/01/mars-surface-power-generation-challenges-and-considerations.pdf): dust and seasonal constraints; not a solar rating for this site.
 - [NASA Mars surface-power decision](https://www.nasa.gov/wp-content/uploads/2024/12/acr24-mars-surface-power-decision.pdf): firm-power architecture context; no guaranteed base allocation.
 - [NASA dust accumulation observations](https://science.nasa.gov/photojournal/dust-accumulation-on-mars/): deposition mechanism, not a universal degradation rate.
-- [Image prompts and provenance](assets/requirements/IMAGE_PROMPTS.md): conceptual comparison generated with the built-in tool.
+- [Image prompts and provenance](images/image-prompts.md): conceptual comparison generated with the built-in tool.
 
 The 100/120 kW targets, shading preferences and ideal margins are project proposals, not sourced NASA acceptance limits.

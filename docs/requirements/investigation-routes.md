@@ -4,13 +4,13 @@
 
 Plan useful surface investigations of candidate facility sites: where to go, what to measure, in what order, and how to return within a stated mission envelope. Support comparison and evidence gathering, not operational certification of astronaut safety.
 
-Use the [reference facility](REFERENCE_FACILITY.md) and its hypothetical base. Its approximately 1–3 km candidate search distance is a planning assumption, not a walking range or approved excursion limit. Define walking, rover-assisted, and robotic plans separately. A route suitable for an astronaut is not automatically a heavy-cargo route.
+Use the [reference facility](../reference-facility.md) and its hypothetical base. Its approximately 1–3 km candidate search distance is a planning assumption, not a walking range or approved excursion limit. Define walking, rover-assisted, and robotic plans separately. A route suitable for an astronaut is not automatically a heavy-cargo route.
 
 **Baseline** is the minimum condition for a scenario-feasible investigation plan. **Ideal** adds information value or reserve. **D** denotes a limit from mission/suit/vehicle/instrument design. **P** denotes a proposed project preference. Numerical margins below are comparison choices, not NASA EVA limits. No fixed oxygen duration, radiation allowance, or safe travel distance is invented. Missing mission limits leave route feasibility unresolved.
 
 ## Illustration
 
-![Comparison of a route linking ground, solar and thermal measurements with planned return options versus a shortcut across obstacles and an unverified segment](assets/requirements/routes.png)
+![Comparison of a route linking ground, solar and thermal measurements with planned return options versus a shortcut across obstacles and an unverified segment](images/routes.png)
 
 Routes, base, instruments and astronauts are conceptual. The blue line is not a verified safe path, and a dashed alternate is not automatically independent or reachable. Real direction, timing, task duration, resource consumption and contingencies must be evaluated together. The illustration does not locate a real facility.
 
@@ -160,6 +160,6 @@ The route serves the investigation: unresolved ground, solar and thermal metrics
 - [NASA-hosted EVA decision-support research](https://ntrs.nasa.gov/api/citations/20230007488/downloads/ICES%202023%20PersEIDS.pdf): context for consumables, timeline replanning and delayed Earth support, not approved Mars excursion limits.
 - [HiRISE terrain-model documentation](https://www.uahirise.org/dtm/about.php): terrain evidence and its resolution limitations.
 - [Challenge objectives](https://www.spaceappschallenge.org/2026/challenges/interplanetary-survival-guide-martian-map/?tab=details): localized astronaut exploration and integrated data.
-- [Image prompts and provenance](assets/requirements/IMAGE_PROMPTS.md): conceptual comparison generated with the built-in tool.
+- [Image prompts and provenance](images/image-prompts.md): conceptual comparison generated with the built-in tool.
 
 All proposed margins and plan-completeness metrics are project definitions. Operational limits must come from a specified mission, not from the illustration or the prototype.

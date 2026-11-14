@@ -2,15 +2,15 @@
 
 ## Purpose and benchmark status
 
-Evaluate whether the subsurface can support the reference computing facility, its equipment foundations, and service corridors, and identify the field tests needed to resolve geological and ice-related uncertainty. Surface geometry is covered separately by [Buildable Terrain Requirements](BUILDABLE_TERRAIN_REQUIREMENTS.md).
+Evaluate whether the subsurface can support the reference computing facility, its equipment foundations, and service corridors, and identify the field tests needed to resolve geological and ice-related uncertainty. Surface geometry is covered separately by [Buildable Terrain Requirements](buildable-terrain.md).
 
-Use the [reference facility](REFERENCE_FACILITY.md): six conceptual equipment/support modules, separate solar and radiator plots, and connecting corridors. Module mass, contact loads, foundation design, and excavation equipment are not yet defined. The site cannot receive a ground-suitability pass until those design inputs and adequate local evidence exist.
+Use the [reference facility](../reference-facility.md): six conceptual equipment/support modules, separate solar and radiator plots, and connecting corridors. Module mass, contact loads, foundation design, and excavation equipment are not yet defined. The site cannot receive a ground-suitability pass until those design inputs and adequate local evidence exist.
 
 **Baseline** is the minimum criterion for the stated screening scenario; **ideal** adds margin or reduces work. **D** denotes a design-dependent engineering limit. **P** denotes a proposed project preference. Every numerical ideal multiplier below is a P preference, not a NASA standard or substitute for a geotechnical safety factor. Missing design limits remain unresolved. A pass is conditional screening evidence, not construction approval.
 
 ## Illustration
 
-![Conceptual comparison of consistent supporting layers and investigated ice versus variable layers and shallow ice beneath a proposed pad](assets/requirements/ground-ice.png)
+![Conceptual comparison of consistent supporting layers and investigated ice versus variable layers and shallow ice beneath a proposed pad](images/ground-ice.png)
 
 The cutaways illustrate possible conditions, not actual subsurface observations. Orange boundaries represent a hypothetical influence zone; its real depth and lateral extent require modeling. Ice near a facility is not automatically harmful or useful, and layered ground is not automatically strong. Tests determine the relevant properties.
 
@@ -91,7 +91,7 @@ Do not assume a universal safe ice depth. Required depth follows foundation infl
 
 Do not simply add separate settlement predictions if they double-count the same physical mechanism. Evaluate combined load and thermal response consistently.
 
-**Map output:** Heat-influence and ground-change envelopes by time, sensitive interfaces, and monitoring locations. Cross-link to [thermal requirements](THERMAL_CONDITIONS_REQUIREMENTS.md).
+**Map output:** Heat-influence and ground-change envelopes by time, sensitive interfaces, and monitoring locations. Cross-link to [thermal requirements](thermal-conditions.md).
 
 **Field measurements:** Deploy depth-temperature sensors and displacement references; monitor over relevant cycles. A brief excursion can install instruments but cannot measure five years of behavior.
 
@@ -148,6 +148,6 @@ SWIM products described by USGS include approximately 3 km ice-consistency pixel
 - [NASA Mars science objectives](https://science.nasa.gov/planetary-science/programs/mars-exploration/mars-science-objectives/): context for ice, surface science and infrastructure concerns, not foundation thresholds.
 - [USGS refined subsurface ice mapping](https://www.usgs.gov/publications/refined-mapping-subsurface-water-ice-mars-support-future-missions): scale and uncertainty of regional ice products.
 - [SWIM data products](https://swim.psi.edu/SWIM2Products.php): combined ice-consistency evidence, not calibrated foundation-scale probabilities.
-- [Image prompts and provenance](assets/requirements/IMAGE_PROMPTS.md): built-in image-generation tool; concept illustration only.
+- [Image prompts and provenance](images/image-prompts.md): built-in image-generation tool; concept illustration only.
 
 All baseline design ratios and ideal margins are project assessment definitions. Sources do not certify a Mars data-center design.
