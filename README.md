@@ -44,8 +44,10 @@ data center be built, and what would astronauts need to check on the ground
 to find out? The full plan is in [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
 
 In short, we will build a map based on NASA data. It will help astronauts
-compare candidate sites for a hypothetical AI-training facility near an
-assumed future Mars base. The first version of the map covers five connected
+compare candidate sites for a modular computing and data-storage facility
+that supports an established, hypothetical Mars base. Its services include
+base operations, scientific processing, robotics support, archives and
+optional AI workloads. The first version of the map covers five connected
 factors:
 
 1. **Buildable terrain:** usable area, slope, roughness and obstacles for the whole facility layout.
@@ -63,6 +65,23 @@ averaged score. The facility's size, power, cooling and other requirements
 are still assumptions, and no ranking thresholds have been agreed yet. Site
 suitability also does not show that a Mars data center would be commercially
 viable.
+
+### Requirement documents
+
+| Document | What it covers |
+|---|---|
+| [Project plan](docs/PROJECT_PLAN.md) | Objective, scenario, the five factors and shared evidence rules |
+| [Reference facility](docs/REFERENCE_FACILITY.md) | Assumed base, workloads, 60/150/250 kW IT load, power, cooling and layout |
+| [Buildable terrain](docs/BUILDABLE_TERRAIN_REQUIREMENTS.md) | 21 metrics (BT-01 to BT-21): area, slope, roughness, obstacles, hazards, access |
+| [Ground and ice](docs/GROUND_AND_ICE_REQUIREMENTS.md) | 12 metrics (GI-01 to GI-12): bearing capacity, settlement, ice, excavation |
+| [Solar conditions](docs/SOLAR_CONDITIONS_REQUIREMENTS.md) | 13 metrics (SC-01 to SC-13): shading, energy output, dust, storage, array layout |
+| [Thermal conditions](docs/THERMAL_CONDITIONS_REQUIREMENTS.md) | 12 metrics (TC-01 to TC-12): heat rejection, cold protection, radiators |
+| [Investigation routes](docs/INVESTIGATION_ROUTES_REQUIREMENTS.md) | 14 metrics (IR-01 to IR-14): stop purpose, mobility, time, consumables, contingencies |
+| [Metric data availability](docs/reference/METRIC_DATA_AVAILABILITY.md) | Which of the 72 metrics can be estimated from existing data and which need fieldwork |
+
+Each metric has a baseline and an ideal target. All the numbers are proposed
+project targets or depend on engineering designs not yet defined. None of
+them is a NASA standard.
 
 ## What this repo does today
 
@@ -130,7 +149,7 @@ pytest --run-network      # also runs the live Mars Trek test (marked @pytest.ma
 │   └── trek.py          # Mars Trek WMTS client (injectable HTTP session)
 ├── tests/               # pytest suite + recorded WMTS capabilities fixtures
 ├── data/                # downloaded tiles and caches (not committed; see data/README.md)
-├── docs/                # project plan, data-source and design notes
+├── docs/                # project plan, requirement specs, reference facility, data-source notes
 ├── notebooks/           # exploration notebooks (optional)
 ├── pyproject.toml
 ├── requirements.txt
