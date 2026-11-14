@@ -1,0 +1,33 @@
+README.md
+  s_10ff77521b063e::t_fed4f89084d973 44,73-80,152-156
+docs/requirements/ground-and-ice.md
+  s_10ff77521b063e::t_cdfe6a00ec36f8 1-153
+docs/requirements/solar-conditions.md
+  s_10ff77521b063e::t_cdfe6a00ec36f8 1-156
+docs/requirements/metric-data-availability.md
+  s_10ff77521b063e::t_cdfe6a00ec36f8 1-139
+docs/project-plan.md
+  s_10ff77521b063e::t_cdfe6a00ec36f8 1-120
+docs/requirements/buildable-terrain.md
+  s_10ff77521b063e::t_cdfe6a00ec36f8 1-191
+docs/requirements/investigation-routes.md
+  s_10ff77521b063e::t_cdfe6a00ec36f8 1-165
+docs/requirements/thermal-conditions.md
+  s_10ff77521b063e::t_cdfe6a00ec36f8 1-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3e96ef396fff8d9c364b41f21803b56c2da697f2",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
