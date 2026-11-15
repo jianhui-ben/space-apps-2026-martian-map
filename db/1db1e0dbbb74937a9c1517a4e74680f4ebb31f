@@ -1,0 +1,32 @@
+tests/test_web_sizing.py
+  s_10ff77521b063e::t_1d8dfafd6f6030 45-48,125-129
+web/src/sizing/intake.js
+  s_10ff77521b063e::t_603fc62c997893 39,43
+src/martian_map/sizing/validation.py
+  s_10ff77521b063e::t_603fc62c997893 116
+tests/test_sizing_scale.py
+  s_10ff77521b063e::t_1b35da0f029a6f 86-128
+web/src/sizing/workloads.js
+  s_10ff77521b063e::t_80a0fc3b453717 44-57,59,61-62,65-92,139,142-145,148-153,162,184,189-190
+src/martian_map/sizing/workloads.py
+  s_10ff77521b063e::t_eae24f93cae42e 68
+  s_10ff77521b063e::t_4c602bcc8ddb74 6-7,22,47,50-53,55-60,64,69,90,94,119-133,135,137-167
+examples/sizing/facility-requirements.json
+  s_10ff77521b063e::t_07c0ddcb03d048 1822
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "db1db1e0dbbb74937a9c1517a4e74680f4ebb31f",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
