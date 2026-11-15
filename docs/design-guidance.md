@@ -144,9 +144,9 @@ Candidate feedback must distinguish observations, derived estimates, modeled res
 
 ### Selected construction intake
 
-**Selected: Guided brief.** [The connected flow](../design-reference/mars-guided-flow.html) opens on the interactive Mars globe. “Define construction project” opens the guided Project → Robots → Operations → Review sequence. “Back to globe” preserves entries and the current step; “Continue project brief” resumes them. The introduction now describes construction support rather than research workloads.
+**Selected: Guided brief.** [The connected flow](../design-reference/mars-construction-twin-trails.html) opens on the interactive Mars globe. “Define construction project” opens the guided Project → Robots → Operations → Review sequence. “Back to globe” preserves entries and the current step; “Continue project brief” resumes them. The introduction now describes construction support rather than research workloads.
 
-[The earlier comparison](../design-reference/mars-construction-intake.html) retains these two alternatives for reference:
+The earlier comparison mockup (removed from the repo; it remains in git history) offered two alternatives:
 
 - **Guided brief:** project, robots, operations, and review steps, with a persistent project summary and Mars illustration.
 - **Project worksheet:** project and fleet editing in one view, with expandable schedule/output details and a brief summary.

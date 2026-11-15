@@ -60,8 +60,7 @@ Gale crater is the demonstration region. The construction project, base, and fac
 | [Facility-to-location requirements](docs/facility-to-location-requirements.md) | Traceability from facility outputs to five assessment categories |
 | [Reference facility](docs/reference-facility.md) | Legacy numerical comparison case; not estimator output |
 | [Design guidance](docs/design-guidance.md) | Visual and writing conventions for the ARES site-planning app: colors, typography, layout, components, copy |
-| [Selected guided flow](design-reference/mars-guided-flow.html) | Interactive globe introduction → Guided brief → review; preserves entries when returning to the globe; sizing is not connected |
-| [Intake comparison](design-reference/mars-construction-intake.html) | Earlier Guided brief / Project worksheet alternatives; Guided brief selected |
+| [Twin Trails construction flow](design-reference/mars-construction-twin-trails.html) | Interactive globe introduction → construction project brief → review, ready for location matching; standalone page |
 | [Earlier design reference](design-reference/mars-copy-balance.html) | Historical landing-page copy comparison; visual reference only for the former population/research intake |
 | [3D map prototype](design-reference/map-prototype/) | 3D map prototype in three looks (diorama, survey sheet, helmet HUD) with screenshots, run steps and the map's tech stack (three.js r170, 3d-tiles-renderer 0.5.4, fonts) vendored |
 | [Buildable terrain](docs/requirements/buildable-terrain.md) | 21 metrics (BT-01 to BT-21): area, slope, roughness, obstacles, hazards, access |
@@ -97,6 +96,11 @@ them is a NASA standard.
   hold the same for the other two regions.
 - **[docs/data-sources.md](docs/data-sources.md)** explains what each dataset tells you, and what it can't, in plain
   language. **[docs/data-extraction.md](docs/data-extraction.md)** explains how to fetch, refresh and read it.
+- **`python -m martian_map size`** is the construction sizing engine. It turns a construction brief into
+  conditional compute, storage, power, heat, layout and ground-load requirements, plus a requirement record for
+  each of the 72 location metrics. Its coefficients are explicit screening assumptions; `--evidence-only` leaves
+  unvalidated estimates unresolved. It never declares a site feasible. See
+  [docs/sizing-model.md](docs/sizing-model.md) and the [module README](src/martian_map/sizing/README.md).
 - **Older helpers:**
   - `martian_map.trek` is a small Mars Trek tile client;
   - `martian_map.geo` and `martian_map.traverse` are pure coordinate and walking-route helpers;
@@ -124,6 +128,7 @@ python -m martian_map tile --lat -4.72 --lon 137.39 --zoom 7 --layer themis --dr
 python -m martian_map tile --lat -4.72 --lon 137.39 --zoom 7 --layer viking      # saves into data/tiles/
 python -m martian_map traverse --waypoints "-4.70,137.38,-4150;-4.71,137.39,-4120;-4.725,137.40,-3820" --max-range 10
 python -m martian_map demo                                                      # live: 3 layers + sample traverse
+python -m martian_map size --input examples/sizing/construction-brief.json --output /tmp/facility-requirements.json
 ```
 
 Conventions: latitude is planetocentric. Longitude is east-positive and accepts
@@ -187,9 +192,11 @@ pytest --run-network      # also runs the live Mars Trek test (marked @pytest.ma
 │   ├── grids.py, png.py, terrain.py, horizon.py, sun.py, alignment.py, pds3.py, geotiff.py
 │   ├── references.py    # who made each dataset (feeds docs/data-references.md)
 │   ├── metrics.py       # which requirement metrics each dataset supports
+│   ├── sizing/          # construction brief → facility requirements (see its README)
 │   └── sources/         # one module per data source (elevation, arcgis, rover, weather, solar, themis,
 │                        #   thermal_inertia, water, static)
 ├── tests/               # pytest suite + recorded WMTS capabilities fixtures
+├── examples/sizing/     # example construction brief and its generated requirements
 ├── data/                # downloaded data (not committed) + catalog.json (committed); see data/README.md
 ├── scenario/            # gale.json: the team's assumptions (committed)
 ├── design-reference/    # HTML design mockups; map-prototype/ = 3D map prototype + vendored tech stack
@@ -200,6 +207,7 @@ pytest --run-network      # also runs the live Mars Trek test (marked @pytest.ma
 │   ├── data-sources.md          # what data we have, in plain words
 │   ├── data-extraction.md       # how the data gets into data/
 │   ├── data-references.md       # who made each dataset; NASA / partner / other (for the submission)
+│   ├── sizing-model.md          # how the sizing engine works, its assumptions and limits
 │   ├── metric-data-coverage.md  # which datasets feed each of the 72 requirement metrics
 │   └── requirements/            # one spec per factor + metric data availability; images/
 ├── notebooks/           # exploration notebooks (optional)
@@ -248,14 +256,3 @@ or is computed from them. See that page for details.
 ## License
 
 [MIT](LICENSE) © 2026 jianhui-ben
-
-
-### Construction sizing engine
-
-The offline sizing engine now converts a construction brief into conditional equipment, power, heat, reference footprint and ground-load requirements, with a handoff for all five location categories. Run:
-
-```sh
-python -m martian_map size --input examples/sizing/construction-brief.json --output /tmp/facility-requirements.json
-```
-
-See [the implemented model, assumptions and UI adapter](docs/sizing-model.md). Coefficients remain explicit screening assumptions; `--evidence-only` leaves unvalidated estimates unresolved. This engine does not declare a candidate site feasible.
