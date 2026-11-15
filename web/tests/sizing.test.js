@@ -29,7 +29,7 @@ test('fromBrief: product retention is the asked value when given, else the proje
 
 test('sizeBrief: an unusable product retention is a missing answer under its own name', () => {
   const b = caseBrief('example_filled');
-  b.q.products = { mode: 'known', value: 0, unit: 'sols' };
+  b.q.products = { mode: 'known', value: -1, unit: 'sols' };
   const s = sizeBrief(b, bundle);
   assertEq(s.status, 'needs_answers');
   assertEq(s.missing.map((m) => m.label), ['Keep processed outputs']);
@@ -78,7 +78,7 @@ test('unknown sorts and de-duplicates its references', () => {
 test('sizeBrief: the default example needs exactly the four open answers', () => {
   const s = sizeBrief(caseBrief('example_default'), bundle);
   assertEq(s.status, 'needs_answers');
-  assertEq(s.missing.map((m) => m.label), ['Project duration', 'Keep raw survey data', 'Available power', 'Essential backup']);
+  assertEq(s.missing.map((m) => m.label), ['Project duration', 'Keep raw data', 'Power approach', 'Essential backup duration']);
   assert(s.missing.every((m) => m.tab === 2), 'tab');
   assertEq(s.problems, []);
 });
@@ -96,21 +96,21 @@ test('sizeBrief: an impossible deadline cannot be sized', () => {
   const s = sizeBrief(caseBrief('deadline_impossible'), bundle);
   assertEq(s.status, 'cannot_size');
   assertEq(s.problems[0].reason, 'equipment:worker_search_limit');
-  assert(s.problems[0].message.startsWith("The results can't be ready within 0.01 hours with up to 256 computers."), s.problems[0].message);
+  assertEq(s.problems[0].message, "The results can't be ready within 0.01 hours with up to 256 computers. Allow more time or process less often.");
   assertEq(s.problems[0].tab, 2);
 });
 
 test('sizeBrief: inspection reports without inspection robots', () => {
   const s = sizeBrief(caseBrief('inspection_without_robots'), bundle);
   assertEq(s.status, 'cannot_size');
-  assertEq(s.problems[0].message, 'Inspection reports needs Inspection or Assembly robots. Add a group or untick the output.');
+  assertEq(s.problems[0].message, 'Inspection reports needs Inspection or Assembly robots: raise Construction robots or the robot shares in Planning defaults.');
   assertEq(s.problems[0].tab, 1);
 });
 
 test('sizeBrief: base power below the facility peak', () => {
   const s = sizeBrief(caseBrief('base_too_small'), bundle);
   assertEq(s.status, 'cannot_size');
-  assertEq(s.problems[0].message, "Base power available (5.0 kW) is below the facility's 9.6 kW peak. Raise it, or choose Hybrid or Solar + storage.");
+  assertEq(s.problems[0].message, "Available base power (5.0 kW) is below the facility's 9.6 kW peak. Raise it, or choose Hybrid or Solar + storage.");
   assertEq(s.problems[0].tab, 2);
 });
 
@@ -119,7 +119,7 @@ test('sizeBrief: base connection without base power needs that answer', () => {
   b.q.basePower = { mode: 'unknown' };
   const s = sizeBrief(b, bundle);
   assertEq(s.status, 'needs_answers');
-  assert(s.missing.some((m) => m.label === 'Base power available' && m.tab === 2), 'base power');
+  assert(s.missing.some((m) => m.label === 'Available base power' && m.tab === 2), 'base power');
 });
 
 test('sizeBrief: ranges are sized, assessed is the scenario with the larger plot', () => {
@@ -149,8 +149,8 @@ test('sizeBrief: an invalid half-entered answer counts as unanswered and never t
   f.q.hours = { mode: 'known', value: 99, unit: 'hours' };
   const t = sizeBrief(f, bundle);
   assertEq(t.status, 'needs_answers');
-  assert(t.missing.some((m) => m.label === 'Robot group 1 numbers' && m.tab === 1), 'fleet');
-  assert(t.missing.some((m) => m.label === 'Operating time'), 'hours');
+  assert(t.missing.some((m) => m.label === 'Construction robots' && m.tab === 1), 'fleet');
+  assert(t.missing.some((m) => m.label === 'Working time'), 'hours');
 });
 
 test('briefSetup maps the power choice', () => {

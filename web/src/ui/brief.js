@@ -2,7 +2,8 @@
 // copy verbatim. One panel asks for the construction (type of work, robots) and the schedule (working time, duration,
 // turnaround); "Planning defaults" holds the editable assumptions (fleet mix, processing, retention, power, backup).
 // "Find area" checks the values and hands over (onDone); the facility is sized from toSizingBrief(values) in main.js,
-// and the outcome is the facility step (ui/landing.js createFacility). The brief never changes a status or the priority.
+// and the outcome is the facility step (ui/landing.js createFacility). A sized brief becomes the facility the map places
+// and checks every site against, so it changes the sites' results and their priority.
 import { assumptionChip } from './chips.js';
 import { markerLabel } from '../sizing/index.js';
 
@@ -252,7 +253,7 @@ export function createBrief(el, side, { onChange = () => {}, onDone = () => {}, 
     alert.setAttribute('role', 'alert');
     const actions = h('div', 'form-actions');
     const go = button('primary', 'Find area', { id: 'brief-find' });
-    go.addEventListener('click', find);
+    go.type = 'submit'; // Enter in a field finds the area too (the form's submit handler)
     actions.append(go);
     form.append(top, h('p', 'panel-intro', 'A few project details. A place to begin.'),
       section('01 · The construction', select('workType', WORK_TYPES, 'Type of work', 'Required'), number('robots', 'Required')),

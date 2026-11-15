@@ -92,7 +92,7 @@ export function briefChecks(site, layout, setup, size) {
   const corridor = S('corridor_width_m'), grade = S('vehicle_grade_limit_deg'), limit = S('service_distance_limit_m'), bearing = S('required_allowable_bearing_kpa');
 
   out.set('BT-17', result('BT-17', { status: STATUS.NEEDS_DESIGN_INPUT, baseline: '≥ ' + corridor + ' m, grade ≤ ' + grade + '°',
-    note: 'needs a planned route; route planning comes from the navigation lane' }));
+    note: 'needs a planned route; route planning is not part of this screening' }));
 
   const compound = ((layout && layout.footprints) || []).find((f) => f.id === 'compound');
   const bl21 = '≤ ' + limit + ' m', id21 = '≤ ' + fmt(0.8 * limit, 0) + ' m (0.8 of it)';

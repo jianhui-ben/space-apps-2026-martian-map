@@ -124,7 +124,7 @@ test('GI-01 needs fieldwork against the required bearing; BT-17 needs a route', 
   assert(gi.note.includes('not been measured'), gi.note);
   assertEq(bt.status, STATUS.NEEDS_DESIGN_INPUT);
   assertEq(bt.target.baseline, '≥ ' + spec('corridor_width_m') + ' m, grade ≤ ' + spec('vehicle_grade_limit_deg') + '°');
-  assert(bt.note.includes('route planning comes from the navigation lane'), bt.note);
+  assertEq(bt.note, 'needs a planned route; route planning is not part of this screening');
 });
 
 test('TC-03 is met when the radiator rejects the heat, not met when the sink is too warm, unconfirmed when generic', () => {

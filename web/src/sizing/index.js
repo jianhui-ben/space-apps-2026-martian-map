@@ -9,15 +9,15 @@ export const SIZE_KEYS = ['workers', 'required_storage_tb', 'facility_peak_kw', 
   'required_solar_average_kw', 'solar_panel_area_m2', 'solar_plot_m2', 'radiator_emitting_area_m2', 'radiator_plot_m2',
   'battery_units', 'modules', 'core_area_m2', 'full_reference_plot_m2', 'required_allowable_bearing_kpa'];
 
-// Labels of the brief answers; per-job and per-group inputs are built in labelFor.
+// Labels of the brief answers, the intake's field names (ui/brief.js); per-job and fleet inputs are built in labelFor.
 export const INPUT_LABELS = {
   'input:project.duration': 'Project duration',
-  'input:retention.products': 'Project duration', // products are kept for the whole project
-  'input:retention.raw': 'Keep raw survey data',
-  'input:infrastructure.power_strategy': 'Available power',
-  'input:infrastructure.backup_duration': 'Essential backup',
-  'input:infrastructure.available_base_power': 'Base power available',
-  'input:operations.hours_per_sol': 'Operating time',
+  'input:retention.products': 'Keep processed outputs', // the project duration when the brief does not ask for it
+  'input:retention.raw': 'Keep raw data',
+  'input:infrastructure.power_strategy': 'Power approach',
+  'input:infrastructure.backup_duration': 'Essential backup duration',
+  'input:infrastructure.available_base_power': 'Available base power',
+  'input:operations.hours_per_sol': 'Working time',
 };
 const ORDER = Object.keys(INPUT_LABELS).filter((k) => k !== 'input:retention.products');
 const OUTPUT_LABELS = { map: 'Terrain maps', progress: 'Progress comparisons', inspection: 'Inspection reports', plan: 'Fleet work plans' };
@@ -26,6 +26,7 @@ const QUANTITIES = ['duration', 'area', 'hours', 'deadline', 'retention', 'produ
 const SCENARIO_END = { low_endpoint: 'low', high_endpoint: 'high' };
 
 const valid = (n) => Number.isFinite(n) && n > 0;
+const ZERO_OK = new Set(['retention', 'products', 'backup']); // keeping nothing, or no backup, is an answer
 const UNKNOWN = { mode: 'unknown' };
 
 // The app calls this on every keystroke and the port does not validate: a half-entered answer counts as unanswered.
@@ -35,8 +36,9 @@ function sanitize(brief, solHours) {
     const v = (b.q || {})[key];
     if (!v) continue;
     const cap = key === 'hours' ? solHours : Infinity;
-    const ok = v.mode === 'known' ? valid(v.value) && v.value <= cap
-      : v.mode === 'range' ? valid(v.min) && valid(v.max) && v.min <= v.max && v.max <= cap : true;
+    const good = ZERO_OK.has(key) ? (n) => Number.isFinite(n) && n >= 0 : valid;
+    const ok = v.mode === 'known' ? good(v.value) && v.value <= cap
+      : v.mode === 'range' ? good(v.min) && good(v.max) && v.min <= v.max && v.max <= cap : true;
     if (!ok) b.q[key] = UNKNOWN;
   }
   for (const f of b.fleet || []) {
@@ -55,7 +57,7 @@ function labelFor(marker, request) {
     return { label: m[2] === 'deadline' ? 'Results needed within' : out + ' frequency', tab: 2, rank: [1, ORDER.length + (m[2] === 'deadline' ? 0 : 1), at] };
   }
   m = /^input:fleet\.(\d+)\.(count|active_count)$/.exec(marker);
-  if (m) return { label: 'Robot group ' + (Number(m[1]) + 1) + ' numbers', tab: 1, rank: [0, 0, Number(m[1])] };
+  if (m) return { label: 'Construction robots', tab: 1, rank: [0, 0, Number(m[1])] };
   return { label: marker, tab: 2, rank: [2, 0, 0] }; // nothing is silently dropped
 }
 
@@ -92,12 +94,12 @@ function problemsFor(markers, request, bundle, endpoint, p) {
     let m;
     if (marker === 'equipment:worker_search_limit') {
       const deadlines = request.jobs.map((j) => (j.deadline.state === 'specified' ? j.deadline.value : j.deadline[endpoint])).filter(Number.isFinite);
-      out.push({ reason: marker, tab: 2, message: `The results can't be ready within ${hoursText(Math.min(...deadlines))} with up to ${p.max_workers} computers. Allow more time or ask for fewer outputs.` });
+      out.push({ reason: marker, tab: 2, message: `The results can't be ready within ${hoursText(Math.min(...deadlines))} with up to ${p.max_workers} computers. Allow more time or process less often.` });
     } else if (marker === 'model:max_jobs') {
-      out.push({ reason: marker, tab: 2, message: `This schedule needs more processing jobs than the model handles (${p.max_jobs}). Shorten the project or run outputs less often.` });
+      out.push({ reason: marker, tab: 2, message: `This schedule needs more processing jobs than the model handles (${p.max_jobs}). Shorten the project or process less often.` });
     } else if ((m = /^fleet_role:(.+)$/.exec(marker))) {
       const job = outputOfRoles(request, bundle, m[1]);
-      out.push({ reason: marker, tab: 1, message: `${OUTPUT_LABELS[job?.id] ?? 'An output'} needs ${roleText(m[1])} robots. Add a group or untick the output.` });
+      out.push({ reason: marker, tab: 1, message: `${OUTPUT_LABELS[job?.id] ?? 'An output'} needs ${roleText(m[1])} robots: raise Construction robots or the robot shares in Planning defaults.` });
     } else if (marker === 'equipment:worker_memory') {
       out.push({ reason: marker, tab: 2, message: 'One job needs more memory than a computer has.' });
     } else out.push({ reason: marker, tab: 2, message: `The facility can't be sized from these answers (${marker}).` });
@@ -121,11 +123,11 @@ export function sizeBrief(brief, bundle) {
   for (const marker of unresolved.flat()) {
     if (!marker.startsWith('input:')) continue;
     const l = labelFor(marker, request);
-    if (asked && marker === 'input:retention.products') l.label = 'Keep processed outputs';
+    if (!asked && marker === 'input:retention.products') l.label = INPUT_LABELS['input:project.duration']; // kept for the whole project
     if (!found.has(l.label)) found.set(l.label, { input: marker, ...l });
   }
   if ((clean.power === 'Base connection' || clean.power === 'Hybrid') && request.infrastructure.available_base_power.state === 'unknown') {
-    found.set('Base power available', { input: 'input:infrastructure.available_base_power', ...labelFor('input:infrastructure.available_base_power', request) });
+    found.set(INPUT_LABELS['input:infrastructure.available_base_power'], { input: 'input:infrastructure.available_base_power', ...labelFor('input:infrastructure.available_base_power', request) });
   }
   const missing = [...found.values()].sort((a, b) => a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1] || a.rank[2] - b.rank[2])
     .map(({ input, label, tab }) => ({ input, label, tab }));
@@ -141,7 +143,7 @@ export function sizeBrief(brief, bundle) {
       const base = request.infrastructure.available_base_power, peak = o.specifications.facility_peak_kw;
       if (clean.power === 'Base connection' && !left.length && peak.status === 'resolved') {
         const b = base.state === 'specified' ? base.value : base[endpoint];
-        if (Number.isFinite(b) && b < peak.value) note({ reason: 'base_power_below_peak', tab: 2, message: `Base power available (${b.toFixed(1)} kW) is below the facility's ${peak.value.toFixed(1)} kW peak. Raise it, or choose Hybrid or Solar + storage.` }, o.scenario_id);
+        if (Number.isFinite(b) && b < peak.value) note({ reason: 'base_power_below_peak', tab: 2, message: `Available base power (${b.toFixed(1)} kW) is below the facility's ${peak.value.toFixed(1)} kW peak. Raise it, or choose Hybrid or Solar + storage.` }, o.scenario_id);
       }
     });
   }
@@ -157,5 +159,5 @@ export function sizeBrief(brief, bundle) {
 
 // The brief-sourced setup the map places and checks.
 export function briefSetup(sizing, brief) {
-  return { source: 'brief', power: POWER[brief.power] ?? null, sizing };
+  return { source: 'brief', power: POWER[brief.power] ?? null, sizing, brief }; // brief: what was sized (the facility step shows it)
 }

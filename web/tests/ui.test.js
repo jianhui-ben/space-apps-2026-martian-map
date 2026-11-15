@@ -319,6 +319,18 @@ test('toSizingBrief: the defaults are sized; survey work is an all-survey fleet 
   assertEq(odd.fleet.map((f) => [f.role, f.count, f.active]), [['Survey', 2, 1], ['Excavation', 2, 1], ['Transport', 3, 1]]);
 });
 
+test('toSizingBrief: keeping no raw data and no backup are answers, and are sized', () => {
+  const s = sizeBrief(toSizingBrief({ ...defaultBrief(), rawRetention: 0, backup: 0 }), sizingBundle);
+  assertEq([s.status, s.missing, s.problems], ['sized', [], []]);
+});
+
+test('toSizingBrief: 3 earthworks robots leave no survey robot; the reason names the intake fields to change', () => {
+  const s = sizeBrief(toSizingBrief({ ...defaultBrief(), robots: 3 }), sizingBundle);
+  assertEq(s.status, 'cannot_size');
+  assert(s.problems.some((x) => x.message === 'Terrain maps needs Survey robots: raise Construction robots or the robot shares in Planning defaults.'),
+    JSON.stringify(s.problems));
+});
+
 test('intakeError: the shares, each required number, then base power for hybrid or base-connected operation', () => {
   const d = defaultBrief();
   assertEq(intakeError(d), null);
@@ -523,8 +535,13 @@ test('facility step review: the Sizing says what to change; no way on to the loc
     assertEq(texts(el, 'button.primary'), ['Edit brief']);
     el.querySelector('#facility-edit').click();
     assertEq(edit, 1);
-    f.open({ status: 'needs_answers', missing: [{ label: 'Keep raw survey data' }, { label: 'Essential backup' }], problems: [], options: [], assessed: null });
-    assertEq(texts(el, '.sizing-problem'), ['Answer these to size the facility: Keep raw survey data, Essential backup.']);
+    f.open({ status: 'needs_answers', missing: [{ label: 'Keep raw data' }, { label: 'Essential backup duration' }], problems: [], options: [], assessed: null });
+    assertEq(el.querySelector('.panel-intro').textContent, "This brief can't be sized as entered.");
+    assertEq(texts(el, '.sizing-problem'), ['Answer these to size the facility: Keep raw data, Essential backup duration.']);
+    const few = sizeBrief(toSizingBrief({ ...defaultBrief(), robots: 3 }), sizingBundle);
+    f.open(few); // not a schedule problem: the plain lead
+    assertEq(el.querySelector('.panel-intro').textContent, "This brief can't be sized as entered.");
+    assertEq(texts(el, '.sizing-problem'), few.problems.map((x) => x.message));
     f.open(); // the ready view again, from the setup
     assertEq(el.querySelector('#facility-title').textContent, 'Ready for location matching.');
   } finally { el.remove(); }

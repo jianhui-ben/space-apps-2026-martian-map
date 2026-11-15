@@ -18,7 +18,8 @@ OUT = ROOT / 'web' / 'tests' / 'fixtures' / 'sizing.json'
 
 
 def default_brief():
-    """The app's defaultBrief() (web/src/state.js) plus the backup and base-power quantities."""
+    """The earlier tabbed brief's example, in the shape fromBrief reads, plus the backup and base-power quantities: the
+    parity cases' starting point. (The app's intake, web/src/ui/brief.js toSizingBrief, builds the same shape.)"""
     return {
         'name': 'Gale landing pad & access road',
         'types': ['Landing pad', 'Road'],

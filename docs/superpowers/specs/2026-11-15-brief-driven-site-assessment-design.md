@@ -299,3 +299,16 @@ What was built differs from the design above in these places:
 - **Site fly-in.** The arrival altitude is scaled to the sized compound's width (with a floor), so a small facility's
   handles are visible when the fly-in ends; the looks and a setup change keep the standard camera.
 - **Pages build.** The published site ships `web/sizing/` (the coefficient copy) with `src` and `vendor`.
+- **Labels and reasons in the intake's terms.** Missing answers use the intake's field names (Working time, Project
+  duration, Results needed within, Keep raw data, Keep processed outputs, Power approach, Essential backup duration,
+  Available base power, Construction robots). The `cannot_size` reasons read: "The results can't be ready within
+  {deadline} with up to {max_workers} computers. Allow more time or process less often."; "This schedule needs more
+  processing jobs than the model handles ({max_jobs}). Shorten the project or process less often."; "{Output} needs
+  {roles} robots: raise Construction robots or the robot shares in Planning defaults."; "Available base power ({b} kW)
+  is below the facility's {peak} kW peak. Raise it, or choose Hybrid or Solar + storage." "Review your brief." leads
+  with the mockup's schedule line only for the first two; otherwise with "This brief can't be sized as entered."
+  Keeping no raw data or processed outputs, and no backup, are answers (0 is sized).
+- **The map's facility from the start.** When the coefficients load, the brief as it stands (the defaults) is sized
+  and becomes the setup, so a site opened from the landing's pins is checked against it; the reference facility is
+  the setup only before that (or if the load fails) and for the test hook. The setup keeps the sizing brief it was
+  sized from (`setup.brief`), and the facility step describes that brief.

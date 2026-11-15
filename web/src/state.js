@@ -1,13 +1,14 @@
 // A tiny keyed store. Keys used by the app: stage ('landing' | 'brief' | 'facility' | 'explore'), brief (the Twin Trails
-// intake's values, Task 9), setup (FIXED_SETUP until the brief is sized, then the facility sized from it; __map.applySetup
-// can change it in tests), layouts (siteId -> placement), results (siteId -> Map of id -> Result), priority (regionId ->
+// intake's values, Task 9), setup (the facility sized from the brief once the coefficients load, with the sizing brief as
+// setup.brief; FIXED_SETUP only before that, or for __map.applySetup in tests), layouts (siteId -> placement), results (siteId -> Map of id -> Result), priority (regionId ->
 // prioritize() rows), records, openSiteId, selectedSite (the candidate card last chosen), view (the factor tab: null | 'BT'
 // | 'GI' | 'SC' | 'TC' | 'IR'), look ('diorama' | 'survey' | 'hud', R32), plus region (the region in view) and regions
 // (regionId -> {state, error}).
 // Values are replaced, never mutated in place, and every set notifies.
 
-// The legacy reference facility: 150 kW IT (225 kW total), firm base power plus a solar top-up. It is the setup until the
-// brief is sized, and is shown as an illustrative reference, never as an estimate from the brief.
+// The legacy reference facility: 150 kW IT (225 kW total), firm base power plus a solar top-up. It is the setup only until
+// the coefficients load (or if they fail to) and for the test hook, shown as an illustrative reference, never as an
+// estimate from the brief.
 export const FIXED_SETUP = Object.freeze({ loadKw: 150, power: 'topup' });
 
 // The construction brief's editable defaults, the Twin Trails intake's (design-reference/mars-construction-twin-trails.html):

@@ -404,7 +404,9 @@ def test_site_no_zfight_at_edge(page, server_url):
 def test_site_hover_readout(page, server_url):
     _open_site(page, server_url)
     readout = page.locator("#readout")
-    c = page.evaluate("__map.siteView.debug.lonLatScreen(__map.siteView.frame.lon0, __map.siteView.frame.lat0)")
+    # the ground under the arrival view's middle: the layout centre (the fly-in frames the sized layout, so the site
+    # centre can sit behind the card)
+    c = page.evaluate("__map.siteView.debug.footprintScreen('compound')")
     page.mouse.move(c["x"], c["y"])
     readout.wait_for(state="visible", timeout=20000)
     text = readout.inner_text()
@@ -442,8 +444,12 @@ def _drag(page, a, b, steps=8):
 def test_site_rotate_layout(page, server_url):
     _open_site(page, server_url)
     placement = "__map.layoutStore.get('%s').placement" % SITE
-    page.evaluate("""() => { const p = %s, v = __map.siteView;
-        return __map.globe.flyTo(p.centerLon, p.centerLat, 400, 0, {tiltDeg: 45, targetAltM: v.debug.groundAt(p.centerLon, p.centerLat)}); }""" % placement)
+    # 400 m over a 36 m compound, closer for a smaller sized one: the compound is the same size on screen, so the
+    # handles show (they need it 36 px wide) and the drags below stay inside it
+    w = page.evaluate("(id) => __map.layoutStore.get(id).footprints.find((f) => f.id === 'compound').w", SITE)
+    page.evaluate("""(alt) => { const p = %s, v = __map.siteView;
+        return __map.globe.flyTo(p.centerLon, p.centerLat, alt, 0, {tiltDeg: 45, targetAltM: v.debug.groundAt(p.centerLon, p.centerLat)}); }""" % placement,
+                  400 * w / 36)
     handle = page.locator(".site-handle")
     assert not handle.is_visible()  # Task 9b: the handles sit on the selected footprint only
     c = page.evaluate("__map.siteView.debug.footprintScreen('compound')")
@@ -462,8 +468,8 @@ def test_site_rotate_layout(page, server_url):
     p1 = page.evaluate(placement)
     assert 60 < p1["rotationDeg"] < 120, p1
     assert abs(p1["centerLon"] - p0["centerLon"]) < 1e-9 and abs(p1["centerLat"] - p0["centerLat"]) < 1e-9, (p0, p1)
-    # R + drag on the compound turns it by the change in bearing around its centre: south back to east
-    c = page.evaluate("__map.siteView.debug.footprintScreen('compound')")
+    # R + drag on the compound turns the layout by the change in bearing around the layout's centre: south back to east
+    c = page.evaluate("([lon, lat]) => __map.siteView.debug.lonLatScreen(lon, lat)", [p1["centerLon"], p1["centerLat"]])
     page.keyboard.down("r")
     _drag(page, (c["x"], c["y"] + 12), (c["x"] + 12, c["y"]))  # inside the compound (about 66 x 47 px here)
     page.keyboard.up("r")
@@ -1537,7 +1543,7 @@ def test_factor_probe_rows(page, server_url):
     _enter(page, "gale")
     _open_row(page, SITE)
     assert settle_tiles(page)
-    c = page.evaluate("__map.siteView.debug.lonLatScreen(__map.siteView.frame.lon0, __map.siteView.frame.lat0)")
+    c = page.evaluate("__map.siteView.debug.footprintScreen('compound')")  # the arrival frames the layout, not the site centre
     specific = {
         "BT": {"On a dune field", "Buildable here"},
         "GI": {"Geologic unit", "Nearest mineral find", "Thermal inertia", "Ground ice depth"},
@@ -1635,6 +1641,12 @@ def test_brief_intake_and_copy(page, server_url):
     hosts = record_request_hosts(page)
     _boot(page, server_url)
     assert page.locator("#landing p.support").text_content() == LANDING_SUPPORT
+    # once the coefficients load, the map's facility is the one sized from the defaults (a landing pin's site is never
+    # checked against the reference facility), and the setup keeps the sizing brief it came from
+    page.wait_for_function("__map.store.get('setup').source === 'brief'", timeout=30000)
+    sized = page.evaluate("""async () => { const { toSizingBrief } = await import('/src/ui/brief.js'), s = __map.store.get('setup');
+        return [s.sizing.status, s.power, JSON.stringify(s.brief) === JSON.stringify(toSizingBrief(__map.store.get('brief')))]; }""")
+    assert sized == ["sized", "solar_batteries", True], sized
     page.locator("#landing-start").click()
     brief = page.locator("#brief")
     brief.wait_for(state="visible", timeout=10000)
@@ -1686,6 +1698,7 @@ def test_brief_intake_and_copy(page, server_url):
     _no_tiny_text_or_small_targets(page, "brief")
     _shot(page, "brief-intake.png")
     # Find area checks the values first: the message beside it, the field marked, the brief kept, nothing sized
+    page.evaluate("window.__setup0 = __map.store.get('setup'); true")
     page.locator('#brief [data-input="excPercent"]').fill("90")
     page.locator("#brief-find").click()
     assert brief.locator(".form-error").text_content() == "Survey and excavation shares must add up to 100% or less."
@@ -1696,9 +1709,11 @@ def test_brief_intake_and_copy(page, server_url):
     assert brief.locator(".form-error").text_content() == "Construction robots: enter a whole number from 1 to 1,000 robots."
     assert page.locator('#brief [data-input="robots"]').get_attribute("aria-invalid") == "true"
     assert page.locator('#brief [data-input="surveyPercent"]').get_attribute("aria-invalid") is None
-    assert page.evaluate("[__map.store.get('stage'), __map.store.get('setup')]") == ["brief", {"loadKw": 150, "power": "topup"}]
+    assert page.evaluate("[__map.store.get('stage'), __map.store.get('setup') === window.__setup0]") == ["brief", True]
+    # Enter in a field is Find area too
     page.locator('#brief [data-input="robots"]').fill("20")
-    _find_area(page)
+    page.locator('#brief [data-input="robots"]').press("Enter")
+    page.locator("#facility-assess").wait_for(state="visible", timeout=30000)
     assert page.locator("#facility-title").text_content() == READY
     assert page.evaluate("__map.store.get('setup').source") == "brief"
     assert hosts <= GLOBE_HOSTS, hosts

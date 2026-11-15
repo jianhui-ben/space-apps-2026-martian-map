@@ -134,7 +134,7 @@ Use this direct, informative voice consistently across screens. Shorten it where
 
 The workflow is construction inputs → estimated facility → five location requirements → candidate comparison. Start with construction type and extent, robot roles/counts, operating schedule, and update deadlines. Offer precision, duration, growth, and existing infrastructure as follow-up inputs. See [input specification](construction-project-inputs.md).
 
-Owners do not enter rack counts or complex dimensions. Offer “unknown” where appropriate, display important profile assumptions, and ask follow-up questions that materially change the estimate. Do not turn robot count into a fixed kW or land-area multiplier. Separate construction fleet quantities from computing-module delivery and investigation vehicles.
+Owners do not enter rack counts or complex dimensions. Give every value an editable planning default, labelled as an assumption, display important profile assumptions, and ask follow-up questions that materially change the estimate. Do not turn robot count into a fixed kW or land-area multiplier. Separate construction fleet quantities from computing-module delivery and investigation vehicles.
 
 The facility preview shows options or ranges for compute, storage, power, heat rejection, and complete footprint. Distinguish owner input, model assumption, equipment specification, and computed output. Label a facility calculated from the brief “Calculated from your brief with screening assumptions — not a validated design.” The label “Illustrative reference — not calculated from your project.” applies to the legacy reference facility only, which is never presented as an interactive estimate.
 

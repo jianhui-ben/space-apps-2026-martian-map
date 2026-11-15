@@ -31,33 +31,24 @@ keeps the ARES header (wordmark left, base context right) and one working panel 
 map takes the rest. A three-step stepper under the header (Construction brief · Facility
 specifications · Location assessment) shows where the user is. This follows the teammate's
 construction-driven reframe: `docs/design-guidance.md` §7, `docs/construction-project-inputs.md`,
-and the "Guided brief" variant of `design-reference/mars-construction-twin-trails.html`.
+and the Twin Trails intake in `design-reference/mars-construction-twin-trails.html`.
 
-**Landing:** "Describe your construction project to explore locations for its supporting data
-center.", with one primary action that starts the brief. The globe is live behind it.
+**Landing:** "Your project. Your next frontier." and "Start with the construction your robots will
+do. Find where its supporting facility could be built.", with one primary action that starts the
+brief ("Define construction project"). The globe is live behind it.
 
-**1 Construction brief** (the left panel, globe still interactive): the Guided brief's four tabs,
-pre-filled with its editable example ("Gale landing pad & access road", 20 robots):
-- **Project:** name, what you're building (multi-select), and survey area and road length as
-  known / range / unknown. The construction location is the study region with the site not yet
-  selected.
-- **Robots:** groups by main task (survey, excavation, transport, assembly, inspection), each with
-  total and active counts, and the fleet total.
-- **Operations:**
-  - operating time (h / sol), project duration and construction precision;
-  - "results needed within" (hours), the required processing outputs and their frequency;
-  - what to do if a result is late.
-- **Review before sizing:** the brief summary, "Still to confirm", and the five factors marked
-  "Awaiting sizing".
-
-A "Project brief" summary sits beside the tabs. Every quantity accepts known, range or unknown.
-The brief is recorded and shown; it never changes a status or the priority, because the sizing
-model is planned and not implemented.
+**1 Construction brief** (the left panel, globe still interactive): one "Construction site" panel
+asks for the type of work, the construction robots, the working time, the project duration and
+"Results needed within". "Planning defaults · optional to customize" holds the editable
+assumptions (robot mix, processing, retention, power and backup), labelled as planning
+assumptions; every field has a default. "Find area" checks the values and sizes the facility from
+them, so the brief decides the facility every site is checked against, and with it the sites'
+results and priority.
 
 **2 Facility specifications:**
 - The facility calculated from the brief is listed, labelled exactly "Calculated from your brief
-  with screening assumptions — not a validated design.", and the step states that results are kept
-  for the whole project. The map places that facility's outlines.
+  with screening assumptions — not a validated design.", and the step says how long processed
+  outputs are kept. The map places that facility's outlines.
 - The reference label applies to the legacy reference facility only; it is never presented as an
   estimate from the brief.
 
@@ -172,15 +163,16 @@ scale, with their cards next to each other.
 
 ## Facility setup
 
-One fixed case, the reference facility from `docs/reference-facility.md`: 150 kW IT (225 kW
-total facility load), firm base power plus a solar top-up. The user doesn't choose a size or power
-option. It is shown as "Illustrative reference — not calculated from your project." wherever its
-numbers appear. That label applies to the reference facility only; the facility calculated from the
-brief carries "Calculated from your brief with screening assumptions — not a validated design." Every number is a scenario assumption and sits in the intake's Assumptions disclosure: "Base
-services included. Firm power plus supplemental solar assumed; capacity unverified. Facility sizing
-requires workload validation." The disclosure then lists the facility and its plots.
+The facility the map places and checks is the one calculated from the brief (the browser port of
+the sizing model, `docs/sizing-model.md`), labelled "Calculated from your brief with screening
+assumptions — not a validated design."; its solar and radiator plots are resized at each site. The
+reference facility from `docs/reference-facility.md` (150 kW IT, 225 kW total facility load, firm
+base power plus a solar top-up) remains only as the setup before the coefficients load and for a
+test hook, shown as "Illustrative reference — not calculated from your project." wherever its
+numbers appear, with its Assumptions disclosure: "Base services included. Firm power plus
+supplemental solar assumed; capacity unverified. Facility sizing requires workload validation."
 
-Placed footprints:
+The reference facility's footprints:
 
 - core compound 60 × 60 m (six 12 × 4 m modules);
 - radiator plot 60 × 64 m, north of the compound;

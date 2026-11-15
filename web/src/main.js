@@ -348,12 +348,19 @@ async function boot() {
   // (loaded now; while it loads the brief shows "Sizing in progress", and a failed load is the outcome's reason): sized,
   // the setup the map places is the facility calculated from it; not sized, the facility step says why and the setup stays.
   let list = null, app = null, bundle = null, bundleError = null, assessed = () => {}, outcome = null;
-  const bundleReady = loadBundle('./sizing/screening-v1.json').then((b) => { bundle = b; }, (e) => { bundleError = e; });
   const size = (b) => (bundle ? sizeBrief(b, bundle) : {
     status: 'cannot_size', missing: [], options: [], assessed: null, params: {},
     problems: [{ reason: 'model', tab: 2, message: bundleError ? 'The sizing model failed to load: ' + errText(bundleError) : 'The sizing model is still loading. Try again in a moment.' }],
   });
   const setSetup = (s) => (app ? app.setSetup(s) : store.set('setup', s)); // sites load later with the store's setup
+  // Once the coefficients are in, the map's facility is the one sized from the brief as it stands (the defaults are
+  // sized), so a site opened from the landing's pins is never checked against the reference facility.
+  const sizeCurrent = () => {
+    if ((store.get('setup') || {}).source === 'brief') return;
+    const request = toSizingBrief(store.get('brief')), sizing = size(request);
+    if (sizing.status === 'sized') setSetup(briefSetup(sizing, request));
+  };
+  const bundleReady = loadBundle('./sizing/screening-v1.json').then((b) => { bundle = b; sizeCurrent(); }, (e) => { bundleError = e; });
   const landing = createLanding($('landing'), { onStart: () => go('brief') });
   const brief = createBrief($('brief'), $('brief-summary'), {
     onChange: (b) => store.set('brief', b),
@@ -368,7 +375,7 @@ async function boot() {
     },
   });
   const facility = createFacility($('facility'), {
-    setup: () => store.get('setup'), brief: () => toSizingBrief(store.get('brief')),
+    setup: () => store.get('setup'), brief: () => (store.get('setup') || {}).brief || null, // what was sized
     onAssess: () => { go('explore'); assessed(); }, onEdit: () => go('brief'),
   });
   const stepper = createStepper($('stepper'), { onStep: (stage) => go(stage) });

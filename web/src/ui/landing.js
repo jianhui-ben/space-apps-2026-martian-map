@@ -161,11 +161,14 @@ export function createStepper(el, { onStep }) {
   };
 }
 
+const SCHEDULE_REASONS = new Set(['equipment:worker_search_limit', 'model:max_jobs']); // the mockup's lead fits these
+
 // 2 Facility specifications, the outcome of "Find area". open() (or open(sizing) with a sized one): "Ready for location
 // matching." with the facility calculated from the brief (or the reference facility, for the test hook's setup), labelled,
 // with its assumptions and what it needs from a site; "Edit brief" (onEdit) and "Assess locations →" (onAssess) on to the
 // globe. open(sizing) with one that is not sized: "Review your brief." with what the Sizing says to change, and "Edit
-// brief" only. brief() -> the sizing brief the setup was sized from (ui/brief.js toSizingBrief), or null.
+// brief" only. brief() -> the sizing brief the shown setup was sized from (setup.brief, set by sizing/index.js
+// briefSetup), or null: the facility and its requirement rows describe what was sized, not later edits.
 export function createFacility(el, { setup, brief = () => null, onAssess, onEdit = () => {} }) {
   const heading = (text) => {
     const title = h('h2', '', text);
@@ -204,7 +207,9 @@ export function createFacility(el, { setup, brief = () => null, onAssess, onEdit
       : sizing.problems.map((p) => p.message);
     const actions = h('div', 'form-actions');
     actions.append(edit('primary'));
-    el.replaceChildren(title, h('p', 'panel-intro', 'This workload needs a revised schedule or equipment assumptions. Try allowing more time for processed results.'),
+    const schedule = sizing.status === 'cannot_size' && sizing.problems.some((p) => SCHEDULE_REASONS.has(p.reason));
+    el.replaceChildren(title, h('p', 'panel-intro', schedule ? 'This workload needs a revised schedule or equipment assumptions. Try allowing more time for processed results.'
+      : "This brief can't be sized as entered."),
       ...issues.map((t) => h('p', 'sizing-problem', t)), actions);
     title.focus({ preventScroll: true });
   }
