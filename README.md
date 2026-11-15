@@ -73,7 +73,7 @@ viable.
 | [Project plan](docs/project-plan.md) | Objective, scenario, the five factors and shared evidence rules |
 | [Reference facility](docs/reference-facility.md) | Assumed base, workloads, 60/150/250 kW IT load, power, cooling and layout |
 | [Design guidance](docs/design-guidance.md) | Visual and writing conventions for the ARES site-planning app: colors, typography, layout, components, copy |
-| [Design reference](design-reference/) | HTML design mockups. `mars-copy-balance.html` compares two landing-page copy options, Practical guidance (selected) and Editorial balance; download it and open it in a browser |
+| [Design reference](design-reference/) | HTML design mockups. `mars-copy-balance.html` compares two landing-page copy options, Practical guidance (selected) and Editorial balance; download it and open it in a browser. [`map-prototype/`](design-reference/map-prototype/) is the 3D map prototype in three looks (diorama, survey sheet, helmet HUD) with screenshots, run steps and the map's tech stack (three.js r170, 3d-tiles-renderer 0.5.4, fonts) vendored |
 | [Buildable terrain](docs/requirements/buildable-terrain.md) | 21 metrics (BT-01 to BT-21): area, slope, roughness, obstacles, hazards, access |
 | [Ground and ice](docs/requirements/ground-and-ice.md) | 12 metrics (GI-01 to GI-12): bearing capacity, settlement, ice, excavation |
 | [Solar conditions](docs/requirements/solar-conditions.md) | 13 metrics (SC-01 to SC-13): shading, energy output, dust, storage, array layout |
@@ -174,7 +174,7 @@ pytest --run-network      # also runs the live Mars Trek test (marked @pytest.ma
 ├── tests/               # pytest suite + recorded WMTS capabilities fixtures
 ├── data/                # downloaded data (not committed) + catalog.json (committed); see data/README.md
 ├── scenario/            # gale.json: the team's assumptions (committed)
-├── design-reference/    # HTML design mockups
+├── design-reference/    # HTML design mockups; map-prototype/ = 3D map prototype + vendored tech stack
 ├── docs/
 │   ├── project-plan.md          # objective, scenario, five factors, shared evidence rules
 │   ├── reference-facility.md    # assumed facility used by every factor

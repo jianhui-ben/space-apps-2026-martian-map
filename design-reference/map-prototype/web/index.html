@@ -1,0 +1,207 @@
+<!doctype html>
+<!-- PROTOTYPE - throwaway. 3D terrain-diorama viewer for comparing candidate data-center sites at Gale crater. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype: which site is easier to build on?</title>
+<style>
+@font-face { font-family: "Public Sans"; font-weight: 400; src: url(vendor/fonts/public-sans-400.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 600; src: url(vendor/fonts/public-sans-600.woff2) format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 700; src: url(vendor/fonts/public-sans-700.woff2) format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-weight: 500; src: url(vendor/fonts/barlow-condensed-500.woff2) format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url(vendor/fonts/barlow-condensed-600.woff2) format("woff2"); }
+
+/* ---------- theme tokens (one block per variant) ---------- */
+.viz-root {
+  --bg: linear-gradient(180deg, #e9ddd2 0%, #f5eee7 55%, #efe6dc 100%);
+  --ink: #241c17; --ink-2: #5d5148; --ink-3: #8a7e74;
+  --panel: rgba(255, 252, 248, 0.9); --panel-line: rgba(70, 45, 30, 0.14);
+  --chip: #fff; --chip-ink: #241c17; --chip-line: rgba(60, 40, 25, 0.18);
+  --accent: #23476e; --ok: #0ca30c; --bad: #d03b3b;
+  --font: "Public Sans", system-ui, sans-serif; --font-data: "Public Sans", system-ui, sans-serif;
+  --radius-panel: 14px; --radius-chip: 10px;
+  --shadow: 0 6px 24px rgba(70, 40, 20, 0.12);
+  --profile-fill: #b8835f; --profile-line: #6f3f22;
+}
+.viz-root[data-v="hud"] {
+  --bg: radial-gradient(120% 90% at 50% 30%, #13243a 0%, #0a1422 55%, #060b13 100%);
+  --ink: #dff4ff; --ink-2: #9cc3d6; --ink-3: #6a8ea2;
+  --panel: rgba(7, 16, 28, 0.82); --panel-line: rgba(111, 227, 255, 0.28);
+  --chip: rgba(6, 14, 24, 0.86); --chip-ink: #dff4ff; --chip-line: rgba(111, 227, 255, 0.55);
+  --accent: #6fe3ff; --ok: #6fe3ff; --bad: #fab219;
+  --font: "Barlow Condensed", "Public Sans", sans-serif; --font-data: "Barlow Condensed", sans-serif;
+  --radius-panel: 4px; --radius-chip: 2px;
+  --shadow: 0 0 0 1px rgba(111, 227, 255, 0.12), 0 8px 30px rgba(0, 0, 0, 0.5);
+  --profile-fill: rgba(111, 227, 255, 0.22); --profile-line: #6fe3ff;
+}
+.viz-root[data-v="survey"] {
+  --bg: #eceee9;
+  --ink: #1d2226; --ink-2: #4c555c; --ink-3: #7b858c;
+  --panel: #fbfbf8; --panel-line: #d6d9d2;
+  --chip: #fbfbf8; --chip-ink: #1d2226; --chip-line: #c3c7bf;
+  --accent: #256abf; --ok: #0ca30c; --bad: #d03b3b;
+  --font: "Public Sans", system-ui, sans-serif; --font-data: "Public Sans", system-ui, sans-serif;
+  --radius-panel: 6px; --radius-chip: 4px;
+  --shadow: none;
+  --profile-fill: #9ec5f4; --profile-line: #1c5cab;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+.viz-root { position: fixed; inset: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.4; }
+#gl, #labels { position: absolute; inset: 0; }
+#labels { pointer-events: none; z-index: 1; } /* own stacking context: CSS2DRenderer sets z-index on each label */
+button, input, select { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.panel { position: absolute; z-index: 2; background: var(--panel); border: 1px solid var(--panel-line); border-radius: var(--radius-panel); box-shadow: var(--shadow); backdrop-filter: blur(6px); }
+
+/* title */
+#title { top: 18px; left: 20px; padding: 14px 18px 12px; max-width: 460px; }
+#title h1 { margin: 0; font-size: 26px; line-height: 1.12; font-weight: 700; letter-spacing: -0.01em; }
+.viz-root[data-v="hud"] #title h1 { font-size: 30px; font-weight: 600; letter-spacing: 0.02em; }
+#title p { margin: 6px 0 0; color: var(--ink-2); font-size: 13px; }
+
+/* controls */
+#controls { top: 18px; right: 20px; width: 248px; padding: 12px 14px 14px; max-height: calc(100% - 250px); overflow: auto; }
+#controls h2 { margin: 10px 0 6px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+#controls h2:first-child { margin-top: 0; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.seg button, .btnrow button { padding: 6px 8px; border: 1px solid var(--panel-line); background: transparent; border-radius: calc(var(--radius-chip) - 2px); cursor: pointer; text-align: left; font-size: 13px; }
+.seg button[aria-pressed="true"], .btnrow button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.viz-root[data-v="hud"] .seg button[aria-pressed="true"], .viz-root[data-v="hud"] .btnrow button[aria-pressed="true"] { color: #04121c; }
+.btnrow { display: flex; gap: 4px; flex-wrap: wrap; }
+.btnrow button { flex: 1 1 auto; text-align: center; }
+label.tog { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; font-size: 13px; }
+.range { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.range input { flex: 1; accent-color: var(--accent); }
+.range output { min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+#legend { margin-top: 8px; }
+#legend .bar { height: 10px; border-radius: 3px; }
+#legend .ticks { position: relative; height: 16px; font-size: 11px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+#legend .ticks span { position: absolute; top: 2px; transform: translateX(-50%); white-space: nowrap; }
+#legend .limit { position: absolute; top: -12px; width: 2px; height: 14px; background: var(--ink); }
+#legend .cap { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+#compare { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+#compare th, #compare td { padding: 3px 0; text-align: right; border-bottom: 1px solid var(--panel-line); }
+#compare th:first-child, #compare td:first-child { text-align: left; color: var(--ink-2); font-weight: 400; }
+
+/* hover readout */
+#readout { left: 0; top: 0; padding: 9px 11px; min-width: 210px; pointer-events: none; z-index: 6; font-family: var(--font-data); font-size: 13px; font-variant-numeric: tabular-nums; display: none; }
+#readout b { display: block; font-weight: 600; margin-bottom: 3px; }
+#readout dl { display: grid; grid-template-columns: auto auto; gap: 1px 12px; margin: 0; }
+#readout dt { color: var(--ink-2); }
+#readout dd { margin: 0; text-align: right; }
+#hint { top: 18px; left: 50%; transform: translateX(-50%); padding: 7px 12px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+@media (max-width: 1300px) { #hint { display: none; } }
+
+/* bottom: profiles + evidence key */
+#bottom { left: 20px; right: 20px; bottom: 62px; padding: 10px 14px 10px; display: grid; grid-template-columns: 1fr 1fr 230px; gap: 18px; height: 164px; }
+.profile h3 { margin: 0; font-size: 13px; font-weight: 600; }
+.profile .sub { color: var(--ink-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.profile svg { width: 100%; height: 104px; display: block; overflow: visible; }
+.profile .tip { font-size: 11px; fill: var(--ink); font-variant-numeric: tabular-nums; }
+#key { font-size: 12px; color: var(--ink-2); }
+#key h3 { margin: 0 0 4px; font-size: 13px; color: var(--ink); font-weight: 600; }
+#key div { display: flex; gap: 8px; align-items: baseline; padding: 1px 0; }
+.ev { flex: none; display: inline-block; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 600; border: 1px solid currentColor; }
+.ev-observation { color: #1c7a4a; } .ev-derived { color: #256abf; } .ev-assumption { color: #a35a00; } .ev-display { color: #7b6f66; }
+.viz-root[data-v="hud"] .ev-observation { color: #7dffb0; } .viz-root[data-v="hud"] .ev-derived { color: #6fe3ff; }
+.viz-root[data-v="hud"] .ev-assumption { color: #fab219; } .viz-root[data-v="hud"] .ev-display { color: #9cc3d6; }
+
+/* in-scene callouts */
+.callout { pointer-events: none; padding-bottom: 2px; transition: opacity 0.15s; }
+.callout.culled { opacity: 0; }
+.callout .box { background: var(--chip); color: var(--chip-ink); border: 1px solid var(--chip-line); border-radius: var(--radius-chip); padding: 5px 9px 6px; box-shadow: var(--shadow); white-space: nowrap; font-size: 12.5px; line-height: 1.25; }
+.callout .t { font-weight: 600; }
+.callout .v { font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.callout .ev { margin-left: 6px; font-size: 10px; padding: 0 5px; vertical-align: 1px; }
+.callout.bad .box { border-color: var(--bad); }
+.callout.bad .t::before { content: "\2715  "; color: var(--bad); }
+.callout.ok .t::before { content: "\2713  "; color: var(--ok); }
+.callout.warn .box { border-color: #fab219; }
+.callout.warn .t::before { content: "!  "; color: #b87800; font-weight: 700; }
+.viz-root[data-v="hud"] .callout .box { border-left-width: 3px; text-transform: none; letter-spacing: 0.02em; font-size: 14px; }
+.sitehead { pointer-events: none; text-align: center; padding-top: 4px; }
+.sitehead .name { font-size: 20px; font-weight: 700; color: var(--ink); white-space: nowrap; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+.viz-root[data-v="hud"] .sitehead .name { font-size: 24px; font-weight: 600; text-shadow: none; }
+.sitehead .sub { font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+.sitehead .stats { margin-top: 4px; font-size: 12px; color: var(--ink-2); font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scalelabel { font-size: 11px; color: var(--ink-2); font-family: var(--font-data); white-space: nowrap; pointer-events: none; }
+
+/* prototype variant switcher */
+#variants { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; background: #1d1d1b; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,0.3); z-index: 10; }
+#variants span { color: #bdbcb4; font-size: 12px; padding: 6px 8px 6px 12px; }
+#variants a { color: #f0efec; text-decoration: none; font-size: 13px; padding: 6px 14px; border-radius: 999px; }
+#variants a[aria-current="page"] { background: #f0efec; color: #1d1d1b; font-weight: 600; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: 15px; color: var(--ink-2); }
+
+@media (max-width: 900px) {
+  #bottom { grid-template-columns: 1fr; height: auto; max-height: 40%; overflow: auto; }
+  #controls { width: 200px; }
+  #title { max-width: calc(100% - 260px); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js" } }</script>
+</head>
+<body>
+<div class="viz-root" id="root" data-v="diorama">
+  <div id="gl"></div>
+  <div id="labels"></div>
+  <div id="loading">Loading terrain from the 1 m elevation model…</div>
+
+  <header id="title" class="panel">
+    <h1>Which site is easier to build on?</h1>
+    <p>Two candidate data-center sites at Gale crater, built from real NASA HiRISE elevation and imagery.</p>
+  </header>
+
+  <aside id="controls" class="panel" aria-label="Map controls">
+    <h2>Surface</h2>
+    <div class="seg" id="layers" role="group" aria-label="Surface layer">
+      <button data-layer="photo_tint">Photo, tinted</button>
+      <button data-layer="photo_grey">Photo, true grey</button>
+      <button data-layer="slope">Slope</button>
+      <button data-layer="rough">Roughness</button>
+      <button data-layer="hillshade">Shaded relief</button>
+    </div>
+    <div id="legend" hidden></div>
+    <h2>Height</h2>
+    <div class="range"><input id="exag" type="range" min="1" max="6" step="0.5" value="2" aria-label="Vertical exaggeration"><output id="exagOut">2×</output></div>
+    <h2>Show</h2>
+    <label class="tog"><input type="checkbox" id="tCallouts" checked> Callouts</label>
+    <label class="tog"><input type="checkbox" id="tFootprints" checked> Facility footprints</label>
+    <label class="tog"><input type="checkbox" id="tContours"> Contours</label>
+    <label class="tog"><input type="checkbox" id="tWalls" checked> Block sides</label>
+    <label class="tog"><input type="checkbox" id="tHigh"> High detail mesh (2 m)</label>
+    <h2>View</h2>
+    <div class="btnrow" id="views">
+      <button data-view="both">Both</button><button data-view="A">Site A</button><button data-view="B">Site B</button><button data-view="top">Top</button>
+    </div>
+    <div id="compareWrap"><h2>Compare</h2><table id="compare"></table></div>
+  </aside>
+
+  <div id="hint" class="panel">Drag to orbit, right-drag to pan, scroll to zoom at the cursor. Double-click to fly to a spot.</div>
+  <div id="readout" class="panel" aria-live="polite"></div>
+
+  <section id="bottom" class="panel">
+    <div class="profile" id="profA"></div>
+    <div class="profile" id="profB"></div>
+    <div id="key">
+      <h3>What each element is</h3>
+      <div><span class="ev ev-observation">observation</span> HiRISE photo</div>
+      <div><span class="ev ev-derived">derived</span> elevation, slope, roughness</div>
+      <div><span class="ev ev-assumption">assumption</span> sites, base, footprints, 5° limit</div>
+      <div><span class="ev ev-display">display only</span> block sides, tint, height scale</div>
+    </div>
+  </section>
+
+  <nav id="variants" aria-label="Prototype variants">
+    <span>Prototype</span>
+    <a href="?v=diorama">Diorama</a><a href="?v=hud">Helmet HUD</a><a href="?v=survey">Survey sheet</a>
+  </nav>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
