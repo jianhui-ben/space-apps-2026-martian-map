@@ -1,4 +1,7 @@
-"""THEMIS thermal inertia at 1 km (Huang 2026, Zenodo record 23527756), cut to the Gale region.
+"""THEMIS thermal inertia at 1 km (Huang 2026, Zenodo record 23527756), cut to the region.
+
+The map comes in Mars Chart sheets: MC-23 Aeolis holds Gale, MC-13 Syrtis Major
+Jezero, and MC-2 Diacria Arcadia Planitia (this 1 km version of MC-2 stops at 45 N).
 
 Thermal inertia says how slowly the ground warms up and cools down. Solid rock
 and bedrock keep their heat through the night (high values); dust and fine sand
@@ -34,6 +37,12 @@ TILE = "THEMIS_TI_2026_MC23_ti_1km.tif"  # Mars Chart 23 (Aeolis): 135-180 E, 0-
 TILE_URL = f"{FILES}/{TILE}/content"
 SUMS_URL = f"{FILES}/SHA256SUMS.txt/content"
 MC23 = Bounds(135.0, -30.0, 180.0, 0.0)
+# region id -> (sheet label, file, the sheet's expected west / north edges), checked against the file's georeferencing
+SHEETS = {
+    "gale": ("MC-23 Aeolis", TILE, MC23),
+    "jezero": ("MC-13 Syrtis Major", "THEMIS_TI_2026_MC13_ti_1km.tif", Bounds(45.0, 0.0, 90.0, 30.0)),
+    "arcadia": ("MC-2 Diacria", "THEMIS_TI_2026_MC02_ti_1km.tif", Bounds(-180.0, 30.0, -120.0, 45.0)),
+}
 MAX_TILE_BYTES = 32 << 20
 SCALE = 0.1
 NODATA = 65535
@@ -53,18 +62,29 @@ def _expected_sha256(sums: str, name: str) -> str:
     raise ValueError(f"{name} is not listed in SHA256SUMS.txt")
 
 
+def _sheet(scenario) -> tuple:
+    try:
+        return SHEETS[scenario.region_id]
+    except KeyError:
+        raise ValueError(f"no thermal-inertia sheet is set for region {scenario.region_id!r}") from None
+
+
 def _thermal_inertia(ctx: StepContext) -> List[Dict[str, Any]]:
-    region = ctx.scenario.gale_region
+    sc = ctx.scenario
+    region = sc.region_bounds
+    label, tile, expect = _sheet(sc)
+    tile_url = f"{FILES}/{tile}/content"
+    where = "Gale" if sc.is_gale else sc.region_name
     sums = ctx.fetcher.get_bytes(SUMS_URL, 64 << 10).body.decode("utf-8", "replace")
-    expected = _expected_sha256(sums, TILE)
-    body = ctx.fetcher.get_bytes(TILE_URL, MAX_TILE_BYTES).body
+    expected = _expected_sha256(sums, tile)
+    body = ctx.fetcher.get_bytes(tile_url, MAX_TILE_BYTES).body
     if hashlib.sha256(body).hexdigest() != expected:
-        raise ValueError(f"{TILE}: SHA-256 checksum does not match SHA256SUMS.txt")
+        raise ValueError(f"{tile}: SHA-256 checksum does not match SHA256SUMS.txt")
     gt = read_geotiff(body)
     sheet = equirect_bounds(gt, MARS_SPHERE_RADIUS_M)
-    if not sheet.contains_bounds(region) or abs(sheet.west - MC23.west) > 0.05 or abs(sheet.north - MC23.north) > 0.05:
-        raise ValueError(f"{TILE} covers {[round(v, 3) for v in sheet.as_list()]}, which does not cover the expected "
-                         f"MC-23 sheet {MC23.as_list()} and the Gale region {region.as_list()}")
+    if not sheet.contains_bounds(region) or abs(sheet.west - expect.west) > 0.05 or abs(sheet.north - expect.north) > 0.05:
+        raise ValueError(f"{tile} covers {[round(v, 3) for v in sheet.as_list()]}, which does not cover the expected "
+                         f"{label.split()[0]} sheet {expect.as_list()} and the {where} region {region.as_list()}")
     raw = gt.bands[0]
     values = np.where(raw == NODATA, np.nan, raw.astype(np.float32) * np.float32(SCALE)).astype(np.float32)
     upper = gt.bands[1] if gt.bands.shape[0] > 1 else None
@@ -86,7 +106,7 @@ def _thermal_inertia(ctx: StepContext) -> List[Dict[str, Any]]:
     covered = float(finite.size) / grid.values.size if grid.values.size else 0.0
     return [new_entry(
         "thermal_inertia_themis_1km", "Thermal inertia from THEMIS night images (1 km)",
-        "How slowly the ground warms and cools, as numbers on a 1 km grid over all of Gale: high means rock or "
+        f"How slowly the ground warms and cools, as numbers on a 1 km grid over all of {where}: high means rock or "
         "bedrock, low means dust or sand. The best available stand-in for how rocky the ground is.",
         ["terrain", "ground", "thermal"], "thermal", "derived", "local",
         evidence_note="computed by the author from THEMIS night-time temperatures with a thermal model (KRC 3.6.5)",
@@ -105,14 +125,15 @@ def _thermal_inertia(ctx: StepContext) -> List[Dict[str, Any]]:
             "Cells where every 100 m value was only an upper limit are left empty.",
         ],
         tags=["thermal inertia", "rock", "rocky", "bedrock", "dust", "sand", "themis", "ground"],
-        source={"name": f"THEMIS-derived thermal inertia, 1 km browse version, sheet MC-23 ({TILE})",
-                "page_url": PAGE, "request_url": TILE_URL, "fetched_at": _now(), "credit": CREDIT,
+        source={"name": f"THEMIS-derived thermal inertia, 1 km browse version, sheet {label.split()[0]} ({tile})",
+                "page_url": PAGE, "request_url": tile_url, "fetched_at": _now(), "credit": CREDIT,
                 "license": "CC BY 4.0", "doi": DOI, "full_product_doi": FULL_PRODUCT_DOI, "citation": CITATION,
                 "sha256_verified": True},
     )]
 
 
 thermal_inertia_step = Step("thermal_inertia", ("thermal_inertia_themis_1km",), _thermal_inertia,
-                            inputs=lambda ctx: {"gale_region": ctx.scenario.gale_region.as_list(), "tile": TILE})
+                            inputs=lambda ctx: {"gale_region": ctx.scenario.region_bounds.as_list(),
+                                                "tile": SHEETS.get(ctx.scenario.region_id, (None, None))[1]})
 
-__all__ = ["SUMS_URL", "TILE", "TILE_URL", "thermal_inertia_step"]
+__all__ = ["SHEETS", "SUMS_URL", "TILE", "TILE_URL", "thermal_inertia_step"]

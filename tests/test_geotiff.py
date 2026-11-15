@@ -99,3 +99,50 @@ def test_truncated_chunk_rejected():
     data = make_geotiff(_bands(), compression=50000)
     with pytest.raises(GeoTiffError):
         read_geotiff(data[:-40])
+
+
+@pytest.mark.parametrize("predictor", [2, 3])
+def test_float_predictors_decode(predictor):
+    rng = np.random.default_rng(5)
+    heights = (rng.normal(-2500.0, 40.0, size=(1, 40, 36))).astype(np.float32)
+    heights[0, 3, 4] = -3.4028226550889045e38  # the HiRISE DTM no-data value
+    data = to_bigtiff(make_geotiff(heights, compression=8, predictor=predictor, tile=(16, 16), nodata=None))
+    gt = read_geotiff(data)
+    assert gt.bands.dtype == np.float32
+    assert np.array_equal(gt.bands, heights)
+
+
+def test_predictor_3_on_integers_rejected():
+    data = bytearray(make_geotiff(_bands(4, 4), compression=1, predictor=1))
+    i = data.find((317).to_bytes(2, "little") + (3).to_bytes(2, "little"))
+    data[i + 8:i + 10] = (3).to_bytes(2, "little")
+    with pytest.raises(GeoTiffError, match="predictor 3"):
+        read_geotiff(bytes(data))
+
+
+def test_float_predictor_2_big_endian():
+    from martian_map.geotiff import _undo_predictor
+
+    vals = np.array([[[1.5], [2.25], [-3.0]]], dtype=">f4")
+    ints = vals.view(">u4").astype(np.uint64)
+    diff = ints.copy()
+    diff[:, 1:] = (ints[:, 1:] - ints[:, :-1]) % (1 << 32)
+    raw = diff.astype(">u4").tobytes()
+    out = _undo_predictor(raw, 2, np.dtype(">f4"), 1, 3, 1)
+    assert out.astype("=f4").ravel().tolist() == [1.5, 2.25, -3.0]
+
+
+def test_float_predictor_3_two_samples():
+    """libtiff accumulates the byte planes with a stride of the samples per pixel."""
+    from tiff_helpers import _predict_float
+
+    rng = np.random.default_rng(1)
+    block = rng.normal(0, 100, size=(3, 5, 2)).astype(np.float32)
+    raw = _predict_float(block)
+    rows, cols, spp, size = 3, 5, 2, 4
+    planes = np.frombuffer(raw, dtype=np.uint8).reshape(rows, size * cols * spp).astype(np.int64)
+    acc = planes.reshape(rows, size * cols, spp).cumsum(axis=1).reshape(rows, -1) % 256  # libtiff fpAcc, stride spp
+    be = acc.astype(np.uint8).reshape(rows, size, cols * spp).transpose(0, 2, 1).copy()
+    assert np.array_equal(be.view(">f4").reshape(rows, cols, spp), block)  # the helper encodes like libtiff
+    from martian_map.geotiff import _undo_predictor
+    assert np.array_equal(_undo_predictor(raw, 3, np.dtype("<f4"), rows, cols, spp), block)

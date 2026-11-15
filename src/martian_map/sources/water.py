@@ -35,6 +35,15 @@ WATER_STOPS = [(2.0, (255, 255, 204)), (4.0, (161, 218, 180)), (6.0, (65, 182, 1
                (20.0, (12, 44, 132))]
 ICE_NOTE = ("Not an ice map: Gale is 4.6 degrees south of the equator, outside the latitudes where buried ice "
             "is stable near the surface. The water here is bound in minerals and soil.")
+ICE_NOTES = {
+    "gale": ICE_NOTE,
+    "jezero": ("Not an ice map: Jezero is 18.4 degrees north of the equator, outside the latitudes where buried ice "
+               "is stable near the surface. The water here is bound in minerals and soil."),
+    "arcadia": ("Arcadia Planitia (39 N) is in the mid-latitude band where radar and fresh impact craters show ice "
+                "buried within metres of the surface, but this map senses only the top few tens of centimetres and "
+                "cannot tell ice from water held in minerals. Buried ice needs the SWIM maps (ice_swim, "
+                "pending)."),
+}
 
 
 def _label_value(label: str, key: str) -> Optional[str]:
@@ -86,10 +95,13 @@ def _water(ctx: StepContext) -> List[Dict[str, Any]]:
     table = ctx.fetcher.get_bytes(GRS_TABLE_URL, 4 << 20).body.decode("ascii", "replace")
     bins = parse_grs_table(label, table)
     grid = bins_grid(bins)
-    region = ctx.scenario.gale_region
+    region = ctx.scenario.region_bounds
     half = BIN_DEG / 2
     gale = [b for b in bins if Bounds(b["lon"] - half, b["lat"] - half, b["lon"] + half, b["lat"] + half)
             .intersects(region)]
+    sc = ctx.scenario
+    where = "Gale" if sc.is_gale else sc.region_name
+    key = "gale" if sc.is_gale else "region"
     f32 = write_grid(grid, ctx.path("water/odyssey_grs_h2o_5x5.f32"), ctx.data_root, "f32")
     png = write_overlay(grid.values, np.isnan(grid.values), grid.bounds, ctx.path("water/odyssey_grs_h2o_5x5.png"),
                         ctx.data_root, WATER_STOPS, "wt% H2O")
@@ -110,11 +122,11 @@ def _water(ctx: StepContext) -> List[Dict[str, Any]]:
         resolution_m=296000, smallest_feature_m=600000,
         positional_accuracy="5 degree bins, smoothed over about 10 degrees",
         uncertainty={"value": "per cell", "basis": "sigma_wt_pct in each bin (1 standard deviation)"},
-        gale_bins=gale,
-        gale_range_wt_pct=[min(vals), max(vals)] if vals else None,
+        **{f"{key}_bins": gale, f"{key}_range_wt_pct": [min(vals), max(vals)] if vals else None},
         limitations=[
-            ICE_NOTE,
-            "Each cell is about 300 km across (smoothed over about 600 km): all of Gale is one or two cells.",
+            ICE_NOTES.get(sc.region_id, ICE_NOTE if sc.is_gale else "Not an ice map: it cannot tell ice from water "
+                                                                     "held in minerals."),
+            f"Each cell is about 300 km across (smoothed over about 600 km): all of {where} is one or two cells.",
             "Assumes the hydrogen it detects is in water; it cannot tell water in minerals from ice.",
             "Senses only the top few tens of centimetres.",
             "No values near the poles (there the signal is dominated by ice and the table leaves them empty).",
@@ -127,6 +139,6 @@ def _water(ctx: StepContext) -> List[Dict[str, Any]]:
     )]
 
 
-water_step = Step("water", ("water_odyssey_grs",), _water, inputs=lambda ctx: {"gale_region": ctx.scenario.gale_region.as_list()})
+water_step = Step("water", ("water_odyssey_grs",), _water, inputs=lambda ctx: {"gale_region": ctx.scenario.region_bounds.as_list()})
 
 __all__ = ["GRS_LABEL_URL", "GRS_TABLE_URL", "bins_grid", "parse_grs_table", "water_step"]

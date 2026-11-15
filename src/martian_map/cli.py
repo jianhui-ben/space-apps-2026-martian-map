@@ -107,7 +107,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--refresh", action="store_true", help="fetch again even if files are up to date")
     s.add_argument("--stretch", action="store_true", help="also run stretch steps")
     s.add_argument("--data-root", type=Path, default=Path("data"))
-    s.add_argument("--scenario", type=Path, default=Path("scenario/gale.json"))
+    s.add_argument("--scenario", type=Path, default=Path("scenario/gale.json"),
+                   help="scenario/gale.json (written to data/), or another region such as scenario/jezero.json "
+                        "(written to data/regions/<id>/ and merged into data/catalog.json)")
 
     c = sub.add_parser("catalog", help="inspect data/catalog.json")
     csub = c.add_subparsers(dest="catalog_command", required=True)
@@ -133,15 +135,16 @@ def build_parser() -> argparse.ArgumentParser:
 def cmd_snapshot(args, fetcher=None, out=None) -> int:
     from .http import Fetcher
     from .scenario import load_scenario
-    from .snapshot import SnapshotError, run_snapshot
+    from .snapshot import REGIONS_DIR, SnapshotError, merge_regions, run_snapshot
 
     out = out if out is not None else sys.stdout
     scenario = load_scenario(args.scenario)
     only = {x.strip() for x in args.only.split(",") if x.strip()} if args.only else None
+    root = args.data_root if scenario.is_gale else args.data_root / REGIONS_DIR / scenario.region_id
     try:
         report = run_snapshot(
             scenario,
-            args.data_root,
+            root,
             fetcher if fetcher is not None else Fetcher(),
             only=only,
             refresh=args.refresh,
@@ -151,7 +154,11 @@ def cmd_snapshot(args, fetcher=None, out=None) -> int:
     except SnapshotError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    print(f"catalog: {args.data_root / 'catalog.json'} ({len(report.catalog.entries)} datasets)", file=out)
+    merged = merge_regions(args.data_root)
+    print(f"catalog: {root / 'catalog.json'} ({len(report.catalog.entries)} datasets)", file=out)
+    if not scenario.is_gale or len(merged.areas.get("regions", {})) > 1:
+        print(f"merged: {args.data_root / 'catalog.json'} ({len(merged.entries)} datasets, regions: "
+              f"{', '.join(sorted(merged.areas.get('regions', {})))})", file=out)
     for w in report.warnings:
         print(f"warning: {w}", file=out)
     for step_id, message in report.failed:

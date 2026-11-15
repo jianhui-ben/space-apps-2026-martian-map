@@ -25,9 +25,10 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 from ..catalog import file_record, new_entry
-from ..geotiff import Reader, georef, read_tags, read_window
+from ..cog import RangeReader
+from ..geotiff import georef, read_tags, read_window
 from ..grids import Grid, write_grid
-from ..http import FetchError, atomic_write
+from ..http import atomic_write
 from ..png import write_overlay
 from ..scenario import Bounds
 from ..snapshot import Step, StepContext, _now
@@ -55,28 +56,6 @@ PUBLISHED_RATES = [
     {"value_m_per_earth_year": 1.0, "what": "upper bound for the Bagnold Dunes from orbital images",
      "source": "NASA/JPL-Caltech, PIA20284 caption (2016)"},
 ]
-HEAD_BYTES = 1 << 16
-
-
-class RangeReader:
-    """``read(offset, length)`` over HTTP range requests, with the file's first bytes cached."""
-
-    def __init__(self, ctx: StepContext, url: str):
-        self.ctx, self.url, self.requests = ctx, url, 0
-        self.head = self._get(0, HEAD_BYTES, short_ok=True)
-
-    def _get(self, off: int, n: int, short_ok: bool = False) -> bytes:
-        self.requests += 1
-        res = self.ctx.fetcher.get_bytes(self.url, n + 1024, headers={"Range": f"bytes={off}-{off + n - 1}"},
-                                         ok_status=(206,), timeout_s=60)
-        if len(res.body) != n and not (short_ok and len(res.body) < n):
-            raise FetchError(f"range {off}-{off + n - 1} of {self.url} returned {len(res.body)} bytes")
-        return res.body
-
-    def __call__(self, off: int, n: int) -> bytes:
-        if off + n <= len(self.head):
-            return self.head[off:off + n]
-        return self._get(off, n)
 
 
 def window_for_bounds(tags: Dict[int, list], bounds: Bounds, radius_m: float) -> Tuple[int, int, int, int]:

@@ -240,16 +240,32 @@ class Catalog:
         return results
 
     def markdown_table(self) -> str:
-        rows = ["| id | what it is | factors | evidence | access |", "|---|---|---|---|---|"]
-        for e in sorted(self.entries, key=lambda x: x["id"]):
+        regional = any(e.get("region", "gale") != "gale" for e in self.entries)
+        head = "| id | region | what it is | factors | evidence | access |" if regional else \
+            "| id | what it is | factors | evidence | access |"
+        rows = [head, "|---|---|---|---|---|---|" if regional else "|---|---|---|---|---|"]
+        order = region_order(self)
+        for e in sorted(self.entries, key=lambda x: (order.get(x.get("region", "gale"), 99), x["id"])):
             access = e.get("access", "")
             if e.get("status") not in (None, "ok"):
                 access = f"{access} ({e['status']})"
+            region = f" {_md_cell(e.get('region', 'gale'))} |" if regional else ""
             rows.append(
-                f"| `{e['id']}` | {_md_cell(e.get('summary', ''))} | {_md_cell(', '.join(e.get('factors', [])))} "
+                f"| `{e['id']}` |{region} {_md_cell(e.get('summary', ''))} | {_md_cell(', '.join(e.get('factors', [])))} "
                 f"| {_md_cell(e.get('evidence_type', ''))} | {_md_cell(access)} |"
             )
         return "\n".join(rows) + "\n"
+
+
+def region_order(catalog: "Catalog") -> Dict[str, int]:
+    """Gale first, then the other regions in the order ``areas.regions`` lists them."""
+    names = ["gale"] + [r for r in (catalog.areas.get("regions") or {}) if r != "gale"]
+    names += sorted({e.get("region", "gale") for e in catalog.entries} - set(names))
+    return {r: i for i, r in enumerate(names)}
+
+
+def region_name(catalog: "Catalog", region: str) -> str:
+    return ((catalog.areas.get("regions") or {}).get(region) or {}).get("name") or region
 
 
 TABLE_START = "<!-- catalog-table:start -->"

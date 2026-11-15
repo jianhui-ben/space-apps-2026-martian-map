@@ -149,7 +149,7 @@ SIM_SOURCE = dict(
 
 
 def _geology(ctx: StepContext) -> List[Dict[str, Any]]:
-    region = ctx.scenario.gale_region
+    region = ctx.scenario.region_bounds
     layers = [
         ("geology_units", 3, "Geologic units (rock types)",
          "What the rock is, from the global geologic map: each area has a unit name and description.",
@@ -168,7 +168,7 @@ def _geology(ctx: StepContext) -> List[Dict[str, Any]]:
 
 
 def _region_inputs(ctx: StepContext) -> Dict[str, Any]:
-    return {"gale_region": ctx.scenario.gale_region.as_list()}
+    return {"gale_region": ctx.scenario.region_bounds.as_list()}
 
 
 geology_step = Step("geology", ("geology_units", "geology_contacts", "geology_structures"), _geology,
@@ -180,7 +180,8 @@ def _geology_index(ctx: StepContext) -> List[Dict[str, Any]]:
         title="Geologic maps covering the study area",
         summary="The list (and outlines) of published geologic maps that cover the study area, including unfinished ones.",
         factors=["ground"], evidence_type="reference", category="reference",
-        limitations=["An index of maps, not geology itself; the 1:60K Aeolis Mons map is listed as In Progress."],
+        limitations=["An index of maps, not geology itself; the 1:60K Aeolis Mons map is listed as In Progress."
+                     if ctx.scenario.is_gale else "An index of maps, not geology itself."],
         tags=["geology", "maps", "index"], source_name="USGS-NASA Planetary Geologic Mapping Program map database",
         page_url=PGM_PAGE, credit="USGS Astrogeology Science Center"))]
 
@@ -190,7 +191,7 @@ geology_index_step = Step("geology_index", ("geology_map_index",), _geology_inde
 
 
 def _minerals(ctx: StepContext) -> List[Dict[str, Any]]:
-    return [_vector_entry(ctx, "minerals_detections", MINERALS, ctx.scenario.gale_region, dict(
+    return [_vector_entry(ctx, "minerals_detections", MINERALS, ctx.scenario.region_bounds, dict(
         title="Water-related mineral detections",
         summary="Places where orbiters (CRISM, OMEGA) detected minerals that formed with water, such as clays and sulfates.",
         factors=["ground"], evidence_type="interpretation", category="minerals",
@@ -204,7 +205,7 @@ minerals_step = Step("minerals", ("minerals_detections",), _minerals, inputs=_re
 
 
 def _dunes(ctx: StepContext) -> List[Dict[str, Any]]:
-    return [_vector_entry(ctx, "dune_fields", DUNES, ctx.scenario.gale_region, dict(
+    return [_vector_entry(ctx, "dune_fields", DUNES, ctx.scenario.region_bounds, dict(
         title="Sand dune fields",
         summary="Outlines of mapped sand-dune fields: loose, moving sand that is hard to drive on and build on.",
         factors=["terrain", "ground"], evidence_type="interpretation", category="terrain",

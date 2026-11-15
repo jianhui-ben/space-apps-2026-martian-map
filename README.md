@@ -95,8 +95,13 @@ them is a NASA standard.
   - Solar: crater-wide elevation, per-site skylines and sun tables.
   - Thermal: four THEMIS temperature images, plus Curiosity's daily weather.
   - Routes: assumptions, place names, and a live height lookup.
+- **`python -m martian_map snapshot --scenario scenario/jezero.json`** (or `arcadia.json`) does the same for
+  Jezero crater and Arcadia Planitia, for comparison. Their files go in `data/regions/<id>/`, and their entries
+  are added to the same index, with ids ending in `__jezero` or `__arcadia`.
 - **`python -m martian_map catalog check|search|table`** inspects the index.
-- **[`scenario/gale.json`](scenario/gale.json)** holds the team's assumptions: base, candidate sites and placeholder limits.
+- **[`scenario/gale.json`](scenario/gale.json)** holds the team's assumptions: base, candidate sites and placeholder
+  limits. [`scenario/jezero.json`](scenario/jezero.json) and [`scenario/arcadia.json`](scenario/arcadia.json)
+  hold the same for the other two regions.
 - **[docs/data-sources.md](docs/data-sources.md)** explains what each dataset tells you, and what it can't, in plain
   language. **[docs/data-extraction.md](docs/data-extraction.md)** explains how to fetch, refresh and read it.
 - **Older helpers:**

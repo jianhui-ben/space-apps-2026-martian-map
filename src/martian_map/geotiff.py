@@ -2,8 +2,9 @@
 
 Supports classic TIFF and BigTIFF in either byte order, tiles or strips, samples
 stored together per pixel ("chunky"), 8/16/32-bit integers and 32/64-bit floats,
-no compression, Deflate or ZSTD (via the ``zstandard`` package), and the
-horizontal-differencing predictor. Anything else raises :class:`GeoTiffError`
+no compression, Deflate or ZSTD (via the ``zstandard`` package), the
+horizontal-differencing predictor (2, also on floats, as libtiff writes it) and
+the floating-point predictor (3). Anything else raises :class:`GeoTiffError`
 rather than returning wrong numbers.
 
 ``read_tags`` and ``read_window`` take a ``read(offset, length)`` function, so a
@@ -125,11 +126,11 @@ def _image(bo: str, t: Dict[int, list]):
         raise GeoTiffError("TIFF with separate sample planes is not supported")
     compression = t.get(259, [1])[0]
     predictor = t.get(317, [1])[0]
-    if predictor not in (1, 2):
+    if predictor not in (1, 2, 3):
         raise GeoTiffError(f"TIFF predictor {predictor} is not supported")
     dt = _dtype(bo, bits[0], t.get(339, [1])[0])
-    if predictor == 2 and dt.kind == "f":
-        raise GeoTiffError("TIFF predictor 2 on floating-point samples is not supported")
+    if predictor == 3 and dt.kind != "f":
+        raise GeoTiffError("TIFF predictor 3 (floating point) on integer samples is not valid")
     if 322 in t:
         cw, ch = t[322][0], t[323][0]
         offsets, counts = t.get(324), t.get(325)
@@ -143,6 +144,30 @@ def _image(bo: str, t: Dict[int, list]):
     if not offsets or not counts or len(offsets) != len(counts) or len(offsets) != expected:
         raise GeoTiffError("TIFF chunk tables are missing or inconsistent")
     return width, height, spp, dt, compression, predictor, layout, offsets, counts
+
+
+def _undo_predictor(raw: bytes, predictor: int, dt: np.dtype, rows: int, cols: int, spp: int) -> np.ndarray:
+    """The chunk's samples as (rows, cols, samples), with the predictor's differencing undone (as libtiff does)."""
+    if predictor == 3:  # per row: byte planes, most significant first, byte differences with a stride of spp
+        size = dt.itemsize
+        planes = np.frombuffer(raw, dtype=np.uint8).reshape(rows, size * cols, spp)
+        planes = np.cumsum(planes, axis=1, dtype=np.uint8).reshape(rows, size, cols * spp)
+        be = np.ascontiguousarray(planes.transpose(0, 2, 1))
+        return be.view(f">f{size}").reshape(rows, cols, spp)
+    block = np.frombuffer(raw, dtype=dt).reshape(rows, cols, spp)
+    if predictor != 2:
+        return block
+    if dt.kind == "f":  # libtiff differences float samples as unsigned integers of the same size
+        ints = block.view(f"{dt.str[0]}u{dt.itemsize}").astype(f"=u{dt.itemsize}")
+        return np.cumsum(ints, axis=1, dtype=ints.dtype).view(f"=f{dt.itemsize}")
+    return np.cumsum(block, axis=1, dtype=block.dtype)
+
+
+def window_chunks(bo: str, t: Dict[int, list], row0: int, col0: int, rows: int, cols: int) -> List[Tuple[int, int]]:
+    """(offset, length) of every tile or strip :func:`read_window` reads for this window."""
+    layout, offsets, counts = _image(bo, t)[6:]
+    return [(off, n) for (r0, c0, ch, cw), off, n in zip(layout, offsets, counts)
+            if not (r0 >= row0 + rows or r0 + ch <= row0 or c0 >= col0 + cols or c0 + cw <= col0)]
 
 
 def read_window(read: Reader, bo: str, t: Dict[int, list], row0: int, col0: int, rows: int,
@@ -167,9 +192,7 @@ def read_window(read: Reader, bo: str, t: Dict[int, list], row0: int, col0: int,
         need = ch * cw * spp * dt.itemsize
         if len(raw) < need:
             raise GeoTiffError("TIFF chunk is shorter than its declared size")
-        block = np.frombuffer(raw[:need], dtype=dt).reshape(ch, cw, spp)
-        if predictor == 2:
-            block = np.cumsum(block, axis=1, dtype=block.dtype)
+        block = _undo_predictor(raw[:need], predictor, dt, ch, cw, spp)
         ra, rb = max(r0, row0), min(r0 + ch, row0 + rows, height)
         ca, cb = max(c0, col0), min(c0 + cw, col0 + cols, width)
         out[ra - row0:rb - row0, ca - col0:cb - col0] = block[ra - r0:rb - r0, ca - c0:cb - c0]
@@ -217,4 +240,4 @@ def equirect_bounds(gt: GeoTiff, radius_m: float) -> Bounds:
 
 
 __all__: List[str] = ["GeoTiff", "GeoTiffError", "equirect_bounds", "georef", "read_geotiff", "read_tags",
-                      "read_window"]
+                      "read_window", "window_chunks"]

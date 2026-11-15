@@ -40,6 +40,8 @@ Things to know when reading the lists:
   - What we use it for: Map service for HiRISE, CTX, THEMIS, TES, MOLA and Viking layers, the Gale 1 m elevation model, and the mineral and dune layers.
   - Credit: NASA/JPL-Caltech, Solar System Treks Project. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Datasets: `dune_fields`, `elevation_10m_study`, `elevation_1m_curiosity_recent`, `elevation_1m_near_base_north`, `elevation_1m_near_base_west`, `elevation_2m_trip_area`, `elevation_463m_region`, `elevation_point_service`, `horizon_curiosity_recent`, `horizon_near_base_north`, `horizon_near_base_west`, `imagery_ctx`, `imagery_hirise_gray`, `imagery_viking`, `minerals_detections`, `relief_mola`, `roughness_1m_curiosity_recent`, `roughness_1m_near_base_north`, `roughness_1m_near_base_west`, `slope_10m_study`, `slope_10m_window_curiosity_recent`, `slope_10m_window_near_base_north`, `slope_10m_window_near_base_west`, `slope_1m_curiosity_recent`, `slope_1m_near_base_north`, `slope_1m_near_base_west`, `slope_2m_trip_area`, `sun_table_curiosity_recent`, `sun_table_near_base_north`, `sun_table_near_base_west`, `surface_dust_tes`, `thermal_day`, `thermal_inertia_tes`, `thermal_night`
+  - Datasets, Arcadia Planitia: `dune_fields`, `elevation_463m_region`, `horizon_arcadia_north`, `horizon_arcadia_south`, `imagery_viking`, `minerals_detections`, `relief_mola`, `sun_table_arcadia_north`, `sun_table_arcadia_south`, `surface_dust_tes`, `thermal_day`, `thermal_inertia_tes`, `thermal_night`
+  - Datasets, Jezero crater: `dune_fields`, `elevation_463m_region`, `horizon_jezero_north`, `horizon_jezero_south`, `imagery_viking`, `minerals_detections`, `relief_mola`, `sun_table_jezero_north`, `sun_table_jezero_south`, `surface_dust_tes`, `thermal_day`, `thermal_inertia_tes`, `thermal_night`
 - **Mars Reconnaissance Orbiter HiRISE camera**. NASA/JPL-Caltech/University of Arizona. <https://www.uahirise.org/>
   - What we use it for: Sharpest photos and the 1 m elevation model of Gale.
   - Credit: NASA/JPL-Caltech/University of Arizona. Licence: NASA data; generally not subject to US copyright. Credit as shown.
@@ -55,30 +57,42 @@ Things to know when reading the lists:
   - Credit: NASA/JPL-Caltech/JHUAPL. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Reference: Murchie, S., et al. (2007). Compact Reconnaissance Imaging Spectrometer for Mars (CRISM) on Mars Reconnaissance Orbiter (MRO). J. Geophys. Res., 112, E05S03.
   - Datasets: `minerals_detections`
+  - Datasets, Arcadia Planitia: `minerals_detections`
+  - Datasets, Jezero crater: `minerals_detections`
 - **Mars Global Surveyor Mars Orbiter Laser Altimeter (MOLA)**. NASA Goddard Space Flight Center, MOLA Science Team. <https://pds-geosciences.wustl.edu/missions/mgs/mola.html>
   - What we use it for: Regional (463 m) heights for the far skyline, and the shaded-relief layer.
   - Credit: NASA/GSFC MOLA Science Team. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Reference: Smith, D. E., et al. (2001). Mars Orbiter Laser Altimeter: Experiment summary after the first year of global mapping of Mars. J. Geophys. Res., 106(E10), 23689-23722.
   - Datasets: `elevation_463m_region`, `horizon_curiosity_recent`, `horizon_near_base_north`, `horizon_near_base_west`, `relief_mola`, `sun_table_curiosity_recent`, `sun_table_near_base_north`, `sun_table_near_base_west`
+  - Datasets, Arcadia Planitia: `elevation_463m_region`, `horizon_arcadia_north`, `horizon_arcadia_south`, `relief_mola`, `sun_table_arcadia_north`, `sun_table_arcadia_south`
+  - Datasets, Jezero crater: `elevation_463m_region`, `horizon_jezero_north`, `horizon_jezero_south`, `relief_mola`, `sun_table_jezero_north`, `sun_table_jezero_south`
 - **Mars Global Surveyor Thermal Emission Spectrometer (TES)**. NASA/JPL-Caltech/Arizona State University. <https://pds-geosciences.wustl.edu/missions/mgs/tes.html>
   - What we use it for: Global thermal inertia and surface dust pictures.
   - Credit: NASA/JPL-Caltech/Arizona State University. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Reference: Christensen, P. R., et al. (2001). Mars Global Surveyor Thermal Emission Spectrometer experiment: Investigation description and surface science results. J. Geophys. Res., 106(E10), 23823-23871.
   - Datasets: `surface_dust_tes`, `thermal_inertia_tes`
+  - Datasets, Arcadia Planitia: `surface_dust_tes`, `thermal_inertia_tes`
+  - Datasets, Jezero crater: `surface_dust_tes`, `thermal_inertia_tes`
 - **Mars Odyssey Thermal Emission Imaging System (THEMIS)**. NASA/JPL-Caltech/Arizona State University. <https://themis.asu.edu/>
   - What we use it for: Surface temperature images and infrared pictures; the source of the 1 km thermal inertia map.
   - Credit: NASA/JPL-Caltech/Arizona State University. Licence: NASA PDS data; generally not subject to US copyright. Credit the THEMIS team.
   - Reference: Christensen, P. R., et al. (2004). The Thermal Emission Imaging System (THEMIS) for the Mars 2001 Odyssey Mission. Space Sci. Rev., 110, 85-130.
   - Datasets: `themis_temp_day_aphelion`, `themis_temp_day_perihelion`, `themis_temp_night_aphelion`, `themis_temp_night_perihelion`, `themis_temperature_list`, `thermal_day`, `thermal_inertia_themis_1km`, `thermal_night`
+  - Datasets, Arcadia Planitia: `themis_temp_day_aphelion`, `themis_temp_night_aphelion`, `themis_temperature_list`, `thermal_day`, `thermal_inertia_themis_1km`, `thermal_night`
+  - Datasets, Jezero crater: `themis_temp_night_aphelion`, `themis_temperature_list`, `thermal_day`, `thermal_inertia_themis_1km`, `thermal_night`
 - **Mars Odyssey Gamma Ray Spectrometer (GRS)**. NASA/JPL-Caltech/University of Arizona (GRS team). <https://pds-geosciences.wustl.edu/missions/odyssey/grs_elements.html>
   - What we use it for: Water held in the top layer of the ground, 5 degree cells.
   - Credit: NASA/JPL-Caltech/University of Arizona. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Reference: Boynton, W. V., et al. (2007). Concentration of H, Si, Cl, K, Fe, and Th in the low and mid latitude regions of Mars. J. Geophys. Res. Planets. Data set ODY-M-GRS-5-ELEMENTS-V1.0, NASA PDS.
   - Datasets: `water_odyssey_grs`
+  - Datasets, Arcadia Planitia: `water_odyssey_grs`
+  - Datasets, Jezero crater: `water_odyssey_grs`
 - **Viking Orbiter images**. NASA/JPL-Caltech/USGS. <https://nssdc.gsfc.nasa.gov/planetary/viking.html>
   - What we use it for: Global colour background map.
   - Credit: NASA/JPL-Caltech/USGS. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Datasets: `imagery_viking`
+  - Datasets, Arcadia Planitia: `imagery_viking`
+  - Datasets, Jezero crater: `imagery_viking`
 - **Mars Science Laboratory 'Where is Curiosity?' map (MMGIS)**. NASA/JPL-Caltech. <https://mars.nasa.gov/maps/location/?mission=Curiosity>
   - What we use it for: Curiosity's path, stops, current position, named places and its photo map layers.
   - Credit: NASA/JPL-Caltech. Licence: NASA data; generally not subject to US copyright. Credit as shown.
@@ -115,29 +129,61 @@ Things to know when reading the lists:
   - What we use it for: Archive the THEMIS temperature images and the Odyssey water table were downloaded from.
   - Credit: NASA PDS Geosciences Node. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Datasets: `themis_temp_day_aphelion`, `themis_temp_day_perihelion`, `themis_temp_night_aphelion`, `themis_temp_night_perihelion`, `themis_temperature_list`, `water_odyssey_grs`
+  - Datasets, Arcadia Planitia: `themis_temp_day_aphelion`, `themis_temp_night_aphelion`, `themis_temperature_list`, `water_odyssey_grs`
+  - Datasets, Jezero crater: `themis_temp_night_aphelion`, `themis_temperature_list`, `water_odyssey_grs`
 - **Mars24 Sunclock algorithm**. NASA Goddard Institute for Space Studies. <https://www.giss.nasa.gov/tools/mars24/help/algorithm.html>
   - What we use it for: Formulas for where the sun is in the Martian sky.
   - Credit: NASA GISS. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Reference: Allison, M., and McEwen, M. (2000). A post-Pathfinder evaluation of areocentric solar coordinates with improved timing recipes for Mars seasonal/diurnal climate studies. Planet. Space Sci., 48, 215-235.
   - Datasets: `sun_table_curiosity_recent`, `sun_table_near_base_north`, `sun_table_near_base_west`
+  - Datasets, Arcadia Planitia: `sun_table_arcadia_north`, `sun_table_arcadia_south`
+  - Datasets, Jezero crater: `sun_table_jezero_north`, `sun_table_jezero_south`
 - **Geologic Map of Mars (USGS SIM 3292)**. U.S. Geological Survey Astrogeology Science Center, for the NASA Planetary Geologic Mapping Program. <https://pubs.usgs.gov/sim/3292/>
   - What we use it for: Geologic units, contacts and structures.
   - Credit: Tanaka et al. 2014, USGS. Licence: U.S. Government work; public domain. Credit the authors.
   - Reference: Tanaka, K. L., et al. (2014). Geologic map of Mars. U.S. Geological Survey Scientific Investigations Map 3292.
   - Datasets: `geology_contacts`, `geology_structures`, `geology_units`
+  - Datasets, Arcadia Planitia: `geology_contacts`, `geology_structures`, `geology_units`
+  - Datasets, Jezero crater: `geology_contacts`, `geology_structures`, `geology_units`
 - **USGS-NASA Planetary Geologic Mapping Program interactive Mars maps**. U.S. Geological Survey Astrogeology Science Center, for the NASA Planetary Geologic Mapping Program. <https://astrogeology-usgs.hub.arcgis.com/pages/interactive-maps-mars>
   - What we use it for: Index of published and in-progress geologic maps.
   - Credit: USGS Astrogeology Science Center. Licence: U.S. Government work; public domain.
   - Datasets: `geology_map_index`
+  - Datasets, Arcadia Planitia: `geology_map_index`
+  - Datasets, Jezero crater: `geology_map_index`
 - **HiRISE elevation model and orthophotos DTEEC_040770_1755_039280_1755 (USGS Astrogeology)**. U.S. Geological Survey Astrogeology Science Center and the HiRISE team, from NASA MRO HiRISE images; served as analysis-ready cloud-optimised GeoTIFFs. <https://www.uahirise.org/dtm/ESP_040770_1755>
   - What we use it for: Two orthophotos of the Bagnold Dunes on the same 1 m grid (2007 and 2015), used to measure moving sand.
   - Credit: NASA/JPL-Caltech/University of Arizona; USGS Astrogeology. Licence: NASA data; generally not subject to US copyright. Credit as shown.
   - Datasets: `dune_change_imagery`
+- **HiRISE elevation model DTEEC_045994_1985_046060_1985_U01, Jezero crater (USGS Astrogeology)**. HiRISE team (University of Arizona) and the U.S. Geological Survey Astrogeology Science Center, from NASA MRO HiRISE stereo images; served as analysis-ready cloud-optimised GeoTIFFs. <https://www.uahirise.org/dtm/ESP_045994_1985>
+  - What we use it for: 1 m elevation of the Jezero sites and trip area (Perseverance's landing area).
+  - Credit: NASA/JPL-Caltech/University of Arizona; USGS Astrogeology. Licence: NASA data; generally not subject to US copyright. Credit as shown.
+  - Datasets, Jezero crater: `elevation_1m_jezero_north`, `elevation_1m_jezero_south`, `elevation_2m_trip_area`, `horizon_jezero_north`, `horizon_jezero_south`, `roughness_1m_jezero_north`, `roughness_1m_jezero_south`, `slope_10m_window_jezero_north`, `slope_10m_window_jezero_south`, `slope_1m_jezero_north`, `slope_1m_jezero_south`, `slope_2m_trip_area`, `sun_table_jezero_north`, `sun_table_jezero_south`
+- **CTX elevation model F05_037818_1977_XN_17N282W__F04_037330_2008_XN_20N282W, Jezero crater (USGS Astrogeology)**. U.S. Geological Survey Astrogeology Science Center (Ames Stereo Pipeline, tied to MOLA), from NASA MRO CTX stereo images. <https://doi.org/10.5066/P9JKVWR3>
+  - What we use it for: 20 m elevation of the Jezero study area (most of the crater floor and the delta).
+  - Credit: NASA/JPL-Caltech/MSSS; USGS Astrogeology. Licence: NASA data; generally not subject to US copyright. Credit as shown.
+  - Reference: Laura, J. R., Adoram-Kershner, L. A., Meyer, D. P., Wheeler, B. H., Bauck, K. H., and Fergason, R. L. (2023). Mars Reconnaissance Orbiter (MRO) Context Camera (CTX) orthoimage generated using Ames stereo pipeline derived digital terrain models. U.S. Geological Survey, doi:10.5066/P9JKVWR3.
+  - Datasets, Jezero crater: `elevation_20m_study`, `horizon_jezero_north`, `horizon_jezero_south`, `slope_20m_study`, `sun_table_jezero_north`, `sun_table_jezero_south`
+- **HiRISE elevation model DTEEC_035862_2195_035928_2195_A01, Arcadia Planitia (USGS Astrogeology)**. HiRISE team (University of Arizona) and the U.S. Geological Survey Astrogeology Science Center, from NASA MRO HiRISE stereo images; served as analysis-ready cloud-optimised GeoTIFFs. <https://www.uahirise.org/dtm/ESP_035862_2195>
+  - What we use it for: 1 m elevation of the Arcadia Planitia sites and trip area.
+  - Credit: NASA/JPL-Caltech/University of Arizona; USGS Astrogeology. Licence: NASA data; generally not subject to US copyright. Credit as shown.
+  - Datasets, Arcadia Planitia: `elevation_1m_arcadia_north`, `elevation_1m_arcadia_south`, `elevation_2m_trip_area`, `horizon_arcadia_north`, `horizon_arcadia_south`, `roughness_1m_arcadia_north`, `roughness_1m_arcadia_south`, `slope_10m_window_arcadia_north`, `slope_10m_window_arcadia_south`, `slope_1m_arcadia_north`, `slope_1m_arcadia_south`, `slope_2m_trip_area`, `sun_table_arcadia_north`, `sun_table_arcadia_south`
+- **CTX elevation model D22_035862_2182_XN_38N167W__D22_035928_2192_XN_39N167W, Arcadia Planitia (USGS Astrogeology)**. U.S. Geological Survey Astrogeology Science Center (Ames Stereo Pipeline, tied to MOLA), from NASA MRO CTX stereo images. <https://doi.org/10.5066/P9JKVWR3>
+  - What we use it for: 20 m elevation of the Arcadia Planitia study area.
+  - Credit: NASA/JPL-Caltech/MSSS; USGS Astrogeology. Licence: NASA data; generally not subject to US copyright. Credit as shown.
+  - Reference: Laura, J. R., Adoram-Kershner, L. A., Meyer, D. P., Wheeler, B. H., Bauck, K. H., and Fergason, R. L. (2023). Mars Reconnaissance Orbiter (MRO) Context Camera (CTX) orthoimage generated using Ames stereo pipeline derived digital terrain models. U.S. Geological Survey, doi:10.5066/P9JKVWR3.
+  - Datasets, Arcadia Planitia: `elevation_20m_study`, `horizon_arcadia_north`, `horizon_arcadia_south`, `slope_20m_study`, `sun_table_arcadia_north`, `sun_table_arcadia_south`
+- **Mars 2020 'Where is Perseverance?' map (MMGIS)**. NASA/JPL-Caltech. <https://mars.nasa.gov/maps/location/?mission=M20>
+  - What we use it for: Perseverance's path, stops, current position and named places at Jezero.
+  - Credit: NASA/JPL-Caltech. Licence: NASA data; generally not subject to US copyright. Credit as shown.
+  - Datasets, Jezero crater: `map_config`, `named_sites`, `rover_path`, `rover_position`, `rover_stops`
 - **Mars Global Digital Dune Database**. U.S. Geological Survey, NASA-funded; served by NASA Mars Trek. <https://pubs.usgs.gov/of/2007/1158/>
   - What we use it for: Outlines of dune fields (loose sand).
   - Credit: Hayward et al., USGS. Licence: U.S. Government work; public domain. Credit the authors.
   - Reference: Hayward, R. K., et al. (2007). Mars Global Digital Dune Database and initial science results. J. Geophys. Res., 112, E11007.
   - Datasets: `dune_fields`
+  - Datasets, Arcadia Planitia: `dune_fields`
+  - Datasets, Jezero crater: `dune_fields`
 
 ### Space Agency Partner data
 
@@ -146,11 +192,15 @@ Things to know when reading the lists:
   - Credit: ESA/IAS/CNES (OMEGA). Licence: ESA data; free for research and education. Credit ESA and the OMEGA team.
   - Reference: Bibring, J.-P., et al. (2004). OMEGA: Observatoire pour la Mineralogie, l'Eau, les Glaces et l'Activite. ESA SP-1240, 37-49.
   - Datasets: `minerals_detections`
+  - Datasets, Arcadia Planitia: `minerals_detections`
+  - Datasets, Jezero crater: `minerals_detections`
 - **Mars Climate Database (MCD)**. Laboratoire de Meteorologie Dynamique (LMD, CNRS/Sorbonne Universite), with the University of Oxford and IAA Granada; developed with support from ESA and CNES. <https://www-mars.lmd.jussieu.fr/mcd_python/>
   - What we use it for: Typical temperatures, air pressure, dust and sunlight at the base for every hour and season, in typical, clear, dusty and dust-storm years (climate model).
   - Credit: Mars Climate Database (c) LMD/OU/IAA/ESA/CNES. Licence: Free for scientific use if the origin is quoted and the LMD team is kept informed.
   - Reference: Forget, F., et al. (1999). Improved general circulation models of the Martian atmosphere from the surface to above 80 km. J. Geophys. Res., 104(E10), 24155-24175. Millour, E., et al. (2018). The Mars Climate Database (version 5.3). From Mars Express to ExoMars Scientific Workshop, ESAC.
   - Datasets: `dust_climate_mcd`, `temperature_climate_mcd`
+  - Datasets, Arcadia Planitia: `dust_climate_mcd`, `temperature_climate_mcd`
+  - Datasets, Jezero crater: `dust_climate_mcd`, `temperature_climate_mcd`
 
 ### Other data, references and tools
 
@@ -159,6 +209,8 @@ Things to know when reading the lists:
   - Credit: Huang, J. (2026), from NASA/JPL-Caltech/ASU THEMIS data. Licence: CC BY 4.0
   - Reference: Huang, J. (2026). A new global thermal inertia map of Mars from THEMIS nighttime images: 1 km browse version [Data set]. Zenodo. https://doi.org/10.5281/zenodo.23527756
   - Datasets: `thermal_inertia_themis_1km`
+  - Datasets, Arcadia Planitia: `thermal_inertia_themis_1km`
+  - Datasets, Jezero crater: `thermal_inertia_themis_1km`
 - **Mars Science Laboratory aerosol optical depths (Lemmon 2024, Mendeley Data)**. Mark Lemmon, Space Science Institute; measured from NASA Curiosity Mastcam solar images. <https://data.mendeley.com/datasets/tbh3pg39xc/3>
   - What we use it for: Measured dust and haze over Gale (optical depth at 880 and 440 nm), 2012-2023.
   - Credit: Lemmon, M. (2024), from NASA/JPL-Caltech/MSSS Mastcam images. Licence: CC BY 4.0
@@ -168,6 +220,8 @@ Things to know when reading the lists:
   - What we use it for: Slope, roughness, skylines, sun tables, sand movement, coverage and the scenario assumptions.
   - Credit: martian_map team. Licence: MIT
   - Datasets: `dune_change_imagery`, `horizon_curiosity_recent`, `horizon_near_base_north`, `horizon_near_base_west`, `roughness_1m_curiosity_recent`, `roughness_1m_near_base_north`, `roughness_1m_near_base_west`, `scenario`, `slope_10m_study`, `slope_10m_window_curiosity_recent`, `slope_10m_window_near_base_north`, `slope_10m_window_near_base_west`, `slope_1m_curiosity_recent`, `slope_1m_near_base_north`, `slope_1m_near_base_west`, `slope_2m_trip_area`, `sun_table_curiosity_recent`, `sun_table_near_base_north`, `sun_table_near_base_west`
+  - Datasets, Arcadia Planitia: `horizon_arcadia_north`, `horizon_arcadia_south`, `roughness_1m_arcadia_north`, `roughness_1m_arcadia_south`, `scenario`, `slope_10m_window_arcadia_north`, `slope_10m_window_arcadia_south`, `slope_1m_arcadia_north`, `slope_1m_arcadia_south`, `slope_20m_study`, `slope_2m_trip_area`, `sun_table_arcadia_north`, `sun_table_arcadia_south`
+  - Datasets, Jezero crater: `horizon_jezero_north`, `horizon_jezero_south`, `roughness_1m_jezero_north`, `roughness_1m_jezero_south`, `scenario`, `slope_10m_window_jezero_north`, `slope_10m_window_jezero_south`, `slope_1m_jezero_north`, `slope_1m_jezero_south`, `slope_20m_study`, `slope_2m_trip_area`, `sun_table_jezero_north`, `sun_table_jezero_south`
 <!-- references:end -->
 
 ### Other references (published results we compare with, not data we use)

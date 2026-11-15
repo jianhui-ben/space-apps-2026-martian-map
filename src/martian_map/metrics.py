@@ -94,23 +94,39 @@ def parse_availability(markdown: str) -> List[Dict[str, Any]]:
 
 
 def coverage_markdown(catalog: Any, metrics: List[Dict[str, Any]]) -> str:
+    from .catalog import region_name, region_order
+
     have: Dict[str, List[str]] = {}
     pending: Dict[str, List[str]] = {}
+    others: Dict[str, Dict[str, Dict[str, int]]] = {"have": {}, "pending": {}}  # metric -> region -> count
     for e in sorted(catalog.entries, key=lambda x: x["id"]):
-        target = have if e.get("access") in ("local", "live") and e.get("status", "ok") == "ok" else (
-            pending if e.get("access") in ("pending", "not_used") or e.get("status") != "ok" else None)
-        if target is None:
+        ok = e.get("access") in ("local", "live") and e.get("status", "ok") == "ok"
+        kind = "have" if ok else ("pending" if e.get("access") in ("pending", "not_used") or e.get("status") != "ok"
+                                  else None)
+        if kind is None:
             continue
-        for mid in e.get("metrics") or metrics_for(e["id"]):
-            target.setdefault(mid, []).append(e["id"])
+        region = e.get("region", "gale")
+        for mid in e.get("metrics") or metrics_for(e.get("dataset", e["id"])):
+            if region == "gale":
+                (have if kind == "have" else pending).setdefault(mid, []).append(e["id"])
+            else:
+                counts = others[kind].setdefault(mid, {})
+                counts[region] = counts.get(region, 0) + 1
+    order = region_order(catalog)
+
+    def also(kind: str, mid: str) -> str:
+        counts = others[kind].get(mid) or {}
+        return "; ".join(f"{region_name(catalog, r)}: {counts[r]}" for r in sorted(counts, key=lambda r: order.get(r, 99)))
     lines: List[str] = []
     gaps = []
     for prefix, factor in FACTORS.items():
         lines += [f"### {factor}", "",
                   "| Metric | Available today? (teammate) | Data we have | Not available yet |", "|---|---|---|---|"]
         for m in (x for x in metrics if x["id"].startswith(prefix)):
-            ours = ", ".join(f"`{d}`" for d in have.get(m["id"], [])) or "none"
-            missing = ", ".join(f"`{d}`" for d in pending.get(m["id"], [])) or ""
+            ours = "; ".join(x for x in (", ".join(f"`{d}`" for d in have.get(m["id"], [])), also("have", m["id"])) if x) \
+                or "none"
+            missing = "; ".join(x for x in (", ".join(f"`{d}`" for d in pending.get(m["id"], [])),
+                                            also("pending", m["id"])) if x)
             lines.append(f"| {m['id']} {m['name']} | {m['label']} | {ours} | {missing} |")
             if m["label"] in ("Estimate today", "Partial") and not have.get(m["id"]):
                 gaps.append(m)

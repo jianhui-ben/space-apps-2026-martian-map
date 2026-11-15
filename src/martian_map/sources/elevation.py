@@ -1,4 +1,9 @@
-"""Elevation from Mars Trek's ArcGIS ImageServer, and the terrain layers computed from it.
+"""Elevation, and the terrain layers computed from it.
+
+At Gale the heights come from Mars Trek's ArcGIS ImageServer (the 1 m Gale
+DEM). Other regions name their own models in the scenario's ``elevation``: a
+USGS HiRISE DTM (1 m, for the sites and the trip area) and a CTX DTM (about
+20 m, for the study area), read as cloud-optimised GeoTIFFs (see ``cog.py``).
 
 Export layout, verified live 2026-11-14 (4x4, 8x8 and 16x3 exports, each corner
 compared with ``identify`` at the pixel centre; values agree within 0.06 m,
@@ -18,6 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from ..catalog import new_entry
+from ..cog import read_cog_grid
 from ..grids import Grid, nodata_report, parse_bsq_f32, write_grid
 from ..http import Fetcher, build_url
 from ..png import write_overlay
@@ -111,14 +117,50 @@ def service_pixel_deg(fetcher: Fetcher, service: str) -> float:
 
 def _precision(scenario: Scenario) -> Tuple[float, Dict[str, Any]]:
     sigma = float(scenario.assumptions.get("dem_vertical_precision_m", {}).get("value", 0.25))
+    where = ("Trek's Gale_DEM_SMG_1m metadata states no vertical precision (checked 2026-11-14)" if scenario.is_gale
+             else "the USGS elevation models state no vertical precision (checked 2026-11-15)")
     return sigma, {
         "value": sigma,
         "unit": "m",
-        "basis": (
-            "assumption: scenario dem_vertical_precision_m placeholder; Trek's Gale_DEM_SMG_1m metadata "
-            "states no vertical precision (checked 2026-11-14)"
-        ),
+        "basis": f"assumption: scenario dem_vertical_precision_m placeholder; {where}",
     }
+
+
+def study_resolution(scenario: Scenario) -> int:
+    """Metres per pixel of the study-area grid: 10 at Gale, the scenario's study model elsewhere."""
+    return int(scenario.elevation["study"]["resolution_m"]) if scenario.elevation else 10
+
+
+def study_dataset(scenario: Scenario) -> str:
+    """Dataset id of the study-area elevation grid (``elevation_10m_study`` at Gale)."""
+    return f"elevation_{study_resolution(scenario)}m_study"
+
+
+STAC_ITEMS = "https://stac.astrogeology.usgs.gov/api/collections/{collection}/items/{item}"
+
+
+def read_elevation(ctx: StepContext, which: str, bounds: Bounds, resolution_m: int) -> Tuple[Grid, Dict[str, Any]]:
+    """Heights over ``bounds`` at ``resolution_m`` from the ``study`` or ``fine`` model, and the source record."""
+    src = ctx.scenario.elevation[which] if ctx.scenario.elevation else None
+    if src is None:
+        grid = export_grid(ctx.fetcher, GALE_DEM, bounds, resolution_m * GALE_DEM_PIXEL_DEG)
+        req = export_url(GALE_DEM, grid.bounds, grid.shape[1], min(grid.shape[0], 1024))
+        return grid, _source("Mars Trek ImageServer Gale_DEM_SMG_1m (MRO HiRISE, Gale Crater DEM)", req, HIRISE_CREDIT)
+    grid = read_cog_grid(ctx, src["url"], bounds, decimate=resolution_m if which == "fine" else 1)
+    instrument = "MRO HiRISE" if which == "fine" else "MRO CTX"
+    credit = (HIRISE_CREDIT if which == "fine" else "NASA/JPL-Caltech/MSSS") + "; USGS Astrogeology"
+    return grid, {
+        "name": f"USGS Astrogeology analysis-ready elevation model {src['name']} ({instrument})",
+        "page_url": src.get("page_url") or "https://stac.astrogeology.usgs.gov/",
+        "request_url": src["url"],
+        "fetched_at": _now(),
+        "credit": credit,
+        "license": LICENSE,
+    }
+
+
+def _rover_name(scenario: Scenario) -> Optional[str]:
+    return scenario.rover.capitalize() if scenario.rover else None
 
 
 def _elev_stops(values: np.ndarray):
@@ -156,29 +198,36 @@ def _write_triplet(ctx: StepContext, grid: Grid, stem: str, stops, unit: str) ->
 
 
 def _terrain_entries(ctx: StepContext, grid: Grid, area: str, suffix: str, resolution_m: int,
-                     with_roughness: bool, label: str) -> List[Dict[str, Any]]:
+                     with_roughness: bool, label: str, src: Dict[str, Any], model: str = "fine") -> List[Dict[str, Any]]:
     sigma, uncertainty = _precision(ctx.scenario)
     dx, dy = pixel_size_m(grid)
     coverage = _coverage(grid, area)
-    req = export_url(GALE_DEM, grid.bounds, grid.shape[1], min(grid.shape[0], 1024))
-    src = _source("Mars Trek ImageServer Gale_DEM_SMG_1m (MRO HiRISE, Gale Crater DEM)", req, HIRISE_CREDIT)
+    gale = ctx.scenario.elevation is None
+    rover = _rover_name(ctx.scenario)
     common = dict(
         coverage=coverage,
         resolution_m=resolution_m,
         uncertainty=uncertainty,
         source=src,
-        ground_validated={"value": False, "note": "compared with Curiosity's own heights in the alignment check"},
-        observation_time={"note": "mosaic of HiRISE stereo pairs; acquisition dates not given by Trek", "created": "2020-06-25"},
+        ground_validated={"value": False, "note": f"compared with {rover}'s own heights in the alignment check"
+                          if rover else "no rover has driven here, so no ground check"},
+        observation_time={"note": "mosaic of HiRISE stereo pairs; acquisition dates not given by Trek", "created": "2020-06-25"}
+        if gale else {"note": f"from the stereo images named in {ctx.scenario.elevation[model]['name']}; their dates are "
+                              "on the source page"},
     )
-    small = {1: 3, 2: 6}.get(resolution_m, 30)
+    small = {1: 3, 2: 6}.get(resolution_m, 3 * resolution_m)
+    resampled = (f"Resampled to {resolution_m} m by the map server (bilinear) from the 1 m model." if gale
+                 else f"Averaged to {resolution_m} m from the 1 m model ({resolution_m} x {resolution_m} pixel blocks; "
+                      "a block with any missing pixel is left empty).")
     common_limits = [
         f"Features smaller than about {small} m can't be seen in this elevation grid."
         if resolution_m != 1
         else "Rocks and features smaller than about 3 m can't be seen in the 1 m elevation model.",
-        *([f"Resampled to {resolution_m} m by the map server (bilinear) from the 1 m model."]
-          if resolution_m == 2 else []),
+        *([resampled] if resolution_m == 2 else []),
         "Heights come from stereo photos taken from orbit, not direct measurement.",
         "The source states no vertical precision; noise floors use the scenario's placeholder value.",
+        *([] if gale else ["The 1 m (HiRISE) and coarse (CTX) models are separate products and can disagree by tens "
+                           "of metres in absolute height; compare heights within one model (slopes are unaffected)."]),
     ]
     nf = noise_floor(sigma, dx)
 
@@ -196,7 +245,7 @@ def _terrain_entries(ctx: StepContext, grid: Grid, area: str, suffix: str, resol
             f"Height of the ground every {resolution_m} m across the {label}, in metres.",
             ["terrain", "routes", "solar"], "elevation", "derived", "local",
             files=elev_files, smallest_feature_m=small, limitations=common_limits,
-            tags=["elevation", "height", "dem", "hirise"], **common,
+            tags=["elevation", "height", "dem", "ctx" if model == "study" and not gale else "hirise"], **common,
         )
     ]
     slope = slope_deg(grid.values, dx, dy)
@@ -267,8 +316,20 @@ def _terrain_entries(ctx: StepContext, grid: Grid, area: str, suffix: str, resol
 
 
 def _study(ctx: StepContext) -> List[Dict[str, Any]]:
-    grid = export_grid(ctx.fetcher, GALE_DEM, ctx.scenario.study_area, 10 * GALE_DEM_PIXEL_DEG)
-    return _terrain_entries(ctx, grid, "study_area", "10m_study", 10, False, "study area (10 m screening)")
+    res = study_resolution(ctx.scenario)
+    grid, src = read_elevation(ctx, "study", ctx.scenario.study_area, res)
+    return _terrain_entries(ctx, grid, "study_area", f"{res}m_study", res, False, f"study area ({res} m screening)",
+                            src, model="study")
+
+
+def _model_inputs(ctx: StepContext, which: str) -> Dict[str, Any]:
+    return {"model": ctx.scenario.elevation[which]["url"]} if ctx.scenario.elevation else {}
+
+
+def study_step_for(scenario: Scenario) -> Step:
+    res = study_resolution(scenario)
+    return Step("elevation_study", (f"elevation_{res}m_study", f"slope_{res}m_study"), _study,
+                inputs=lambda ctx: {"study_area": ctx.scenario.study_area.as_list(), **_model_inputs(ctx, "study")})
 
 
 study_step = Step("elevation_study", ("elevation_10m_study", "slope_10m_study"), _study,
@@ -278,19 +339,19 @@ study_step = Step("elevation_study", ("elevation_10m_study", "slope_10m_study"),
 def _site_step(site: Site) -> Step:
     def run(ctx: StepContext) -> List[Dict[str, Any]]:
         current = ctx.scenario.site(site.id)
-        grid = export_grid(ctx.fetcher, GALE_DEM, current.bounds, GALE_DEM_PIXEL_DEG)
-        entries = _terrain_entries(ctx, grid, current.id, f"1m_{current.id}", 1, True, f"site {current.name}")
+        grid, src = read_elevation(ctx, "fine", current.bounds, 1)
+        entries = _terrain_entries(ctx, grid, current.id, f"1m_{current.id}", 1, True, f"site {current.name}", src)
         fraction = entries[0]["coverage"]["covered_fraction"]
         if fraction < 0.95:
             ctx.warn(
                 f"site {current.id}: only {fraction:.0%} of the site has 1 m elevation (below 95%); "
-                "consider moving the site box in scenario/gale.json"
+                f"consider moving the site box in scenario/{ctx.scenario.path.name}"
             )
         return entries
 
     ids = tuple(f"{k}_1m_{site.id}" for k in ("elevation", "slope", "roughness")) + (f"slope_10m_window_{site.id}",)
     return Step(f"elevation_site_{site.id}", ids, run,
-                inputs=lambda ctx: {"site": ctx.scenario.site(site.id).bounds.as_list()})
+                inputs=lambda ctx: {"site": ctx.scenario.site(site.id).bounds.as_list(), **_model_inputs(ctx, "fine")})
 
 
 def site_steps(scenario: Scenario) -> List[Step]:
@@ -304,9 +365,9 @@ def _trip(ctx: StepContext) -> List[Dict[str, Any]]:
     area = ctx.scenario.trip_area
     if area is None:
         raise ValueError("the scenario has no trip_area")
-    grid = export_grid(ctx.fetcher, GALE_DEM, area, TRIP_RESOLUTION_M * GALE_DEM_PIXEL_DEG)
+    grid, src = read_elevation(ctx, "fine", area, TRIP_RESOLUTION_M)
     entries = _terrain_entries(ctx, grid, "trip_area", f"{TRIP_RESOLUTION_M}m_trip_area", TRIP_RESOLUTION_M, False,
-                               "trip area (the base and the near-base sites, for route planning)")
+                               "trip area (the base and the near-base sites, for route planning)", src)
     fraction = entries[0]["coverage"]["covered_fraction"]
     if fraction < 0.95:
         ctx.warnings.append(f"trip_area: only {fraction:.0%} of the box has elevation data")
@@ -319,20 +380,25 @@ def trip_steps(scenario: Scenario) -> List[Step]:
         return []
     suffix = f"{TRIP_RESOLUTION_M}m_trip_area"
     return [Step("elevation_trip_area", (f"elevation_{suffix}", f"slope_{suffix}"), _trip,
-                 inputs=lambda ctx: {"trip_area": ctx.scenario.trip_area.as_list(), "resolution_m": TRIP_RESOLUTION_M})]
+                 inputs=lambda ctx: {"trip_area": ctx.scenario.trip_area.as_list(), "resolution_m": TRIP_RESOLUTION_M,
+                                     **_model_inputs(ctx, "fine")})]
 
 
 def _region(ctx: StepContext) -> List[Dict[str, Any]]:
     pixel = service_pixel_deg(ctx.fetcher, MOLA)
-    grid = export_grid(ctx.fetcher, MOLA, ctx.scenario.gale_region, pixel)
+    sc = ctx.scenario
+    grid = export_grid(ctx.fetcher, MOLA, sc.region_bounds, pixel)
     files = _write_triplet(ctx, grid, "elevation_463m_region", _elev_stops(grid.values), "m")
     req = export_url(MOLA, grid.bounds, grid.shape[1], grid.shape[0])
+    title = "Ground height, whole Gale region (coarse)" if sc.is_gale else f"Ground height, whole {sc.region_name} region (coarse)"
+    summary = ("Coarse ground height for the whole crater, its rim and Mount Sharp, used to work out which hills block the sun."
+               if sc.is_gale else f"Coarse ground height for the whole {sc.region_name} region around the study area, used "
+                                  "to work out which distant hills and crater walls block the sun.")
     return [
         new_entry(
-            "elevation_463m_region", "Ground height, whole Gale region (coarse)",
-            "Coarse ground height for the whole crater, its rim and Mount Sharp, used to work out which hills block the sun.",
+            "elevation_463m_region", title, summary,
             ["solar", "terrain"], "elevation", "derived", "local",
-            files=files, coverage=_coverage(grid, "gale_region"), resolution_m=463, smallest_feature_m=1400,
+            files=files, coverage=_coverage(grid, sc.region_area), resolution_m=463, smallest_feature_m=1400,
             uncertainty={"value": "unknown", "basis": "MOLA gridded heights; precision not stated by Trek"},
             source=_source("Mars Trek ImageServer " + MOLA + " (MGS MOLA)", req, "NASA/GSFC MOLA Science Team"),
             limitations=["Coarse (463 m per pixel): only for distant hills and crater walls, not for site terrain."],
@@ -342,7 +408,7 @@ def _region(ctx: StepContext) -> List[Dict[str, Any]]:
 
 
 region_step = Step("elevation_region", ("elevation_463m_region",), _region,
-                   inputs=lambda ctx: {"gale_region": ctx.scenario.gale_region.as_list()})
+                   inputs=lambda ctx: {"gale_region": ctx.scenario.region_bounds.as_list()})
 
 __all__ = [
     "GALE_DEM",
@@ -354,5 +420,9 @@ __all__ = [
     "region_step",
     "service_pixel_deg",
     "site_steps",
+    "read_elevation",
+    "study_dataset",
+    "study_resolution",
     "study_step",
+    "study_step_for",
 ]

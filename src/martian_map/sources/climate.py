@@ -23,7 +23,7 @@ import re
 from typing import Any, Dict, List, Sequence, Tuple
 
 from ..catalog import file_record, new_entry
-from ..http import atomic_write, build_url
+from ..http import FetchError, atomic_write, build_url
 from ..snapshot import Step, StepContext, _now
 
 MCD_PAGE = "https://www-mars.lmd.jussieu.fr/mcd_python/"
@@ -35,7 +35,7 @@ CITATION = ("Forget, F., et al. (1999). Improved general circulation models of t
             "Climate Database (version 5.3). Scientific Workshop: From Mars Express to ExoMars, ESAC Madrid.")
 TERMS = ("Free for scientific use if the origin is quoted and the LMD team is kept informed; the web interface is "
          "intended for moderate use only.")
-TIMEOUT_S = 90.0
+TIMEOUT_S = 150.0
 ALTITUDE_M = 2.0
 
 # MCD variable -> (our key, a piece of the name the MCD prints for it, unit)
@@ -164,11 +164,22 @@ def query(variables: Sequence[str], dust: int, ls: Any, lat: float, lon: float) 
     return q
 
 
+def _get(ctx: StepContext, url: str, max_bytes: int, tries: int = 3) -> bytes:
+    """The MCD server sometimes takes longer than the timeout on a busy CGI run; try again before giving up."""
+    for attempt in range(tries):
+        try:
+            return ctx.fetcher.get_bytes(url, max_bytes, timeout_s=TIMEOUT_S).body
+        except FetchError as exc:
+            if attempt == tries - 1:
+                raise
+            ctx.log(f"climate: retrying after {exc}")
+    raise AssertionError("unreachable")
+
+
 def _fetch(ctx: StepContext, variables: Sequence[str], dust: int, ls: Any, lat: float, lon: float):
-    page = ctx.fetcher.get_bytes(build_url(CGI_URL, query(variables, dust, ls, lat, lon)), 1 << 20,
-                                 timeout_s=TIMEOUT_S).body.decode("utf-8", "replace")
+    page = _get(ctx, build_url(CGI_URL, query(variables, dust, ls, lat, lon)), 1 << 20).decode("utf-8", "replace")
     link = txt_url(page)
-    text = ctx.fetcher.get_bytes(link, 4 << 20, timeout_s=TIMEOUT_S).body.decode("utf-8", "replace")
+    text = _get(ctx, link, 4 << 20).decode("utf-8", "replace")
     blocks = parse_mcd_text(text)
     check_point(blocks, lat, lon)
     if len(blocks) != len(variables):
@@ -220,8 +231,9 @@ def _climate(ctx: StepContext) -> List[Dict[str, Any]]:
                         "note": "the scenario's base point, rounded to 0.01 degree"},
               "layout": "each variable is values[i][j]: season ls[i] (degrees of solar longitude), "
                         "local time local_time_h[j] (Martian hours; 24 is the end of the sol)"}
-    tpath = ctx.path("climate/mcd_gale_thermal.json")
-    spath = ctx.path("climate/mcd_gale_solar.json")
+    rid = ctx.scenario.region_id
+    tpath = ctx.path(f"climate/mcd_{rid}_thermal.json")
+    spath = ctx.path(f"climate/mcd_{rid}_solar.json")
     for path, names, tables in ((tpath, THERMAL_VARS, thermal), (spath, SOLAR_VARS + ("dod",), solar)):
         units = {VARIABLES[v][0]: VARIABLES[v][2] for v in names}
         atomic_write(path, json.dumps({**common, "units": units, "scenarios": tables},
@@ -240,7 +252,8 @@ def _climate(ctx: StepContext) -> List[Dict[str, Any]]:
         "Model values for a typical year at one point, not measurements; the MCD is checked against spacecraft "
         "and lander data, but local slopes, shadows and rock or sand cover are not in it.",
         "Climate-model cells are a few hundred km across; the MCD adjusts pressure and temperature for the "
-        "local height, but Gale's crater walls and winds are smoothed.",
+        "local height, but " + ("Gale's crater walls and winds are smoothed." if ctx.scenario.is_gale
+                                else "local crater walls, hills and winds are smoothed."),
         "The dust storm case only covers Ls 180-360 (the MCD has no storm runs for the rest of the year).",
     ]
     return [

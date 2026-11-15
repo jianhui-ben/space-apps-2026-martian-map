@@ -43,12 +43,40 @@ The command:
 A full first run takes about 15 minutes, about 560 MB in all. The slow steps:
 
 - the elevation downloads (about 25 s) and the skyline calculation (about 30 s per site);
-- the climate database, 14 requests of 5–25 s each (about 2.5 min);
+- the climate database, 14 requests of 5–25 s each (about 2.5 min); when it is busy a request can take
+  over two minutes or be refused, so the step tries each request three times;
 - Curiosity's radiation record, 49 sampled sols (about 4 min);
 - the solar storm list, 88 requests (about 1.5 min).
 
 The temperature images are 35–54 MB each. The radiation and dune steps read only the bytes they need from
 large files (HTTP range requests), so they download a few MB instead of gigabytes.
+
+## Jezero crater and Arcadia Planitia
+
+Two more regions use the same steps, for comparison with Gale:
+
+```bash
+python -m martian_map snapshot --scenario scenario/jezero.json
+python -m martian_map snapshot --scenario scenario/arcadia.json
+```
+
+- Each run writes its files to `data/regions/<id>/`, with that region's own index
+  `data/regions/<id>/catalog.json`, then merges every region into `data/catalog.json`.
+- A first run takes about 10 minutes and 200-230 MB per region.
+- In the merged index the other regions' ids end in `__jezero` or `__arcadia`, their file paths start with
+  `regions/<id>/`, and every entry has `region` and `dataset` (the id without the ending). Gale's ids stay
+  as they were. `areas.regions` lists each region's areas.
+- Re-running Gale keeps the other regions, even on a fresh clone where their folders are missing.
+- `--only` takes the plain ids, for example `--only elevation_site_jezero_north`.
+- Mars Trek has no 1 m elevation model at Jezero or Arcadia. The heights come from USGS Astrogeology
+  elevation models named in the scenario's `elevation` section: a HiRISE model (1 m, for the sites and
+  the trip area) and a CTX model (about 20 m, for the study area). They are cloud-optimised GeoTIFFs,
+  read with range requests, so a run fetches only the parts that cover the boxes.
+- Some steps run only at Gale, because they use Curiosity's instruments or Gale's dunes: weather (REMS),
+  measured dust (Mastcam, Navcam), moving sand, radiation (RAD) and the solar storm list (DONKI, which is
+  the same for all of Mars). In the other regions these are listed as `not_used`, and each one names
+  the Gale dataset that stands in for it.
+- Perseverance's path and stops come from its own map (MMGIS, `mission=M20`). Arcadia has no rover.
 
 ## Re-running, refreshing and adding a site
 

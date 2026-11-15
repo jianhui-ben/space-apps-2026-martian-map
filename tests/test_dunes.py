@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from tiff_helpers import make_geotiff, to_bigtiff
+from tiff_helpers import RangeSession, make_geotiff, to_bigtiff
 
 from conftest import FakeResponse
 from martian_map.catalog import Catalog
@@ -105,22 +105,6 @@ def _cog(img, west_lon, north_lat, px_m):
     return to_bigtiff(make_geotiff(img[None].astype(np.uint16), pixel_scale=(px_m, px_m),
                                    tiepoint_xy=(west_lon * M_PER_DEG, north_lat * M_PER_DEG), compression=8,
                                    tile=(64, 64), nodata="0"))
-
-
-class RangeSession:
-    def __init__(self, files):
-        self.files = files
-        self.calls = []
-
-    def get(self, url, headers=None, **kw):
-        self.calls.append((url, dict(headers or {})))
-        body = self.files[url]
-        rng = (headers or {}).get("Range")
-        if not rng:
-            return FakeResponse(200, body, {"Content-Type": "image/tiff"})
-        a, b = (int(x) for x in rng.split("=")[1].split("-"))
-        part = body[a:b + 1]
-        return FakeResponse(206, part, {"Content-Type": "image/tiff", "Content-Range": f"bytes {a}-{a + len(part) - 1}/{len(body)}"})
 
 
 def test_step_crops_both_dates_and_measures_movement(tmp_path, monkeypatch):

@@ -11,7 +11,7 @@ references. Every URL here was opened on 2026-11-14 (see
 from __future__ import annotations
 
 from fnmatch import fnmatchcase
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 GROUPS = {
     "nasa": "NASA data and resources",
@@ -168,6 +168,46 @@ REFERENCES: Dict[str, Dict[str, Any]] = {
         credit="NASA/JPL-Caltech/University of Arizona; USGS Astrogeology", license=_NASA_LICENSE,
         url="https://www.uahirise.org/dtm/ESP_040770_1755",
         role="Two orthophotos of the Bagnold Dunes on the same 1 m grid (2007 and 2015), used to measure moving sand."),
+    "usgs_hirise_dtm_jezero": dict(
+        group="nasa", title="HiRISE elevation model DTEEC_045994_1985_046060_1985_U01, Jezero crater (USGS Astrogeology)",
+        provider="HiRISE team (University of Arizona) and the U.S. Geological Survey Astrogeology Science Center, from "
+                 "NASA MRO HiRISE stereo images; served as analysis-ready cloud-optimised GeoTIFFs",
+        credit="NASA/JPL-Caltech/University of Arizona; USGS Astrogeology", license=_NASA_LICENSE,
+        url="https://www.uahirise.org/dtm/ESP_045994_1985",
+        role="1 m elevation of the Jezero sites and trip area (Perseverance's landing area)."),
+    "usgs_ctx_dtm_jezero": dict(
+        group="nasa", title="CTX elevation model F05_037818_1977_XN_17N282W__F04_037330_2008_XN_20N282W, Jezero crater "
+                            "(USGS Astrogeology)",
+        provider="U.S. Geological Survey Astrogeology Science Center (Ames Stereo Pipeline, tied to MOLA), from NASA MRO "
+                 "CTX stereo images", credit="NASA/JPL-Caltech/MSSS; USGS Astrogeology", license=_NASA_LICENSE,
+        url="https://doi.org/10.5066/P9JKVWR3",
+        citation="Laura, J. R., Adoram-Kershner, L. A., Meyer, D. P., Wheeler, B. H., Bauck, K. H., and Fergason, R. L. "
+                 "(2023). Mars Reconnaissance Orbiter (MRO) Context Camera (CTX) orthoimage generated using Ames "
+                 "stereo pipeline derived digital terrain models. U.S. Geological Survey, doi:10.5066/P9JKVWR3.",
+        role="20 m elevation of the Jezero study area (most of the crater floor and the delta)."),
+    "usgs_hirise_dtm_arcadia": dict(
+        group="nasa", title="HiRISE elevation model DTEEC_035862_2195_035928_2195_A01, Arcadia Planitia "
+                            "(USGS Astrogeology)",
+        provider="HiRISE team (University of Arizona) and the U.S. Geological Survey Astrogeology Science Center, from "
+                 "NASA MRO HiRISE stereo images; served as analysis-ready cloud-optimised GeoTIFFs",
+        credit="NASA/JPL-Caltech/University of Arizona; USGS Astrogeology", license=_NASA_LICENSE,
+        url="https://www.uahirise.org/dtm/ESP_035862_2195",
+        role="1 m elevation of the Arcadia Planitia sites and trip area."),
+    "usgs_ctx_dtm_arcadia": dict(
+        group="nasa", title="CTX elevation model D22_035862_2182_XN_38N167W__D22_035928_2192_XN_39N167W, Arcadia "
+                            "Planitia (USGS Astrogeology)",
+        provider="U.S. Geological Survey Astrogeology Science Center (Ames Stereo Pipeline, tied to MOLA), from NASA MRO "
+                 "CTX stereo images", credit="NASA/JPL-Caltech/MSSS; USGS Astrogeology", license=_NASA_LICENSE,
+        url="https://doi.org/10.5066/P9JKVWR3",
+        citation="Laura, J. R., Adoram-Kershner, L. A., Meyer, D. P., Wheeler, B. H., Bauck, K. H., and Fergason, R. L. "
+                 "(2023). Mars Reconnaissance Orbiter (MRO) Context Camera (CTX) orthoimage generated using Ames "
+                 "stereo pipeline derived digital terrain models. U.S. Geological Survey, doi:10.5066/P9JKVWR3.",
+        role="20 m elevation of the Arcadia Planitia study area."),
+    "m20_mmgis": dict(
+        group="nasa", title="Mars 2020 'Where is Perseverance?' map (MMGIS)",
+        provider="NASA/JPL-Caltech", credit="NASA/JPL-Caltech", license=_NASA_LICENSE,
+        url="https://mars.nasa.gov/maps/location/?mission=M20",
+        role="Perseverance's path, stops, current position and named places at Jezero."),
     "mgd3": dict(
         group="nasa", title="Mars Global Digital Dune Database",
         provider="U.S. Geological Survey, NASA-funded; served by NASA Mars Trek", credit="Hayward et al., USGS",
@@ -264,9 +304,31 @@ DATASET_REFERENCES: List[tuple] = [
 ]
 
 
-def references_for(dataset_id: str) -> List[str]:
-    """Reference ids for a dataset id, or [] if none is recorded."""
-    for pattern, refs in DATASET_REFERENCES:
+def _region_references(fine: str, study: str, rover: Optional[str]) -> List[tuple]:
+    rover_refs = ([("rover_*", [rover]), ("named_sites", [rover]), ("map_config", [rover])] if rover
+                  else [("rover_*", [])])  # no rover: never fall back to Curiosity's map
+    return rover_refs + [
+        ("elevation_463m_region", ["mgs_mola", "mars_trek"]),
+        ("elevation_*m_study", [study]),
+        ("slope_*m_study", [study, "this_project"]),
+        ("elevation_*", [fine]),
+        ("slope_*", [fine, "this_project"]),
+        ("roughness_*", [fine, "this_project"]),
+        ("horizon_*", [fine, study, "mgs_mola", "mars_trek", "this_project"]),
+        ("sun_table_*", ["mars24", fine, study, "mgs_mola", "mars_trek", "this_project"]),
+    ]
+
+
+# Regions other than Gale: their own elevation models and rover; checked before DATASET_REFERENCES.
+REGION_REFERENCES: Dict[str, List[tuple]] = {
+    "jezero": _region_references("usgs_hirise_dtm_jezero", "usgs_ctx_dtm_jezero", "m20_mmgis"),
+    "arcadia": _region_references("usgs_hirise_dtm_arcadia", "usgs_ctx_dtm_arcadia", None),
+}
+
+
+def references_for(dataset_id: str, region: str = "gale") -> List[str]:
+    """Reference ids for a dataset id in a region, or [] if none is recorded."""
+    for pattern, refs in REGION_REFERENCES.get(region, []) + DATASET_REFERENCES:
         if fnmatchcase(dataset_id, pattern):
             return list(refs)
     return []
@@ -278,12 +340,17 @@ def _cell(text: Any) -> str:
 
 def references_markdown(catalog: Any) -> str:
     """Lists for the submission form, from the datasets the app uses (local or live) and their references."""
-    used: Dict[str, List[str]] = {}
+    from .catalog import region_name, region_order
+
+    used: Dict[str, Dict[str, List[str]]] = {}  # reference -> region -> dataset names
     for e in sorted(catalog.entries, key=lambda x: x["id"]):
         if e.get("access") not in ("local", "live"):
             continue
-        for rid in e.get("references") or references_for(e["id"]):
-            used.setdefault(rid, []).append(e["id"])
+        region = e.get("region", "gale")
+        name = e["id"] if region == "gale" else e.get("dataset", e["id"])
+        for rid in e.get("references") or references_for(e.get("dataset", e["id"]), region):
+            used.setdefault(rid, {}).setdefault(region, []).append(name)
+    order = region_order(catalog)
     lines: List[str] = []
     for group, heading in GROUPS.items():
         lines.append(f"### {heading}")
@@ -293,13 +360,15 @@ def references_markdown(catalog: Any) -> str:
             lines.append("None.")
         for rid in rids:
             r = REFERENCES[rid]
-            ids = ", ".join(f"`{d}`" for d in used[rid])
             lines.append(f"- **{_cell(r['title'])}**. {_cell(r['provider'])}. <{r['url']}>")
             lines.append(f"  - What we use it for: {_cell(r['role'])}")
             lines.append(f"  - Credit: {_cell(r['credit'])}. Licence: {_cell(r['license'])}")
             if r.get("citation"):
                 lines.append(f"  - Reference: {_cell(r['citation'])}")
-            lines.append(f"  - Datasets: {ids}")
+            for region in sorted(used[rid], key=lambda g: order.get(g, 99)):
+                ids = ", ".join(f"`{d}`" for d in used[rid][region])
+                label = "Datasets" if region == "gale" else f"Datasets, {region_name(catalog, region)}"
+                lines.append(f"  - {label}: {ids}")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

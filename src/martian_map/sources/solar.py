@@ -14,6 +14,7 @@ from ..http import atomic_write
 from ..scenario import Scenario, Site
 from ..snapshot import Step, StepContext, _now
 from ..sun import sun_table, sunlit_fraction
+from .elevation import study_dataset
 
 SPACING_M = 100.0
 OBSERVER_HEIGHT_M = 2.0
@@ -37,17 +38,34 @@ def _regional_offset(ctx: StepContext) -> Optional[float]:
     return float(value) if isinstance(value, (int, float)) else None
 
 
+def study_offset(local: Grid, study: Grid, stride: int = 10) -> Optional[float]:
+    """Median of (1 m height - study height) over the site: what to add to the study grid to match the 1 m one."""
+    h, w = local.shape
+    px, py = local.pixel_deg
+    rows, cols = np.mgrid[0:h:stride, 0:w:stride]
+    lons = local.bounds.west + (cols + 0.5) * px
+    lats = local.bounds.north - (rows + 0.5) * py
+    diffs = [local.values[r, c] - study.sample(lo, la) for r, c, lo, la in
+             zip(rows.ravel(), cols.ravel(), lons.ravel(), lats.ravel())]
+    diffs = np.asarray(diffs, dtype=np.float64)
+    diffs = diffs[np.isfinite(diffs)]
+    return round(float(np.median(diffs)), 2) if diffs.size else None
+
+
 def _solar(site: Site):
     def run(ctx: StepContext) -> List[Dict[str, Any]]:
         current = ctx.scenario.site(site.id)
         local = _grid(ctx, f"elevation_1m_{current.id}")
-        study = _grid(ctx, "elevation_10m_study")
+        study = _grid(ctx, study_dataset(ctx.scenario))
         region = _grid(ctx, "elevation_463m_region")
         offset = _regional_offset(ctx)
+        # Separate models (HiRISE 1 m, CTX study) can disagree in absolute height; line the study grid up with the
+        # 1 m one so the seam does not show up as a fake wall. At Gale both come from one model.
+        s_off = study_offset(local, study) if ctx.scenario.elevation else None
         levels = [
             Level(local, 5.0, 6000.0),
-            Level(study, 20.0, 10000.0),
-            Level(region, 463.0, 120000.0, offset_m=offset or 0.0),
+            Level(study, 20.0, 10000.0, offset_m=s_off or 0.0),
+            Level(region, 463.0, 120000.0, offset_m=(offset or 0.0) + (s_off or 0.0)),
         ]
         hz, lons, lats, missing = horizon_grid(levels, current.bounds, SPACING_M, OBSERVER_HEIGHT_M)
         ny, nx, nb = hz.shape
@@ -76,17 +94,26 @@ def _solar(site: Site):
         coverage = {"area": current.id, "bounds": current.bounds.as_list(),
                     "covered_fraction": (total - len(missing)) / total if total else 0.0}
         source = {"name": "computed by martian_map from the elevation grids", "page_url": "docs/data-sources.md",
-                  "fetched_at": _now(), "credit": "derived from NASA/JPL-Caltech/University of Arizona and NASA/GSFC MOLA data"}
-        offset_note = (f"The regional (463 m) heights were shifted by {offset:+.1f} m to match the 1 m model "
-                       "(measured in the alignment check)." if offset is not None
-                       else "No alignment offset was available; regional heights used as-is.")
+                  "fetched_at": _now(), "credit": "derived from NASA/JPL-Caltech/University of Arizona and NASA/GSFC MOLA data"
+                  + ("" if ctx.scenario.elevation is None else "; NASA/JPL-Caltech/MSSS and USGS Astrogeology")}
+        if s_off is None:
+            offset_note = (f"The regional (463 m) heights were shifted by {offset:+.1f} m to match the 1 m model "
+                           "(measured in the alignment check)." if offset is not None
+                           else "No alignment offset was available; regional heights used as-is.")
+        else:
+            offset_note = (f"The regional (463 m) heights were shifted by {(offset or 0.0) + s_off:+.1f} m in all to "
+                           f"match the 1 m model: {offset or 0.0:+.1f} m to the study-area model (alignment check), "
+                           f"then {s_off:+.1f} m from that to the 1 m model.")
+        study_note = ([f"The study-area heights were shifted by {s_off:+.1f} m to match the 1 m model over the site "
+                       "(two separate elevation models)."] if s_off is not None else [])
         hz_entry = new_entry(
             f"horizon_{current.id}", f"Skyline around site {current.name}",
             "How high the hills and crater walls rise in every direction, at every 100 m point across the site.",
             ["solar"], "solar", "derived", "local",
             files=[hz_rec], coverage=coverage, resolution_m=100, smallest_feature_m=100,
             regional_offset_m=offset, nodata_points=missing,
-            limitations=[SHADOW_LIMIT, f"Seen from {OBSERVER_HEIGHT_M:g} m above the ground.", offset_note,
+            **({"study_offset_m": s_off} if ctx.scenario.elevation else {}),
+            limitations=[SHADOW_LIMIT, f"Seen from {OBSERVER_HEIGHT_M:g} m above the ground.", offset_note, *study_note,
                          "Angles are stored in 0.25 degree steps (value x 0.25 = degrees); 255 means no ground height."],
             tags=["horizon", "skyline", "shadow", "sun"], source=source,
         )
@@ -104,7 +131,7 @@ def _solar(site: Site):
         return [hz_entry, st_entry]
 
     def inputs(ctx: StepContext) -> Dict[str, Any]:
-        grids = (f"elevation_1m_{site.id}", "elevation_10m_study", "elevation_463m_region")
+        grids = (f"elevation_1m_{site.id}", study_dataset(ctx.scenario), "elevation_463m_region")
         return {
             "site": ctx.scenario.site(site.id).bounds.as_list(),
             "grids": {g: [f.get("sha256") for f in (ctx.entry(g) or {}).get("files") or []] for g in grids},

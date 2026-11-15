@@ -124,9 +124,16 @@ def failed_entry(dataset_id: str, message: str, previous: Optional[Dict[str, Any
     )
 
 
+GALE_AREA_KEYS = ("gale_region", "study_area", "base", "sites", "trip_area")  # the root index's top-level areas
+
+
 def _areas(scenario: Scenario) -> Dict[str, Any]:
     return {
-        "gale_region": scenario.gale_region.as_list(),
+        **({"gale_region": scenario.region_bounds.as_list()} if scenario.is_gale else {}),
+        "region_id": scenario.region_id,
+        "name": scenario.region_name,
+        "rover": scenario.rover,
+        "region": scenario.region_bounds.as_list(),
         "study_area": scenario.study_area.as_list(),
         "base": {"lon": scenario.base[0], "lat": scenario.base[1]},
         "sites": {s.id: s.bounds.as_list() for s in scenario.sites},
@@ -169,7 +176,8 @@ def build_coverage_report(catalog: Catalog, scenario: Scenario,
     so an image that misses a site reports "none" there even if its box spans the site.
     """
     areas: List[Tuple[str, Bounds]] = [("study_area", scenario.study_area)] + [(s.id, s.bounds) for s in scenario.sites]
-    listed = [e for e in sorted(catalog.entries, key=lambda x: x["id"]) if e.get("access") in ("local", "live")]
+    listed = [e for e in sorted(catalog.entries, key=lambda x: x["id"]) if e.get("access") in ("local", "live")
+              and e.get("region", scenario.region_id) == scenario.region_id]
     measured = {e["id"]: _grid_fractions(e, areas, data_root) for e in listed}
     rows = []
     for area_name, area in areas:
@@ -194,6 +202,7 @@ def build_coverage_report(catalog: Catalog, scenario: Scenario,
                 covers = "unknown"
             rows.append(
                 {
+                    "region": scenario.region_id,
                     "area": area_name,
                     "dataset_id": e["id"],
                     "covers": covers,
@@ -270,7 +279,11 @@ def run_snapshot(
                 catalog.upsert(failed_entry(d, message, ctx.entry(d)))
 
     known = produced | {d for s in steps for d in s.dataset_ids}
-    for e in [e for e in catalog.entries if e["id"] not in known]:
+    own = scenario.region_id
+    for e in catalog.entries:
+        if e["id"] in produced or e.get("region") is None:
+            e["region"], e["dataset"] = own, e["id"]
+    for e in [e for e in catalog.entries if e["id"] not in known and e["region"] == own]:
         catalog.entries.remove(e)
         log(f"{e['id']}: no step makes this any more (site renamed or removed?); "
             "removed from the catalog, its files stay in data/")
@@ -279,19 +292,68 @@ def run_snapshot(
     from .references import REFERENCES, references_for
 
     for e in catalog.entries:
-        e["references"] = references_for(e["id"])
-        e["metrics"] = metrics_for(e["id"])
+        e["references"] = references_for(e["dataset"], e["region"])
+        e["metrics"] = metrics_for(e["dataset"])
         if e.get("access") in ("local", "live") and not e["references"]:
             ctx.warn(f"{e['id']}: no reference recorded in references.py")
     used = {r for e in catalog.entries if e.get("access") in ("local", "live") for r in e["references"]}
     catalog.references = {r: REFERENCES[r] for r in REFERENCES if r in used}
 
-    catalog.areas = _areas(scenario)
+    full = _areas(scenario)
+    if scenario.is_gale:  # the root index: Gale's areas at the top level as before, every region under "regions"
+        others = (previous.areas.get("regions") if previous else None) or {}
+        catalog.areas = {**{k: full[k] for k in GALE_AREA_KEYS if k in full}, "regions": {**others, "gale": full}}
+    else:
+        catalog.areas = full
     catalog.generated_at = _now()
     catalog.scenario_file = scenario.path.as_posix()
-    catalog.coverage_report = build_coverage_report(catalog, scenario, data_root)
+    catalog.coverage_report = build_coverage_report(catalog, scenario, data_root) + [
+        r for r in (previous.coverage_report if previous else []) if r.get("region", own) != own]
     catalog.save(catalog_path)
     return SnapshotReport(catalog=catalog, failed=failed, warnings=list(ctx.warnings))
+
+
+REGIONS_DIR = "regions"
+
+
+def merge_regions(root: Path) -> Catalog:
+    """Copy each ``<root>/regions/<id>/catalog.json`` into the root catalog (Gale's), so one index lists all regions.
+
+    Their entries get the id ``<dataset>__<region>`` and file paths under ``regions/<id>/``; ``areas.regions``
+    lists every region's boxes. The root's own (Gale) entries and top-level areas are left as they are.
+    """
+    root = Path(root)
+    path = root / "catalog.json"
+    cat = Catalog.load(path) if path.exists() else Catalog(entries=[])
+    # Regions without a folder here (say, a fresh clone, where only this index is in git) keep their entries.
+    present = {p.parent.name for p in (root / REGIONS_DIR).glob("*/catalog.json")}
+    cat.entries = [e for e in cat.entries if e.get("region", "gale") not in present]
+    cat.coverage_report = [r for r in cat.coverage_report if r.get("region", "gale") not in present]
+    own = {k: v for k, v in cat.areas.items() if k != "regions"}
+    regions: Dict[str, Any] = {k: v for k, v in (cat.areas.get("regions") or {}).items() if k not in present}
+    if own and "gale" not in regions:
+        regions["gale"] = own
+    from .references import REFERENCES
+
+    for sub in sorted((root / REGIONS_DIR).glob("*/catalog.json")):
+        rid = sub.parent.name
+        region = Catalog.load(sub)
+        prefix = f"{REGIONS_DIR}/{rid}/"
+        for e in region.entries:
+            copy = json.loads(json.dumps(e))
+            copy["id"], copy["dataset"], copy["region"] = f"{e['id']}__{rid}", e.get("dataset", e["id"]), rid
+            for rec in copy.get("files") or []:
+                rec["path"] = prefix + rec["path"]
+            validate_entry(copy)
+            cat.entries.append(copy)
+        cat.coverage_report += [{**r, "region": rid, "dataset_id": f"{r['dataset_id']}__{rid}"}
+                                for r in region.coverage_report]
+        regions[rid] = {k: v for k, v in region.areas.items() if k != "regions"}
+    cat.areas = {**own, "regions": regions}
+    used = {r for e in cat.entries if e.get("access") in ("local", "live") for r in e.get("references") or []}
+    cat.references = {r: REFERENCES[r] for r in REFERENCES if r in used}
+    cat.save(path)
+    return cat
 
 
 __all__ = [
@@ -301,6 +363,7 @@ __all__ = [
     "StepContext",
     "build_coverage_report",
     "failed_entry",
+    "merge_regions",
     "run_snapshot",
     "step_fingerprint",
 ]

@@ -7,6 +7,8 @@ import zlib
 
 import numpy as np
 
+from conftest import FakeResponse
+
 
 def _encode(raw: bytes, compression: int) -> bytes:
     if compression == 1:
@@ -21,10 +23,25 @@ def _encode(raw: bytes, compression: int) -> bytes:
 
 
 def _predict(block: np.ndarray) -> np.ndarray:
-    """Horizontal differencing (TIFF predictor 2) on a (rows, cols, samples) integer block."""
+    """Horizontal differencing (TIFF predictor 2) on a (rows, cols, samples) block. Floats are differenced as
+    unsigned integers of the same size, the way libtiff does it."""
+    if block.dtype.kind == "f":
+        ints = block.astype(block.dtype.newbyteorder("<")).view(f"<u{block.dtype.itemsize}")
+        return _predict(ints).view(f"<f{block.dtype.itemsize}")
     out = block.copy()
     out[:, 1:, :] = block[:, 1:, :] - block[:, :-1, :]
     return out
+
+
+def _predict_float(block: np.ndarray) -> bytes:
+    """TIFF predictor 3: per row, the samples' big-endian bytes split into planes, then byte differencing."""
+    rows, cols, spp = block.shape
+    size = block.dtype.itemsize
+    be = block.astype(f">f{size}").view(np.uint8).reshape(rows, cols * spp, size)
+    planes = be.transpose(0, 2, 1).reshape(rows, size * cols, spp).astype(np.int16)
+    diff = planes.copy()
+    diff[:, 1:] = planes[:, 1:] - planes[:, :-1]  # libtiff: byte differences with a stride of spp
+    return (diff % 256).astype(np.uint8).tobytes()
 
 
 def make_geotiff(bands, pixel_scale=(1000.0, 1000.0), tiepoint_xy=(8002000.0, 0.0), compression=50000,
@@ -43,6 +60,9 @@ def make_geotiff(bands, pixel_scale=(1000.0, 1000.0), tiepoint_xy=(8002000.0, 0.
                 block = np.zeros((th, tw, spp), dtype=pix.dtype)
                 part = pix[r0:r0 + th, c0:c0 + tw]
                 block[: part.shape[0], : part.shape[1]] = part
+                if predictor == 3:
+                    chunks.append(_encode(_predict_float(block), compression))
+                    continue
                 if predictor == 2:
                     block = _predict(block)
                 chunks.append(_encode(block.astype(dt).tobytes(), compression))
@@ -158,3 +178,19 @@ def to_bigtiff(classic: bytes) -> bytes:
             ifd += struct.pack("<HHQQ", tag, typ, count, head_size + rel)
     ifd += struct.pack("<Q", 0)
     return b"II" + struct.pack("<HHHQ", 43, 8, 0, 16) + bytes(ifd) + bytes(fixed_extra) + pixels
+
+
+class RangeSession:
+    def __init__(self, files):
+        self.files = files
+        self.calls = []
+
+    def get(self, url, headers=None, **kw):
+        self.calls.append((url, dict(headers or {})))
+        body = self.files[url]
+        rng = (headers or {}).get("Range")
+        if not rng:
+            return FakeResponse(200, body, {"Content-Type": "image/tiff"})
+        a, b = (int(x) for x in rng.split("=")[1].split("-"))
+        part = body[a:b + 1]
+        return FakeResponse(206, part, {"Content-Type": "image/tiff", "Content-Range": f"bytes {a}-{a + len(part) - 1}/{len(body)}"})

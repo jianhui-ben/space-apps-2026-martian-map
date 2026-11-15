@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 
 from ..catalog import file_record, new_entry
 from ..http import atomic_write
-from ..scenario import Scenario
+from ..scenario import Bounds, Scenario
 from ..snapshot import Step, StepContext
 
 TREK_EQ = "https://trek.nasa.gov/tiles/Mars/EQ"
@@ -164,6 +164,10 @@ def not_used_entries() -> List[Dict[str, Any]]:
     ]
 
 
+SWIM_DOWN = ("swim.psi.edu returned HTTP 523 (server unreachable) four times on 2026-11-14, last at 23:48 UTC, and "
+             "again on 2026-11-15, and no copy was found on Zenodo")
+
+
 def pending_entries() -> List[Dict[str, Any]]:
     return [
         new_entry("ice_swim", "Subsurface ice maps (SWIM)", "Maps of where buried ice is likely, from several orbiters.",
@@ -188,8 +192,8 @@ def scenario_entry(ctx: StepContext) -> Dict[str, Any]:
         files=[file_record(target, ctx.data_root, "json")],
         coverage={"bounds": ctx.scenario.study_area.as_list()},
         limitations=["Every value is an assumption to be agreed by the team, not data.",
-                     "This is a copy; edit scenario/gale.json in the repo and re-run the snapshot."],
-        source={"name": "team", "page_url": "scenario/gale.json"},
+                     f"This is a copy; edit scenario/{ctx.scenario.path.name} in the repo and re-run the snapshot."],
+        source={"name": "team", "page_url": f"scenario/{ctx.scenario.path.name}"},
         tags=["assumptions", "base", "sites"],
     )
 
@@ -204,4 +208,88 @@ static_step = Step(
     static_entries,
 )
 
-__all__ = ["live_entries", "not_used_entries", "pending_entries", "static_entries", "static_step"]
+# Datasets measured only at Gale (by Curiosity, or computed for Gale's dunes). Elsewhere they are listed as not used,
+# pointing at the Gale dataset as the nearest measured stand-in: (id, title, factors, what it is, stand-in note).
+GALE_ONLY = [
+    ("weather_rems", "Daily weather from a rover's weather station", ["thermal"],
+     "daily weather measured by Curiosity's REMS station at Gale",
+     "Use weather_rems (Gale) for typical Martian surface weather; the climate model entries here are for this base."),
+    ("optical_depth_history", "Measured dust in the air, 2012-2023", ["solar"],
+     "dust in the air measured by Curiosity's Mastcam at Gale",
+     "Global dust storms reach every region, so optical_depth_history (Gale) shows the dusty seasons; local haze "
+     "differs, and dust_climate_mcd here gives the modelled dust for this base."),
+    ("dust_extinction_navcam", "Measured haze near the ground", ["solar"],
+     "near-ground haze measured by Curiosity's Navcam at Gale", "See dust_extinction_navcam (Gale)."),
+    ("dune_change_imagery", "Moving sand measured from repeat photos", ["terrain", "routes"],
+     "sand movement measured only for Gale's Bagnold Dunes", "No moving-sand measurement was made here."),
+    ("radiation_rad", "Radiation dose on the ground", ["routes"],
+     "radiation dose measured on the ground, which only Curiosity's RAD has done on Mars (at Gale)",
+     "The dose depends mostly on how much air is overhead: use radiation_rad (Gale) as the stand-in, slightly low "
+     "for a base higher than Gale's floor (about -4.5 km)."),
+    ("space_weather_donki", "Solar storms and particle events", ["routes"],
+     "the record of solar storms, which is the same for all of Mars", "See space_weather_donki (Gale)."),
+]
+# Datasets Perseverance does measure at Jezero, but which this snapshot does not fetch yet: (id, title, reason).
+PERSEVERANCE_PENDING = {
+    "weather_rems": ("Daily weather from Perseverance (MEDA)",
+                     "Perseverance's MEDA weather station measures air and ground temperature, pressure, wind and "
+                     "humidity at Jezero (NASA PDS Atmospheres node), but this snapshot does not fetch it yet; until "
+                     "then temperature_climate_mcd here gives the modelled weather at this base, and weather_rems "
+                     "(Gale) shows measured surface weather."),
+    "optical_depth_history": ("Measured dust in the air at Jezero (Perseverance)",
+                              "Perseverance measures dust in the air at Jezero (Mastcam-Z sky images and MEDA's "
+                              "radiation and dust sensor), but this snapshot does not fetch it yet; until then "
+                              "dust_climate_mcd here gives the modelled dust, and optical_depth_history (Gale) the "
+                              "measured dusty seasons."),
+}
+NOT_REGIONAL = {"space_weather_donki"}  # the same for all of Mars: not "Gale only"
+SWIM_WHERE = {
+    "jezero": ("SWIM's maps may include Jezero (18.4 N), but buried ice is stable near the surface mostly poleward "
+               "of about 30-40 degrees"),
+    "arcadia": ("Arcadia Planitia (39 N) is inside SWIM's mapped area and one of the most ice-rich places it studies, "
+                "so this is the most important missing dataset for this region"),
+}
+
+
+def _region_listing(sc: Scenario) -> List[Dict[str, Any]]:
+    """Global live layers, Gale-only datasets marked not used, and SWIM, for a region other than Gale."""
+    out = [e for e in live_entries()
+           if e["coverage"].get("bounds") and Bounds.from_list(e["coverage"]["bounds"]).contains_bounds(sc.region_bounds)]
+    for eid, title, factors, what, stand_in in GALE_ONLY:
+        if sc.rover == "perseverance" and eid in PERSEVERANCE_PENDING:
+            p_title, reason = PERSEVERANCE_PENDING[eid]
+            out.append(new_entry(eid, p_title, f"Measured by Perseverance at {sc.region_name}; not fetched yet.",
+                                 list(factors), "not_used", "observation", "pending", reason=reason, source={}))
+        elif eid in NOT_REGIONAL:
+            out.append(_not_used(eid, title, f"The same for all of Mars: {what}.", f"{what}. {stand_in}", factors))
+        else:
+            out.append(_not_used(eid, title + " (Gale only)", f"Not measured at {sc.region_name}: {what}.",
+                                 f"{what}; nothing like it was measured at {sc.region_name}. {stand_in}", factors))
+    if sc.rover is None:
+        for eid, title in (("rover_path", "Rover driven path"), ("rover_stops", "Rover stops and heights")):
+            out.append(_not_used(eid, title, f"No rover has driven at {sc.region_name}.",
+                                 f"no rover has visited {sc.region_name}, so there are no driven paths or rover heights "
+                                 "to check the elevation models against", ["routes"]))
+    out.append(new_entry(
+        "ice_swim", "Subsurface ice maps (SWIM)", "Maps of where buried ice is likely, from several orbiters.",
+        ["ground"], "ice", "derived", "pending",
+        reason=f"{SWIM_DOWN}; {SWIM_WHERE.get(sc.region_id, 'SWIM maps the mid-latitudes')}",
+        source={"page_url": "https://swim.psi.edu/"}))
+    return out
+
+
+def region_entries(ctx: StepContext) -> List[Dict[str, Any]]:
+    return _region_listing(ctx.scenario) + [scenario_entry(ctx)]
+
+
+def region_static_step(scenario: Scenario) -> Step:
+    """The static step for ``scenario``: Gale's full list, or :func:`region_entries` elsewhere."""
+    if scenario.is_gale:
+        return static_step
+    ids = tuple(e["id"] for e in _region_listing(scenario)) + ("scenario",)
+    return Step("static", ids, region_entries,
+                inputs=lambda ctx: {"region": ctx.scenario.region_id, "rover": ctx.scenario.rover})
+
+
+__all__ = ["GALE_ONLY", "live_entries", "not_used_entries", "pending_entries", "region_entries", "region_static_step",
+           "static_entries", "static_step"]

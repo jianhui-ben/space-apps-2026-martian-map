@@ -1,7 +1,7 @@
 # What data we have
 
 This project compares candidate sites for a data center near an imagined future base in **Gale crater** on
-Mars (see the [project plan](project-plan.md)). This page explains, in plain words, every dataset the map
+Mars (see the [project plan](project-plan.md)), with Jezero crater and Arcadia Planitia for comparison. This page explains, in plain words, every dataset the map
 uses: what it shows, what it can't tell you, and where the gaps are.
 
 Everything is listed in one index file, [`data/catalog.json`](../data/catalog.json). The app reads that file to find each
@@ -54,6 +54,73 @@ All areas are set in [`scenario/gale.json`](../scenario/gale.json):
 - **Trip area**, an assumption: a 3.6 × 4.3 km box around the base and both near-base sites, with heights
   and slopes every 2 m (`elevation_2m_trip_area`, `slope_2m_trip_area`) for planning walking and rover
   routes between them.
+
+## Two more regions: Jezero crater and Arcadia Planitia
+
+To compare Gale with other places, the snapshot also covers two more regions in the same layout. Their
+areas are set in [`scenario/jezero.json`](../scenario/jezero.json) and
+[`scenario/arcadia.json`](../scenario/arcadia.json), and their files are in `data/regions/<id>/`. Their
+entries are in the same index:
+
+- **Ids:** they end in `__jezero` or `__arcadia`, for example `slope_10m_window_jezero_north__jezero`.
+  Gale's ids don't change.
+- **Region fields:** every entry has `region` (`gale`, `jezero` or `arcadia`) and `dataset` (the id
+  without the ending), so the map finds the same kind of layer the same way in every region.
+- **Areas:** `areas.regions` lists each region's box, study area, base, sites and trip area.
+
+| | Gale crater | Jezero crater | Arcadia Planitia |
+|---|---|---|---|
+| Where | 4.6 S, 137.4 E | 18.4 N, 77.5 E | 39.1 N, 193 E (-167 E) |
+| Ground | crater floor below Mount Sharp | crater floor east of an old river delta | flat northern lowland plain |
+| Base (assumption) | Curiosity's landing spot | Perseverance's landing spot | middle of the 1 m elevation model |
+| 1 m heights | Mars Trek Gale model (HiRISE) | USGS HiRISE model DTEEC_045994_1985 | USGS HiRISE model DTEEC_035862_2195 |
+| Study-area heights | 10 m, from the same 1 m model | 20 m CTX model (covers 90% of the study area) | 20 m CTX model (91%) |
+| Rover | Curiosity | Perseverance | none |
+| Thermal inertia, median over the region | see `thermal_inertia_themis_1km` | 244 (mixed sand and rock) | 125 (dust and fine sand) |
+| Water in the top layer (Mars Odyssey) | see `water_odyssey_grs` | 3.5% | 4.6-4.9% |
+| Buried ice | not expected | not expected | expected within metres of the surface; the ice maps (SWIM) are still unreachable |
+
+**Candidate sites.** Each region has two 2 × 2 km near-base sites, picked on 2026-11-15 the same way as
+Gale's: screened on the 20 m slope map for flat ground inside the 1 m model, 0.3-3 km from the base. The
+numbers below are from the 1 m heights:
+
+| Site | Distance from base | Local pad slope (BT-05, 10 m boxes) | Bumpiness (95% below) |
+|---|---|---|---|
+| `jezero_north` | 0.3-2.7 km | median 1.6°; 98% of boxes within 10°, 92% within 5° | 0.09 m |
+| `jezero_south` | 0.3-2.9 km | median 3.1°; 97% within 10°, 77% within 5° | 0.12 m |
+| `arcadia_north` | 0.3-2.9 km | median 2.7°; 97% within 10°, 83% within 5° | 0.31 m |
+| `arcadia_south` | 0.3-3.1 km | median 3.0°; 98% within 10°, 77% within 5° | 0.37 m |
+
+Arcadia's plain is flat overall but bumpier at the metre scale than Gale's or Jezero's floor (cracked,
+patterned ground). Both Arcadia sites are just above the 0.3 m bumpiness placeholder.
+
+**Two elevation models.** In the new regions the 1 m (HiRISE) and 20 m (CTX) heights are separate
+products:
+
+- At Jezero the CTX heights read higher than the others: 41-44 m above HiRISE over the two sites, and a
+  median 47 m above Perseverance's own heights.
+- HiRISE agrees with Perseverance: the median difference is 0.4 m at the 13 stops in `jezero_north` and
+  -0.4 m at the 34 in `jezero_south`.
+- Slopes are not affected.
+- Skylines shift the CTX grid to match the 1 m grid over each site. Each skyline entry records the shift
+  in `study_offset_m`.
+
+**Measured only at Gale, or not fetched yet.**
+
+- **Not fetched yet:** Perseverance measures weather (MEDA) and dust in the air (Mastcam-Z, MEDA) at
+  Jezero, but this snapshot doesn't fetch them yet. They are listed as `pending` (`weather_rems__jezero`,
+  `optical_depth_history__jezero`).
+- **Gale only:** Curiosity's radiation dose (RAD, the only one measured on the ground on Mars), its Navcam
+  haze record and Gale's moving dunes. Arcadia has no rover, so its weather and dust are Gale only too.
+  These are listed as `not_used`, and each entry names the Gale dataset that stands in for it.
+- **The same everywhere:** the solar storm list (DONKI) covers all of Mars; see `space_weather_donki`.
+
+**What else differs:**
+
+- No mapped dune fields fall inside either new region.
+- Arcadia has no hydrous-mineral detections.
+- Fewer THEMIS temperature images match the seasons there. Jezero has one of the four; Arcadia has two.
+- Arcadia's 1 m model has a gap about 1 km wide east of the base, so its north site sits west of it.
 
 ## 1. Buildable terrain: is the ground flat and smooth enough?
 
@@ -312,78 +379,177 @@ This table is generated from the index by `python -m martian_map catalog table -
 Don't edit it by hand.
 
 <!-- catalog-table:start -->
-| id | what it is | factors | evidence | access |
-|---|---|---|---|---|
-| `communications` | Line of sight to orbiters and Earth. | routes | reference | not_used |
-| `dune_change_imagery` | Two HiRISE photos of the same 1.5 km of the Bagnold Dunes, eight years apart, on the same 1 m grid, and how far each 64 m square of sand moved between them. | terrain | observation | local |
-| `dune_fields` | Outlines of mapped sand-dune fields: loose, moving sand that is hard to drive on and build on. | terrain, ground | interpretation | local |
-| `dust_climate_mcd` | Modelled dust in the air above the base (visible optical depth) and the sunlight reaching the ground, for every hour of the Martian day through the year, in a typical, a clear, a dusty and a dust-storm year. | solar | model | local |
-| `dust_extinction_navcam` | How hazy the air near the ground inside the crater was, measured by Curiosity's Navcam looking across the crater to its rim, as extinction per km (visibility is roughly 3.9 divided by this, in km). | solar, routes | observation | local |
-| `elevation_10m_study` | Height of the ground every 10 m across the study area (10 m screening), in metres. | terrain, routes, solar | derived | local |
-| `elevation_1m_curiosity_recent` | Height of the ground every 1 m across the site Curiosity recent path (boxwork area), in metres. | terrain, routes, solar | derived | local |
-| `elevation_1m_near_base_north` | Height of the ground every 1 m across the site Near base, north (crater floor), in metres. | terrain, routes, solar | derived | local |
-| `elevation_1m_near_base_west` | Height of the ground every 1 m across the site Near base, west (crater floor, on Curiosity's early path), in metres. | terrain, routes, solar | derived | local |
-| `elevation_2m_trip_area` | Height of the ground every 2 m across the trip area (the base and the near-base sites, for route planning), in metres. | terrain, routes, solar | derived | local |
-| `elevation_463m_region` | Coarse ground height for the whole crater, its rim and Mount Sharp, used to work out which hills block the sun. | solar, terrain | derived | local |
-| `elevation_point_service` | Ask Mars Trek for the ground height at any clicked point in the study area. | terrain, routes | derived | live |
-| `geology_1to60k` | A detailed geologic map of Aeolis Mons (Mount Sharp). | ground | reference | not_used |
-| `geology_contacts` | Lines where one geologic unit meets another. | ground | interpretation | local |
-| `geology_map_index` | The list (and outlines) of published geologic maps that cover the study area, including unfinished ones. | ground | reference | local |
-| `geology_structures` | Mapped landforms such as ridges, scarps and channels. | ground | interpretation | local |
-| `geology_units` | What the rock is, from the global geologic map: each area has a unit name and description. | ground | interpretation | local |
-| `horizon_curiosity_recent` | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
-| `horizon_near_base_north` | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
-| `horizon_near_base_west` | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
-| `ice_swim` | Maps of where buried ice is likely, from several orbiters. | ground | derived | pending |
-| `imagery_ctx` | A wider, less sharp photo map covering the whole crater, about 10 m per pixel at the top zoom. | terrain | observation | live |
-| `imagery_ctx_mmgis` | The same kind of CTX photo map, served in the MMGIS (Web Mercator) tile grid, about 6 m per pixel. | terrain | observation | live |
-| `imagery_hirise_color` | The sharpest colour photo map of Curiosity's area, about 0.32 m per pixel; boulders are visible. | terrain, routes | observation | live |
-| `imagery_hirise_gray` | A sharp black-and-white photo map of the study area, about 0.64 m per pixel at the top zoom. | terrain | observation | live |
-| `imagery_viking` | A global colour photo map for context, 232 m per pixel. | terrain | observation | live |
-| `labels` | Transparent tiles with the names of places Curiosity visited. | routes | reference | live |
-| `map_config` | JPL's configuration for the Curiosity map: the list of its layers and their tile addresses. |  | reference | local |
-| `minerals_detections` | Places where orbiters (CRISM, OMEGA) detected minerals that formed with water, such as clays and sulfates. | ground | interpretation | local |
-| `named_sites` | Outlines of named places Curiosity studied, such as drill sites. | routes | reference | local |
-| `optical_depth_history` | How much sunlight the dust and haze above Gale blocked, measured by Curiosity pointing its Mastcam at the Sun, about every few sols for six Mars years, at two wavelengths (880 and 440 nm), with an uncertainty for each value. | solar, thermal | observation | local |
-| `perseverance_photos` | Photos from the Perseverance rover. |  | reference | not_used |
-| `photos_curiosity_index` | Photos taken by Curiosity at each stop. |  | reference | not_used |
-| `radiation_rad` | How much radiation reached the ground at Gale each day, measured by Curiosity's RAD instrument: one sol every 100 sols from 1 to 4800, in microgray per day. | routes | observation | local |
-| `relief_mola` | A global shaded-relief map coloured by height, 463 m per pixel, for context. | terrain | derived | live |
-| `roughness_1m_curiosity_recent` | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
-| `roughness_1m_near_base_north` | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
-| `roughness_1m_near_base_west` | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
-| `route_animation` | NASA's animated map of Curiosity's planned route. |  | reference | not_used |
-| `rover_path` | The line Curiosity actually drove since landing: ground proven to carry a 900 kg rover. | routes, ground | observation | local |
-| `rover_position` | Curiosity's latest position. The live link always has today's position. | routes | observation | local |
-| `rover_stops` | Every place Curiosity stopped, with its height and how tilted the rover was (roll, pitch, tilt). | routes, ground | observation | local |
-| `scenario` | The team's assumptions: base location, candidate sites, facility size and mobility limits. | terrain, ground, solar, thermal, routes | assumption | local |
-| `slope_10m_study` | How steep the ground is, in degrees, every 10 m across the study area (10 m screening). | terrain, routes | derived | local |
-| `slope_10m_window_curiosity_recent` | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
-| `slope_10m_window_near_base_north` | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
-| `slope_10m_window_near_base_west` | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
-| `slope_1m_curiosity_recent` | How steep the ground is, in degrees, every 1 m across the site Curiosity recent path (boxwork area). | terrain, routes | derived | local |
-| `slope_1m_near_base_north` | How steep the ground is, in degrees, every 1 m across the site Near base, north (crater floor). | terrain, routes | derived | local |
-| `slope_1m_near_base_west` | How steep the ground is, in degrees, every 1 m across the site Near base, west (crater floor, on Curiosity's early path). | terrain, routes | derived | local |
-| `slope_2m_trip_area` | How steep the ground is, in degrees, every 2 m across the trip area (the base and the near-base sites, for route planning). | terrain, routes | derived | local |
-| `space_weather_donki` | Every solar particle storm NASA's space-weather database recorded from Curiosity's landing to today, with the spacecraft that saw it, to find the dates when radiation at Gale could have jumped. | routes | observation | local |
-| `sun_table_curiosity_recent` | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
-| `sun_table_near_base_north` | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
-| `sun_table_near_base_west` | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
-| `surface_dust_tes` | A coarse global picture of how dusty the surface is, which affects solar panels and ground conditions. | solar | derived | live |
-| `temperature_climate_mcd` | Modelled ground-surface temperature, air temperature 2 m above the ground and air pressure at the base, for every hour of the Martian day through the year, in a typical, a clear, a dusty and a dust-storm year. | thermal | model | local |
-| `themis_temp_day_aphelion` | Surface temperature (kelvin) seen from orbit at about 17.0 h local time, season Ls 67, every ~100 m across the study area. | thermal, ground | observation | local |
-| `themis_temp_day_perihelion` | Surface temperature (kelvin) seen from orbit at about 17.9 h local time, season Ls 259, every ~100 m across the study area. | thermal, ground | observation | local |
-| `themis_temp_night_aphelion` | Surface temperature (kelvin) seen from orbit at about 6.9 h local time, season Ls 73, every ~100 m across the study area. | thermal, ground | observation | local |
-| `themis_temp_night_perihelion` | Surface temperature (kelvin) seen from orbit at about 6.8 h local time, season Ls 253, every ~100 m across the study area. | thermal, ground | observation | local |
-| `themis_temperature_list` | Every THEMIS surface-temperature image covering the study area, with its date, season (Ls) and local time. | thermal | observation | local |
-| `thermal_day` | A picture of how warm the ground looks from orbit in the afternoon (bright = warmer), 100 m per pixel. | thermal | observation | live |
-| `thermal_inertia_tes` | A coarse global picture of how quickly the ground heats and cools: low hints at dust or sand, high at rock. | ground, thermal | derived | live |
-| `thermal_inertia_themis_1km` | How slowly the ground warms and cools, as numbers on a 1 km grid over all of Gale: high means rock or bedrock, low means dust or sand. The best available stand-in for how rocky the ground is. | terrain, ground, thermal | derived | local |
-| `thermal_night` | A picture of how warm the ground looks at night; rock and coarse ground stay warmer than dust and sand. | thermal, ground | observation | live |
-| `trek_data_stream` | Whole-file downloads of Trek products. |  | reference | not_used |
-| `trek_login_tools` | Mars Trek's analysis tools. |  | reference | not_used |
-| `water_dan_curiosity` | Curiosity's DAN instrument measures hydrogen (water) in the top metre of ground along its path. | ground | reference | not_used |
-| `water_odyssey_grs` | How much water is held in the top few tens of centimetres of soil and rock, as a percent of weight, measured from orbit in 5 degree cells (about 300 km). | ground | derived | local |
-| `weather_rems` | Daily air and ground temperature, air pressure, UV level and sunrise/sunset measured by Curiosity, by season. | thermal, solar | observation | local |
-| `worldview` | NASA's Earth satellite imagery browser. |  | reference | not_used |
+| id | region | what it is | factors | evidence | access |
+|---|---|---|---|---|---|
+| `communications` | gale | Line of sight to orbiters and Earth. | routes | reference | not_used |
+| `dune_change_imagery` | gale | Two HiRISE photos of the same 1.5 km of the Bagnold Dunes, eight years apart, on the same 1 m grid, and how far each 64 m square of sand moved between them. | terrain | observation | local |
+| `dune_fields` | gale | Outlines of mapped sand-dune fields: loose, moving sand that is hard to drive on and build on. | terrain, ground | interpretation | local |
+| `dust_climate_mcd` | gale | Modelled dust in the air above the base (visible optical depth) and the sunlight reaching the ground, for every hour of the Martian day through the year, in a typical, a clear, a dusty and a dust-storm year. | solar | model | local |
+| `dust_extinction_navcam` | gale | How hazy the air near the ground inside the crater was, measured by Curiosity's Navcam looking across the crater to its rim, as extinction per km (visibility is roughly 3.9 divided by this, in km). | solar, routes | observation | local |
+| `elevation_10m_study` | gale | Height of the ground every 10 m across the study area (10 m screening), in metres. | terrain, routes, solar | derived | local |
+| `elevation_1m_curiosity_recent` | gale | Height of the ground every 1 m across the site Curiosity recent path (boxwork area), in metres. | terrain, routes, solar | derived | local |
+| `elevation_1m_near_base_north` | gale | Height of the ground every 1 m across the site Near base, north (crater floor), in metres. | terrain, routes, solar | derived | local |
+| `elevation_1m_near_base_west` | gale | Height of the ground every 1 m across the site Near base, west (crater floor, on Curiosity's early path), in metres. | terrain, routes, solar | derived | local |
+| `elevation_2m_trip_area` | gale | Height of the ground every 2 m across the trip area (the base and the near-base sites, for route planning), in metres. | terrain, routes, solar | derived | local |
+| `elevation_463m_region` | gale | Coarse ground height for the whole crater, its rim and Mount Sharp, used to work out which hills block the sun. | solar, terrain | derived | local |
+| `elevation_point_service` | gale | Ask Mars Trek for the ground height at any clicked point in the study area. | terrain, routes | derived | live |
+| `geology_1to60k` | gale | A detailed geologic map of Aeolis Mons (Mount Sharp). | ground | reference | not_used |
+| `geology_contacts` | gale | Lines where one geologic unit meets another. | ground | interpretation | local |
+| `geology_map_index` | gale | The list (and outlines) of published geologic maps that cover the study area, including unfinished ones. | ground | reference | local |
+| `geology_structures` | gale | Mapped landforms such as ridges, scarps and channels. | ground | interpretation | local |
+| `geology_units` | gale | What the rock is, from the global geologic map: each area has a unit name and description. | ground | interpretation | local |
+| `horizon_curiosity_recent` | gale | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
+| `horizon_near_base_north` | gale | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
+| `horizon_near_base_west` | gale | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
+| `ice_swim` | gale | Maps of where buried ice is likely, from several orbiters. | ground | derived | pending |
+| `imagery_ctx` | gale | A wider, less sharp photo map covering the whole crater, about 10 m per pixel at the top zoom. | terrain | observation | live |
+| `imagery_ctx_mmgis` | gale | The same kind of CTX photo map, served in the MMGIS (Web Mercator) tile grid, about 6 m per pixel. | terrain | observation | live |
+| `imagery_hirise_color` | gale | The sharpest colour photo map of Curiosity's area, about 0.32 m per pixel; boulders are visible. | terrain, routes | observation | live |
+| `imagery_hirise_gray` | gale | A sharp black-and-white photo map of the study area, about 0.64 m per pixel at the top zoom. | terrain | observation | live |
+| `imagery_viking` | gale | A global colour photo map for context, 232 m per pixel. | terrain | observation | live |
+| `labels` | gale | Transparent tiles with the names of places Curiosity visited. | routes | reference | live |
+| `map_config` | gale | JPL's configuration for the Curiosity map: the list of its layers and their tile addresses. |  | reference | local |
+| `minerals_detections` | gale | Places where orbiters (CRISM, OMEGA) detected minerals that formed with water, such as clays and sulfates. | ground | interpretation | local |
+| `named_sites` | gale | Outlines of named places Curiosity studied, such as drill sites. | routes | reference | local |
+| `optical_depth_history` | gale | How much sunlight the dust and haze above Gale blocked, measured by Curiosity pointing its Mastcam at the Sun, about every few sols for six Mars years, at two wavelengths (880 and 440 nm), with an uncertainty for each value. | solar, thermal | observation | local |
+| `perseverance_photos` | gale | Photos from the Perseverance rover. |  | reference | not_used |
+| `photos_curiosity_index` | gale | Photos taken by Curiosity at each stop. |  | reference | not_used |
+| `radiation_rad` | gale | How much radiation reached the ground at Gale each day, measured by Curiosity's RAD instrument: one sol every 100 sols from 1 to 4800, in microgray per day. | routes | observation | local |
+| `relief_mola` | gale | A global shaded-relief map coloured by height, 463 m per pixel, for context. | terrain | derived | live |
+| `roughness_1m_curiosity_recent` | gale | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
+| `roughness_1m_near_base_north` | gale | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
+| `roughness_1m_near_base_west` | gale | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
+| `route_animation` | gale | NASA's animated map of Curiosity's planned route. |  | reference | not_used |
+| `rover_path` | gale | The line Curiosity actually drove since landing: ground proven to carry a 900 kg rover. | routes, ground | observation | local |
+| `rover_position` | gale | Curiosity's latest position. The live link always has today's position. | routes | observation | local |
+| `rover_stops` | gale | Every place Curiosity stopped, with its height and how tilted the rover was (roll, pitch, tilt). | routes, ground | observation | local |
+| `scenario` | gale | The team's assumptions: base location, candidate sites, facility size and mobility limits. | terrain, ground, solar, thermal, routes | assumption | local |
+| `slope_10m_study` | gale | How steep the ground is, in degrees, every 10 m across the study area (10 m screening). | terrain, routes | derived | local |
+| `slope_10m_window_curiosity_recent` | gale | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
+| `slope_10m_window_near_base_north` | gale | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
+| `slope_10m_window_near_base_west` | gale | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
+| `slope_1m_curiosity_recent` | gale | How steep the ground is, in degrees, every 1 m across the site Curiosity recent path (boxwork area). | terrain, routes | derived | local |
+| `slope_1m_near_base_north` | gale | How steep the ground is, in degrees, every 1 m across the site Near base, north (crater floor). | terrain, routes | derived | local |
+| `slope_1m_near_base_west` | gale | How steep the ground is, in degrees, every 1 m across the site Near base, west (crater floor, on Curiosity's early path). | terrain, routes | derived | local |
+| `slope_2m_trip_area` | gale | How steep the ground is, in degrees, every 2 m across the trip area (the base and the near-base sites, for route planning). | terrain, routes | derived | local |
+| `space_weather_donki` | gale | Every solar particle storm NASA's space-weather database recorded from Curiosity's landing to today, with the spacecraft that saw it, to find the dates when radiation at Gale could have jumped. | routes | observation | local |
+| `sun_table_curiosity_recent` | gale | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
+| `sun_table_near_base_north` | gale | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
+| `sun_table_near_base_west` | gale | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
+| `surface_dust_tes` | gale | A coarse global picture of how dusty the surface is, which affects solar panels and ground conditions. | solar | derived | live |
+| `temperature_climate_mcd` | gale | Modelled ground-surface temperature, air temperature 2 m above the ground and air pressure at the base, for every hour of the Martian day through the year, in a typical, a clear, a dusty and a dust-storm year. | thermal | model | local |
+| `themis_temp_day_aphelion` | gale | Surface temperature (kelvin) seen from orbit at about 17.0 h local time, season Ls 67, every ~100 m across the study area. | thermal, ground | observation | local |
+| `themis_temp_day_perihelion` | gale | Surface temperature (kelvin) seen from orbit at about 17.9 h local time, season Ls 259, every ~100 m across the study area. | thermal, ground | observation | local |
+| `themis_temp_night_aphelion` | gale | Surface temperature (kelvin) seen from orbit at about 6.9 h local time, season Ls 73, every ~100 m across the study area. | thermal, ground | observation | local |
+| `themis_temp_night_perihelion` | gale | Surface temperature (kelvin) seen from orbit at about 6.8 h local time, season Ls 253, every ~100 m across the study area. | thermal, ground | observation | local |
+| `themis_temperature_list` | gale | Every THEMIS surface-temperature image covering the study area, with its date, season (Ls) and local time. | thermal | observation | local |
+| `thermal_day` | gale | A picture of how warm the ground looks from orbit in the afternoon (bright = warmer), 100 m per pixel. | thermal | observation | live |
+| `thermal_inertia_tes` | gale | A coarse global picture of how quickly the ground heats and cools: low hints at dust or sand, high at rock. | ground, thermal | derived | live |
+| `thermal_inertia_themis_1km` | gale | How slowly the ground warms and cools, as numbers on a 1 km grid over all of Gale: high means rock or bedrock, low means dust or sand. The best available stand-in for how rocky the ground is. | terrain, ground, thermal | derived | local |
+| `thermal_night` | gale | A picture of how warm the ground looks at night; rock and coarse ground stay warmer than dust and sand. | thermal, ground | observation | live |
+| `trek_data_stream` | gale | Whole-file downloads of Trek products. |  | reference | not_used |
+| `trek_login_tools` | gale | Mars Trek's analysis tools. |  | reference | not_used |
+| `water_dan_curiosity` | gale | Curiosity's DAN instrument measures hydrogen (water) in the top metre of ground along its path. | ground | reference | not_used |
+| `water_odyssey_grs` | gale | How much water is held in the top few tens of centimetres of soil and rock, as a percent of weight, measured from orbit in 5 degree cells (about 300 km). | ground | derived | local |
+| `weather_rems` | gale | Daily air and ground temperature, air pressure, UV level and sunrise/sunset measured by Curiosity, by season. | thermal, solar | observation | local |
+| `worldview` | gale | NASA's Earth satellite imagery browser. |  | reference | not_used |
+| `dune_change_imagery__arcadia` | arcadia | Not measured at Arcadia Planitia: sand movement measured only for Gale's Bagnold Dunes. | terrain, routes | reference | not_used |
+| `dune_fields__arcadia` | arcadia | Outlines of mapped sand-dune fields: loose, moving sand that is hard to drive on and build on. | terrain, ground | interpretation | local |
+| `dust_climate_mcd__arcadia` | arcadia | Modelled dust in the air above the base (visible optical depth) and the sunlight reaching the ground, for every hour of the Martian day through the year, in a typical, a clear, a dusty and a dust-storm year. | solar | model | local |
+| `dust_extinction_navcam__arcadia` | arcadia | Not measured at Arcadia Planitia: near-ground haze measured by Curiosity's Navcam at Gale. | solar | reference | not_used |
+| `elevation_1m_arcadia_north__arcadia` | arcadia | Height of the ground every 1 m across the site Near base, north (plain), in metres. | terrain, routes, solar | derived | local |
+| `elevation_1m_arcadia_south__arcadia` | arcadia | Height of the ground every 1 m across the site Near base, south (plain), in metres. | terrain, routes, solar | derived | local |
+| `elevation_20m_study__arcadia` | arcadia | Height of the ground every 20 m across the study area (20 m screening), in metres. | terrain, routes, solar | derived | local |
+| `elevation_2m_trip_area__arcadia` | arcadia | Height of the ground every 2 m across the trip area (the base and the near-base sites, for route planning), in metres. | terrain, routes, solar | derived | local |
+| `elevation_463m_region__arcadia` | arcadia | Coarse ground height for the whole Arcadia Planitia region around the study area, used to work out which distant hills and crater walls block the sun. | solar, terrain | derived | local |
+| `geology_contacts__arcadia` | arcadia | Lines where one geologic unit meets another. | ground | interpretation | local |
+| `geology_map_index__arcadia` | arcadia | The list (and outlines) of published geologic maps that cover the study area, including unfinished ones. | ground | reference | local |
+| `geology_structures__arcadia` | arcadia | Mapped landforms such as ridges, scarps and channels. | ground | interpretation | local |
+| `geology_units__arcadia` | arcadia | What the rock is, from the global geologic map: each area has a unit name and description. | ground | interpretation | local |
+| `horizon_arcadia_north__arcadia` | arcadia | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
+| `horizon_arcadia_south__arcadia` | arcadia | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
+| `ice_swim__arcadia` | arcadia | Maps of where buried ice is likely, from several orbiters. | ground | derived | pending |
+| `imagery_viking__arcadia` | arcadia | A global colour photo map for context, 232 m per pixel. | terrain | observation | live |
+| `minerals_detections__arcadia` | arcadia | Places where orbiters (CRISM, OMEGA) detected minerals that formed with water, such as clays and sulfates. | ground | interpretation | local |
+| `optical_depth_history__arcadia` | arcadia | Not measured at Arcadia Planitia: dust in the air measured by Curiosity's Mastcam at Gale. | solar | reference | not_used |
+| `radiation_rad__arcadia` | arcadia | Not measured at Arcadia Planitia: radiation dose measured on the ground, which only Curiosity's RAD has done on Mars (at Gale). | routes | reference | not_used |
+| `relief_mola__arcadia` | arcadia | A global shaded-relief map coloured by height, 463 m per pixel, for context. | terrain | derived | live |
+| `roughness_1m_arcadia_north__arcadia` | arcadia | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
+| `roughness_1m_arcadia_south__arcadia` | arcadia | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
+| `rover_path__arcadia` | arcadia | No rover has driven at Arcadia Planitia. | routes | reference | not_used |
+| `rover_stops__arcadia` | arcadia | No rover has driven at Arcadia Planitia. | routes | reference | not_used |
+| `scenario__arcadia` | arcadia | The team's assumptions: base location, candidate sites, facility size and mobility limits. | terrain, ground, solar, thermal, routes | assumption | local |
+| `slope_10m_window_arcadia_north__arcadia` | arcadia | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
+| `slope_10m_window_arcadia_south__arcadia` | arcadia | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
+| `slope_1m_arcadia_north__arcadia` | arcadia | How steep the ground is, in degrees, every 1 m across the site Near base, north (plain). | terrain, routes | derived | local |
+| `slope_1m_arcadia_south__arcadia` | arcadia | How steep the ground is, in degrees, every 1 m across the site Near base, south (plain). | terrain, routes | derived | local |
+| `slope_20m_study__arcadia` | arcadia | How steep the ground is, in degrees, every 20 m across the study area (20 m screening). | terrain, routes | derived | local |
+| `slope_2m_trip_area__arcadia` | arcadia | How steep the ground is, in degrees, every 2 m across the trip area (the base and the near-base sites, for route planning). | terrain, routes | derived | local |
+| `space_weather_donki__arcadia` | arcadia | The same for all of Mars: the record of solar storms, which is the same for all of Mars. | routes | reference | not_used |
+| `sun_table_arcadia_north__arcadia` | arcadia | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
+| `sun_table_arcadia_south__arcadia` | arcadia | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
+| `surface_dust_tes__arcadia` | arcadia | A coarse global picture of how dusty the surface is, which affects solar panels and ground conditions. | solar | derived | live |
+| `temperature_climate_mcd__arcadia` | arcadia | Modelled ground-surface temperature, air temperature 2 m above the ground and air pressure at the base, for every hour of the Martian day through the year, in a typical, a clear, a dusty and a dust-storm year. | thermal | model | local |
+| `themis_temp_day_aphelion__arcadia` | arcadia | Surface temperature (kelvin) seen from orbit at about 17.6 h local time, season Ls 95, every ~100 m across the study area. | thermal, ground | observation | local |
+| `themis_temp_day_perihelion__arcadia` | arcadia | No suitable THEMIS image was found for this time and season. | thermal | observation | pending |
+| `themis_temp_night_aphelion__arcadia` | arcadia | Surface temperature (kelvin) seen from orbit at about 6.6 h local time, season Ls 61, every ~100 m across the study area. | thermal, ground | observation | local |
+| `themis_temp_night_perihelion__arcadia` | arcadia | No suitable THEMIS image was found for this time and season. | thermal | observation | pending |
+| `themis_temperature_list__arcadia` | arcadia | Every THEMIS surface-temperature image covering the study area, with its date, season (Ls) and local time. | thermal | observation | local |
+| `thermal_day__arcadia` | arcadia | A picture of how warm the ground looks from orbit in the afternoon (bright = warmer), 100 m per pixel. | thermal | observation | live |
+| `thermal_inertia_tes__arcadia` | arcadia | A coarse global picture of how quickly the ground heats and cools: low hints at dust or sand, high at rock. | ground, thermal | derived | live |
+| `thermal_inertia_themis_1km__arcadia` | arcadia | How slowly the ground warms and cools, as numbers on a 1 km grid over all of Arcadia Planitia: high means rock or bedrock, low means dust or sand. The best available stand-in for how rocky the ground is. | terrain, ground, thermal | derived | local |
+| `thermal_night__arcadia` | arcadia | A picture of how warm the ground looks at night; rock and coarse ground stay warmer than dust and sand. | thermal, ground | observation | live |
+| `water_odyssey_grs__arcadia` | arcadia | How much water is held in the top few tens of centimetres of soil and rock, as a percent of weight, measured from orbit in 5 degree cells (about 300 km). | ground | derived | local |
+| `weather_rems__arcadia` | arcadia | Not measured at Arcadia Planitia: daily weather measured by Curiosity's REMS station at Gale. | thermal | reference | not_used |
+| `dune_change_imagery__jezero` | jezero | Not measured at Jezero crater: sand movement measured only for Gale's Bagnold Dunes. | terrain, routes | reference | not_used |
+| `dune_fields__jezero` | jezero | Outlines of mapped sand-dune fields: loose, moving sand that is hard to drive on and build on. | terrain, ground | interpretation | local |
+| `dust_climate_mcd__jezero` | jezero | Modelled dust in the air above the base (visible optical depth) and the sunlight reaching the ground, for every hour of the Martian day through the year, in a typical, a clear, a dusty and a dust-storm year. | solar | model | local |
+| `dust_extinction_navcam__jezero` | jezero | Not measured at Jezero crater: near-ground haze measured by Curiosity's Navcam at Gale. | solar | reference | not_used |
+| `elevation_1m_jezero_north__jezero` | jezero | Height of the ground every 1 m across the site Near base, north (crater floor), in metres. | terrain, routes, solar | derived | local |
+| `elevation_1m_jezero_south__jezero` | jezero | Height of the ground every 1 m across the site Near base, south (crater floor, toward Perseverance's early drive), in metres. | terrain, routes, solar | derived | local |
+| `elevation_20m_study__jezero` | jezero | Height of the ground every 20 m across the study area (20 m screening), in metres. | terrain, routes, solar | derived | local |
+| `elevation_2m_trip_area__jezero` | jezero | Height of the ground every 2 m across the trip area (the base and the near-base sites, for route planning), in metres. | terrain, routes, solar | derived | local |
+| `elevation_463m_region__jezero` | jezero | Coarse ground height for the whole Jezero crater region around the study area, used to work out which distant hills and crater walls block the sun. | solar, terrain | derived | local |
+| `geology_contacts__jezero` | jezero | Lines where one geologic unit meets another. | ground | interpretation | local |
+| `geology_map_index__jezero` | jezero | The list (and outlines) of published geologic maps that cover the study area, including unfinished ones. | ground | reference | local |
+| `geology_structures__jezero` | jezero | Mapped landforms such as ridges, scarps and channels. | ground | interpretation | local |
+| `geology_units__jezero` | jezero | What the rock is, from the global geologic map: each area has a unit name and description. | ground | interpretation | local |
+| `horizon_jezero_north__jezero` | jezero | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
+| `horizon_jezero_south__jezero` | jezero | How high the hills and crater walls rise in every direction, at every 100 m point across the site. | solar | derived | local |
+| `ice_swim__jezero` | jezero | Maps of where buried ice is likely, from several orbiters. | ground | derived | pending |
+| `imagery_viking__jezero` | jezero | A global colour photo map for context, 232 m per pixel. | terrain | observation | live |
+| `map_config__jezero` | jezero | JPL's configuration for the Perseverance map: the list of its layers and their tile addresses. |  | reference | local |
+| `minerals_detections__jezero` | jezero | Places where orbiters (CRISM, OMEGA) detected minerals that formed with water, such as clays and sulfates. | ground | interpretation | local |
+| `named_sites__jezero` | jezero | Outlines of named places on Perseverance's map, such as its landing site. | routes | reference | local |
+| `optical_depth_history__jezero` | jezero | Measured by Perseverance at Jezero crater; not fetched yet. | solar | observation | pending |
+| `radiation_rad__jezero` | jezero | Not measured at Jezero crater: radiation dose measured on the ground, which only Curiosity's RAD has done on Mars (at Gale). | routes | reference | not_used |
+| `relief_mola__jezero` | jezero | A global shaded-relief map coloured by height, 463 m per pixel, for context. | terrain | derived | live |
+| `roughness_1m_jezero_north__jezero` | jezero | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
+| `roughness_1m_jezero_south__jezero` | jezero | How bumpy the ground is (metres left over after removing the overall tilt in each 10 x 10 m box; the requirements' detrended roughness, BT-08). | terrain, routes | derived | local |
+| `rover_path__jezero` | jezero | The line Perseverance actually drove since landing: ground proven to carry a 1,025 kg rover. | routes, ground | observation | local |
+| `rover_position__jezero` | jezero | Perseverance's latest position. The live link always has today's position. | routes | observation | local |
+| `rover_stops__jezero` | jezero | Every place Perseverance stopped, with its height and how tilted the rover was (roll, pitch, tilt). | routes, ground | observation | local |
+| `scenario__jezero` | jezero | The team's assumptions: base location, candidate sites, facility size and mobility limits. | terrain, ground, solar, thermal, routes | assumption | local |
+| `slope_10m_window_jezero_north__jezero` | jezero | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
+| `slope_10m_window_jezero_south__jezero` | jezero | How steep the ground is, in degrees, from a flat plane fitted to every 10 x 10 m box (the requirements' local pad slope, BT-05). | terrain, routes | derived | local |
+| `slope_1m_jezero_north__jezero` | jezero | How steep the ground is, in degrees, every 1 m across the site Near base, north (crater floor). | terrain, routes | derived | local |
+| `slope_1m_jezero_south__jezero` | jezero | How steep the ground is, in degrees, every 1 m across the site Near base, south (crater floor, toward Perseverance's early drive). | terrain, routes | derived | local |
+| `slope_20m_study__jezero` | jezero | How steep the ground is, in degrees, every 20 m across the study area (20 m screening). | terrain, routes | derived | local |
+| `slope_2m_trip_area__jezero` | jezero | How steep the ground is, in degrees, every 2 m across the trip area (the base and the near-base sites, for route planning). | terrain, routes | derived | local |
+| `space_weather_donki__jezero` | jezero | The same for all of Mars: the record of solar storms, which is the same for all of Mars. | routes | reference | not_used |
+| `sun_table_jezero_north__jezero` | jezero | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
+| `sun_table_jezero_south__jezero` | jezero | Where the sun is in the sky through the year and the day, and how much of the site is in sunlight. | solar | model | local |
+| `surface_dust_tes__jezero` | jezero | A coarse global picture of how dusty the surface is, which affects solar panels and ground conditions. | solar | derived | live |
+| `temperature_climate_mcd__jezero` | jezero | Modelled ground-surface temperature, air temperature 2 m above the ground and air pressure at the base, for every hour of the Martian day through the year, in a typical, a clear, a dusty and a dust-storm year. | thermal | model | local |
+| `themis_temp_day_aphelion__jezero` | jezero | No suitable THEMIS image was found for this time and season. | thermal | observation | pending |
+| `themis_temp_day_perihelion__jezero` | jezero | No suitable THEMIS image was found for this time and season. | thermal | observation | pending |
+| `themis_temp_night_aphelion__jezero` | jezero | Surface temperature (kelvin) seen from orbit at about 6.7 h local time, season Ls 67, every ~100 m across the study area. | thermal, ground | observation | local |
+| `themis_temp_night_perihelion__jezero` | jezero | No suitable THEMIS image was found for this time and season. | thermal | observation | pending |
+| `themis_temperature_list__jezero` | jezero | Every THEMIS surface-temperature image covering the study area, with its date, season (Ls) and local time. | thermal | observation | local |
+| `thermal_day__jezero` | jezero | A picture of how warm the ground looks from orbit in the afternoon (bright = warmer), 100 m per pixel. | thermal | observation | live |
+| `thermal_inertia_tes__jezero` | jezero | A coarse global picture of how quickly the ground heats and cools: low hints at dust or sand, high at rock. | ground, thermal | derived | live |
+| `thermal_inertia_themis_1km__jezero` | jezero | How slowly the ground warms and cools, as numbers on a 1 km grid over all of Jezero crater: high means rock or bedrock, low means dust or sand. The best available stand-in for how rocky the ground is. | terrain, ground, thermal | derived | local |
+| `thermal_night__jezero` | jezero | A picture of how warm the ground looks at night; rock and coarse ground stay warmer than dust and sand. | thermal, ground | observation | live |
+| `water_odyssey_grs__jezero` | jezero | How much water is held in the top few tens of centimetres of soil and rock, as a percent of weight, measured from orbit in 5 degree cells (about 300 km). | ground | derived | local |
+| `weather_rems__jezero` | jezero | Measured by Perseverance at Jezero crater; not fetched yet. | thermal | observation | pending |
 <!-- catalog-table:end -->
