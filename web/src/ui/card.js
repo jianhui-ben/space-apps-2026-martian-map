@@ -1,12 +1,14 @@
-// The site card, in the left panel, in plain words first and expert detail on demand (Task 9c): the header with the
-// priority and the plain verdict; five factor rows (icon, name, a plain sentence, "View" where the factor has a view,
-// and a closed Details holding Task 9's metric lines for that factor: value, "baseline / ideal", status label and icon,
-// chips, what settles it, critical unknowns marked); "Why this priority" in plain words with the technical text in its
-// Details; and the next check. Metric ids appear only inside Details. The card lays out whatever Results it is given,
+// The site card, in the left panel, in plain words first and expert detail on demand (Task 9c), kept compact: a small
+// Back, the name with its priority, the plain verdict on one line, and a closed "About this site" (the brief, the
+// region and terrain, "equal with", and "Why this priority" with its technical Details); five one-line factor rows
+// (shape icon, name, a short headline, "View" where the factor has a view, the plain sentence as an instant hover tip,
+// and a closed Details holding the sentence and Task 9's metric lines for that factor: value, "baseline / ideal",
+// status label and icon, chips, what settles it, critical unknowns marked); and the next check, closed. Metric ids appear only inside Details. The card lays out whatever Results it is given,
 // so metrics computed later (environment, field records, route) appear without a change here.
 import { STATUS, fieldCounts } from '../status.js';
 import { failSide } from '../priority.js';
 import { FACTORS, factorSentence, plainVerdict, plainWhy, plainIds, shortName } from '../plain.js';
+import { statusSvg } from './icons.js';
 import { resultChips, alignmentCaveat, chipEl } from './chips.js';
 import { nextCheck, nextCheckEl } from './list.js';
 import { facilityEl } from './landing.js';
@@ -149,10 +151,14 @@ export function cardModel({ site, results, row, metrics, setup, catalog, rows = 
   }
 
   const known = new Set(FACTORS.map((f) => f.id));
-  const factors = FACTORS.map((f) => ({
-    id: f.id, name: f.name, ...factorSentence(f.id, results, metrics),
-    counts: fieldCounts(results, metrics, f.id), sections: sectionsOf(lines.filter((l) => l.factor === f.id)),
-  }));
+  const factors = FACTORS.map((f) => {
+    const s = factorSentence(f.id, results, metrics, { siteId: site.id });
+    const failedIds = lines.filter((l) => l.factor === f.id && l.status === STATUS.NOT_MET).map((l) => l.id);
+    return {
+      id: f.id, name: f.name, ...s, head: factorHeadline(s, failedIds),
+      counts: fieldCounts(results, metrics, f.id), sections: sectionsOf(lines.filter((l) => l.factor === f.id)),
+    };
+  });
   const other = lines.filter((l) => !known.has(l.factor)); // Results of no known factor still show, in their own Details
   return {
     siteId: site.id, name: site.name, regionId: site.regionId,
@@ -200,6 +206,22 @@ function lineEl(l) {
 }
 
 const KIND = { '✓': 'met', '✗': 'conflict', '?': 'unresolved', '—': 'na' };
+// A factor row's headline, five words or fewer; the full sentence is the row's tip and opens its Details.
+const FAIL_WORDS = {
+  'BT-01': 'flat area', 'BT-02': 'layout fit', 'BT-04': 'slope', 'BT-05': 'slope', 'BT-08': 'roughness',
+  'SC-10': 'array fit', 'TC-08': 'radiator fit',
+};
+export function factorHeadline(f, failedIds = []) {
+  if (f.icon === '✗') {
+    const words = [...new Set(failedIds.map((id) => FAIL_WORDS[id] || 'a requirement'))];
+    if (!words.length) return 'Fails a requirement';
+    return 'Fails: ' + words[0] + (words.length > 1 ? ' +' + (words.length - 1) : '');
+  }
+  if (f.simulated) return 'Simulated estimate'; // never read as an orbital result
+  if (f.icon === '✓') return 'Meets from orbit';
+  if (f.icon === '—') return 'Not applicable here';
+  return 'Not settled from orbit'; // missing data never reads as fine
+}
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 
 // onBack() closes the site; onView(id) asks for a factor's view; hasView(id) says whether that factor has one yet.
@@ -259,19 +281,31 @@ export function createCard(el, { onBack, onView = () => {}, hasView = () => fals
     const box = h('div', 'factor k-' + KIND[f.icon]);
     box.dataset.factor = f.id;
     box.dataset.icon = f.icon;
-    const icon = h('span', 'f-icon st-icon k-' + KIND[f.icon], f.icon);
+    box.dataset.tip = f.name + ': ' + f.text; // the full sentence, at once on hover (R37); it also opens the Details
+    const icon = h('span', 'f-icon st-icon k-' + KIND[f.icon] + (f.simulated ? ' simulated' : ''));
+    icon.append(statusSvg(f.icon, { simulated: f.simulated }), h('span', 'sr-only', f.icon)); // the shape shows; the glyph is read
     const words = h('div', 'f-words');
-    words.append(h('span', 'f-name', f.name), h('span', 'f-text', f.text));
+    words.append(h('span', 'f-name', f.name));
+    const head = h('span', 'f-head');
+    if (f.simulated) { // the chip is the headline's first word: still labelled, never presented as data
+      const c = h('span', 'demo-chip sim-chip', 'Simulated');
+      c.title = 'Simulated for the demo: not data, and it changes no status or priority';
+      head.append(c, ' ' + f.head.replace(/^Simulated\s*/, ''));
+    } else head.textContent = f.head;
+    words.append(head);
     box.append(icon, words);
     if (hasView(f.id)) {
       const v = h('button', 'view secondary', 'View');
       v.type = 'button';
+      v.dataset.factor = f.id;
+      v.setAttribute('aria-pressed', 'false'); // main.js marks the factor view in force
       v.setAttribute('aria-label', 'Show ' + f.name + ' on the map');
       v.addEventListener('click', () => onView(f.id));
       box.append(v);
     }
     const d = details('factor:' + f.id, 'Details', 'f-details');
     const body = h('div', 'f-body');
+    body.append(h('p', 'f-text', f.text));
     body.append(h('p', 'counts', plural(f.counts.fieldwork, 'fieldwork item') + ' and ' + plural(f.counts.design, 'design item') + ' open.'));
     if (f.id === 'BT') { // the layout lives on the terrain: what it is and how to move it
       if (setup) body.append(facilityEl(setup, { lead: 'Facility' })); // with its label: an illustrative reference
@@ -295,18 +329,27 @@ export function createCard(el, { onBack, onView = () => {}, hasView = () => fals
     el.setAttribute('aria-label', 'Site card: ' + model.name);
 
     const head = h('header', 'card-head');
-    const back = h('button', 'back text-action', '← Back to ' + (regionName || 'the region'));
+    const back = h('button', 'back text-action', '← Back');
     back.type = 'button';
+    back.append(h('span', 'sr-only', ' to ' + (regionName || 'the region'))); // read in full; shown short
     back.addEventListener('click', onBack);
     head.append(back);
-    if (brief) head.append(h('p', 'brief-line', brief));
-    head.append(h('h2', '', shortName(model.name)));
+    const title = h('div', 'title-line');
+    title.append(h('h2', '', shortName(model.name)),
+      h('span', 'prio-badge' + (model.failures.length ? ' failed' : ''), model.priority === null ? 'not ranked yet' : 'Priority ' + model.priority));
+    const verdict = h('p', 'verdict' + (model.failures.length ? ' failed' : ''), model.verdict);
+    verdict.dataset.tip = model.verdict; // one line; the whole verdict at once on hover
+    head.append(title, verdict);
+
+    // About this site, closed: the brief, the region and terrain, "equal with", and why this priority
+    const about = details('about', 'About this site', 'about');
+    const ab = h('div', 'f-body');
+    if (brief) ab.append(h('p', 'brief-line', brief));
     const desc = model.name.slice(shortName(model.name).length).trim().replace(/^\((.*)\)$/, '$1');
-    head.append(h('p', 'desc', (regionName ? regionName + ' · ' : '') + 'candidate site' + (desc ? ' · ' + desc : '')));
-    const pl = h('p', 'prio-line');
-    pl.append(h('span', 'prio-badge' + (model.failures.length ? ' failed' : ''), model.priority === null ? 'not ranked yet' : 'Priority ' + model.priority));
-    if (model.equalWith.length) pl.append(h('span', 'eq', 'equal with ' + model.equalWith.map((id) => shortName(names.get(id) || id)).join(', ')));
-    head.append(pl, h('p', 'verdict' + (model.failures.length ? ' failed' : ''), model.verdict));
+    ab.append(h('p', 'desc', (regionName ? regionName + ' · ' : '') + 'candidate site' + (desc ? ' · ' + desc : '')));
+    if (model.equalWith.length) ab.append(h('p', 'eq', 'equal with ' + model.equalWith.map((id) => shortName(names.get(id) || id)).join(', ')));
+    about.append(ab);
+    head.append(about);
     el.append(head);
 
     const body = h('div', 'card-body');
@@ -332,6 +375,7 @@ export function createCard(el, { onBack, onView = () => {}, hasView = () => fals
     if (model.other) {
       const box = h('div', 'factor k-unresolved');
       box.dataset.factor = 'other';
+      box.dataset.tip = 'Other checks: results that belong to none of the five factors';
       const d = details('factor:other', 'Other checks', 'f-details');
       const b = h('div', 'f-body');
       sectionsEl('other', model.other, b);
@@ -353,13 +397,14 @@ export function createCard(el, { onBack, onView = () => {}, hasView = () => fals
       + 'critical unknowns go higher, then less grading, shorter cable, less shading and more dune setback, otherwise equal.'));
     wd.append(wb);
     why.append(wd);
-    body.append(why);
+    ab.append(why);
 
     const next = h('section', 'sec sec-next');
     next.dataset.section = 'next';
-    next.append(h('h3', '', 'Next check'));
-    if (model.ranked) next.append(nextCheckEl(model.nextCheck));
-    else next.append(h('p', 'none', 'The next check appears once every site in the region has been checked.'));
+    const nd = details('next', 'Next check', 'next');
+    if (model.ranked) nd.append(nextCheckEl(model.nextCheck));
+    else nd.append(h('p', 'none', 'The next check appears once every site in the region has been checked.'));
+    next.append(nd);
     body.append(next);
     el.append(body);
     body.scrollTop = scroll;

@@ -1,10 +1,11 @@
 // References (Task 9c): one disclosure at the bottom left on every screen, in place of the separate legend, chip key
-// and credits. Three parts: how to read the map (factor icons, status colours, footprint colours, evidence chips and the
-// globe's colour grade), the data on screen (each source with its link, and the shaded-relief toggle), and all the data
-// in the catalog, grouped. The current view's one-line key stays in the panel (ui/factors.js).
+// and credits. Four parts: how to read the map (factor icons, status colours, footprint colours, evidence chips and the
+// globe's colour grade), the data on screen (each source with its link, and the shaded-relief toggle), all the data
+// in the catalog, grouped, and the demo parts (Task 12). The current view's one-line key stays in the panel (ui/factors.js).
 import { FOOTPRINT_COLOURS } from '../site.js';
 import { EVIDENCE, EVIDENCE_MEANING, chipEl } from './chips.js';
 import { FACILITY_LABEL } from './landing.js';
+import { statusSvg } from './icons.js';
 
 // The catalog references of the given datasets, each once, in the order first met. Unknown ids are skipped.
 export function referencesFor(catalog, datasetIds) {
@@ -68,14 +69,23 @@ function part(key, title) {
 function howToRead() {
   const s = part('read', 'How to read the map');
   s.append(h('p', '', 'Each site is judged on five factors: Terrain, Ground & ice, Solar, Thermal and Routes. Each has an icon:'));
+  // the icon's shape, as the list, the pins and the card draw it (R37), with its glyph for screen readers
+  const keyIcon = (kind, icon, simulated = false) => {
+    const i = h('span', 'st-icon k-' + kind);
+    i.append(statusSvg(icon, { simulated }), h('span', 'sr-only', icon));
+    return i;
+  };
   for (const st of STATUSES) {
     const row = h('p', 'keyrow');
-    row.append(h('span', 'st-icon k-' + st.kind, st.icon), ' ' + st.icons);
+    row.append(keyIcon(st.kind, st.icon), ' ' + st.icons);
     s.append(row);
   }
   const na = h('p', 'keyrow');
-  na.append(h('span', 'st-icon k-na', '—'), ' nothing here applies (for example, no solar plot in the layout)');
-  s.append(na);
+  na.append(keyIcon('na', '—'), ' nothing here applies (for example, no solar plot in the layout)');
+  const sim = h('p', 'keyrow');
+  sim.append(keyIcon('met', '✓', true), ' a dashed, hollow icon marked "sim": simulated for the demo where there is no orbital '
+    + 'estimate here, not a real result; it never changes a status or the priority. Hover an icon in the list for its meaning.');
+  s.append(na, sim);
   const fp = h('p', 'fp-note', 'The same three colours mark each status, always with its label and icon, never colour alone. The facility layout '
     + '(compound, radiator plot north and solar plot south) is the reference facility: ');
   fp.append(h('span', 'illustrative', FACILITY_LABEL), ' It is drawn as 5 m boxes, each coloured by its own checks:');
@@ -97,8 +107,9 @@ function howToRead() {
   return s;
 }
 
-// el: the container. onScreen() -> dataset ids drawn right now. globe: for the shaded-relief toggle.
-export function createReferences(el, catalog, { onScreen, globe = null }) {
+// el: the container. onScreen() -> dataset ids drawn right now. globe: for the shaded-relief toggle. demoParts() ->
+// [{id, name, text}]: the factor views that are illustrative here and what each rests on (Task 12).
+export function createReferences(el, catalog, { onScreen, globe = null, demoParts = () => [] }) {
   const d = h('details', 'disclosure');
   d.id = 'references';
   const summary = h('summary', '', 'References');
@@ -139,20 +150,38 @@ export function createReferences(el, catalog, { onScreen, globe = null }) {
     all.append(h('h4', '', GROUP_NAMES[g] || g));
     for (const r of rs) all.append(refEl(r));
   }
-  body.append(head, howToRead(), screen, all);
+  const demo = part('demo', 'Demo parts');
+  const demoList = h('ul', 'demo-list');
+  demo.append(h('p', 'intro', 'Views that are illustrative because the data is thin here (coarse, partial, model-based or not '
+    + 'collected yet), and what each rests on. A demo view never changes a status or the priority.'), demoList);
+  body.append(head, howToRead(), screen, all, demo);
 
   let shownKey = null;
   // The data on screen, refreshed while the page is open (the view or the region can change under it).
   function refresh(force = false) {
     if (!d.open && !force) return;
-    const refs = referencesFor(catalog, onScreen());
-    const key = refs.map((r) => r.id).join('|');
+    const refs = referencesFor(catalog, onScreen()), parts = demoParts();
+    const key = refs.map((r) => r.id).join('|') + '#' + JSON.stringify(parts);
     if (key === shownKey && !force) return;
     shownKey = key;
+    demoList.replaceChildren(...(parts.length ? parts.map((p) => {
+      const li = h('li', '');
+      li.dataset.view = p.id;
+      li.append(h('strong', '', p.name + ': '), p.text + '.');
+      return li;
+    }) : [h('li', 'none', 'No demo views here.')]));
     screenList.replaceChildren(...(refs.length ? refs.map(refEl) : [h('p', 'none', 'No references listed for these layers.')]));
   }
   function hide() { d.open = false; summary.focus({ preventScroll: true }); }
   d.addEventListener('toggle', () => { if (d.open) refresh(true); });
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && d.open) hide(); });
+  // Escape closes the page only while it is open and focus is in it (or nowhere): a focused layout keeps its own
+  // Escape (deselect) without closing References too.
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !d.open || e.defaultPrevented) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && !d.contains(a)) return;
+    e.preventDefault();
+    hide();
+  });
   return { refresh, hide };
 }

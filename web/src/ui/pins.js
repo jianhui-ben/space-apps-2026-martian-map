@@ -145,7 +145,7 @@ export function addRegionPins(globe, catalog, { onRegion = null, onSite = () => 
       b.title = name + ': ' + verdict;
       b.append(h('span', 'prio', String(row.priority)), h('span', 'sname', shortName(name)));
       const icons = h('span', 'icons');
-      for (const c of factorCells(results.get(row.siteId), metrics)) icons.append(iconEl(c));
+      for (const c of factorCells(results.get(row.siteId), metrics, row.siteId)) icons.append(iconEl(c));
       b.append(icons);
       if (row.failures.length) b.append(h('span', 'nr', verdict));
       b.addEventListener('click', () => onSite(row.siteId));

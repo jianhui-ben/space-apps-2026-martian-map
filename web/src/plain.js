@@ -1,7 +1,7 @@
 // Plain words first (Task 9c): the five factors' names, a failure phrase per computed metric, and the sentences the
 // site card, the candidate cards and the pin rows read before any detail. Metric ids and the technical verdicts stay
 // in the Details. Pure: Results in, strings out.
-import { STATUS, factorIcon } from './status.js';
+import { STATUS } from './status.js';
 
 export const FACTORS = [
   { id: 'BT', name: 'Terrain', doc: 'Buildable terrain' },
@@ -12,8 +12,8 @@ export const FACTORS = [
 ];
 
 // The failure phrase of each computed metric. They are read in this order: the ground conditions first, then the
-// fits they cause, then the cable, so a steep spot leads with "too steep" rather than "doesn't fit". Task 12 adds
-// SC-01, SC-03, SC-04, TC-01, BT-15, BT-16 and GI-05; a metric with no phrase reads as its lowercased name.
+// fits they cause, then the cable, so a steep spot leads with "too steep" rather than "doesn't fit"; then Task 12's
+// environment metrics. A metric with no phrase reads as its lowercased name.
 export const PLAIN = {
   'BT-05': 'too steep in places under the compound',
   'BT-04': 'the building pad is too tilted',
@@ -24,6 +24,14 @@ export const PLAIN = {
   'TC-08': "the radiator plot doesn't fit on usable ground",
   'BT-01': 'not enough connected flat ground',
   'BT-21': 'the cable route to the base is too long',
+  // Task 12: the environment metrics, read after the terrain ones
+  'BT-15': 'too close to a dune field',
+  'BT-16': 'in the path of moving sand',
+  'GI-05': 'possible ground ice under the compound',
+  'SC-01': 'the skyline blocks too much sun',
+  'SC-03': 'not enough solar energy on average',
+  'SC-04': 'not enough solar energy in the worst season',
+  'TC-01': 'temperature cases not covered',
 };
 
 export const shortName = (name) => String(name).split(' (')[0];
@@ -43,6 +51,9 @@ export const phraseFor = (id, metrics) => PLAIN[id] || nameOf(id, metrics);
 
 // A critical unknown, as prioritize() counts them: an unresolved metric that could still turn into a failure here.
 const isFieldCheck = (r) => r.status !== STATUS.NOT_APPLICABLE && (r.status === STATUS.NEEDS_FIELDWORK || !!r.straddles);
+// Missing data (no value yet, or a file that failed): unresolved too. prioritize() leaves it out of its count, but the
+// copy must never let it read as fine.
+const needsData = (r) => r.status === STATUS.NEEDS_CONFIRMATION;
 
 // Metric ids in a message (a load error, a row warning) put into words: "BT-08 at s1" -> "detrended roughness at s1".
 export const plainIds = (text, metrics) => String(text).replace(/\b(BT|GI|SC|TC|IR)-\d\d\b/g, (id) => nameOf(id, metrics));
@@ -57,26 +68,74 @@ export function plainVerdict(row, results, metrics = []) {
       + (ids.length > 2 ? ', and ' + (ids.length - 2) + ' more' : '');
   }
   const unknowns = row ? row.criticalUnknowns : all.filter(isFieldCheck).map((r) => r.id);
-  const n = new Set(unknowns.map((id) => factorOf(id, metrics))).size;
+  const field = new Set(unknowns.map((id) => factorOf(id, metrics)));
+  const data = new Set(all.filter(needsData).map((r) => factorOf(r.id, metrics)));
+  const n = new Set([...field, ...data]).size;
   if (!n) return 'No failures found from orbit';
-  return 'No failures; ' + plural(n, 'factor still needs', 'factors still need') + ' field checks';
+  // worded so it never contradicts a factor's ✓ (R37): a ✓ is from orbit, and its field checks can still be open
+  const what = !data.size ? 'field checks open' : !field.size ? 'data missing' : 'data missing or field checks open';
+  return 'No failures from orbit; ' + what + ' in ' + plural(n, 'factor', 'factors');
 }
 
-// One factor's row on the card: {icon, text}. ✗ when any of its metrics fails (a field result too); otherwise the
-// factor icon of the metrics orbital data can settle (status.js), except that a factor whose only open items are field
-// checks reads ? and "not settled from orbit", never "not applicable": missing evidence never reads as fine.
-export function factorSentence(factorId, results, metrics) {
+// The estimates behind a factor's icon (R33, decided by availability per R36): the factor's estimate_today metrics,
+// unless not applicable or waiting on design input. A placeholder no check has filled yet (initialStatuses' blank,
+// evidence "reference") is an uncomputed estimate: it keeps the icon at "?", never ✓. A field check (needs fieldwork
+// without a straddle) never makes the icon "?": it is counted in the sentence instead.
+const isPlaceholder = (r) => !r || r.evidence === 'reference';
+const estimatesOf = (factorId, results, metrics) => metrics
+  .filter((m) => m.factor === factorId && m.availability === 'estimate_today')
+  .map((m) => ({ id: m.id, r: results && results.get(m.id) }))
+  .filter(({ r }) => !r || (r.status !== STATUS.NOT_APPLICABLE && r.status !== STATUS.NEEDS_DESIGN_INPUT));
+// Results exist once any check has filled one in (terrain, environment or a field record); before that, or when the
+// region failed to load, a factor reads "?" rather than simulated.
+const hasResults = (results) => [...((results && results.values()) || [])].some((r) => !isPlaceholder(r));
+
+// A deterministic simulated estimate for a factor with no orbital estimate at a site, seeded by site id + factor, for
+// the demo only: it never changes a Result, the priority or the verdict, and always says it is simulated.
+const SIM_TEXT = {
+  '✓': { BT: 'the ground looks buildable', GI: 'firm ground and no ice expected near the surface', SC: 'good sun', TC: 'temperatures in range', IR: 'a passable route to the base' },
+  '?': { BT: 'the ground needs a closer look', GI: 'ground strength and ice still unknown', SC: 'sunlight still unknown', TC: 'temperatures still unknown', IR: 'the route needs a closer look' },
+  '✗': { BT: 'the ground looks difficult', GI: 'weak ground or shallow ice possible', SC: 'too much shade', TC: 'temperatures out of range', IR: 'a route crosses steep or loose ground' },
+};
+export function seededUnit(key) { // FNV-1a, 0 <= x < 1
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0) / 4294967296;
+}
+export function simulatedEstimate(siteId, factorId) {
+  const u = seededUnit(String(siteId) + ':' + factorId);
+  const icon = u < 0.5 ? '✓' : u < 0.8 ? '?' : '✗';
+  return { icon, text: 'Simulated for the demo: ' + SIM_TEXT[icon][factorId], simulated: true };
+}
+
+// One factor's row on the card: {icon, text, simulated?}. ✗ when any of its metrics fails (a field result too);
+// otherwise from its orbital estimates (R36): ✓ only when every one is computed and met; ? when one is unresolved (not
+// computed yet, no data, or straddling its target). With no computed orbital estimate at all, a simulated one once the
+// site's results exist (siteId given), or ? before then. The field checks still to do and the other items still
+// needing data are counted, so the sentence never reads as fine while something is missing.
+export function factorSentence(factorId, results, metrics, { siteId = null } = {}) {
   const mine = [...((results && results.values()) || [])].filter((r) => factorOf(r.id, metrics) === factorId);
   const failed = mine.filter((r) => r.status === STATUS.NOT_MET).map((r) => r.id).sort(byReading);
   if (failed.length) return { icon: '✗', text: listOf(failed.map((id) => phraseFor(id, metrics))) };
-  const icon = factorIcon(results || new Map(), metrics, factorId);
-  if (icon === '✓') return { icon, text: 'meets the screening criteria' };
   const checks = mine.filter(isFieldCheck).map((r) => r.id).sort();
-  if (checks.length) {
-    return { icon: '?', text: 'not settled from orbit: ' + plural(checks.length, 'field check', 'field checks') + ', starting with ' + nameOf(checks[0], metrics) };
+  const todo = (named) => {
+    const missing = mine.filter((r) => needsData(r) && r.id !== named).length;
+    return (checks.length ? ' · ' + plural(checks.length, 'field check', 'field checks') + ' to confirm' : '')
+      + (missing ? ' · ' + missing + ' still ' + (missing === 1 ? 'needs' : 'need') + ' data' : '');
+  };
+  const est = estimatesOf(factorId, results, metrics);
+  const done = est.filter(({ r }) => !isPlaceholder(r));
+  if (done.length) {
+    // the computed open ones first (more telling), then the ones not computed yet, each in reading order
+    const open = [...done.filter(({ r }) => r.status !== STATUS.MET), ...est.filter(({ r }) => isPlaceholder(r))];
+    if (!open.length) return { icon: '✓', text: 'meets the screening criteria from orbit' + todo(null) };
+    const [{ id, r }] = open.sort((a, b) => isPlaceholder(a.r) - isPlaceholder(b.r) || byReading(a.id, b.id));
+    const why = isPlaceholder(r) ? ' is not estimated yet' : r.straddles ? ' is too close to its target to call' : ' needs data';
+    return { icon: '?', text: 'not settled from orbit: ' + nameOf(id, metrics) + why + todo(id) };
   }
-  if (icon === '?') return { icon, text: 'not settled from orbit: estimates still need data' };
-  return { icon: '—', text: 'not applicable here' };
+  if (!mine.some((r) => r.status !== STATUS.NOT_APPLICABLE)) return { icon: '—', text: 'not applicable here' };
+  if (siteId && hasResults(results)) { const sim = simulatedEstimate(siteId, factorId); return { ...sim, text: sim.text + todo(null) }; }
+  return { icon: '?', text: 'not settled from orbit' + todo(null) };
 }
 
 // Step 3's indicators in plain words (priority.js INDICATORS); BT-15 counts the other way.

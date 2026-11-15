@@ -2,7 +2,7 @@
 // (or an elevation ramp where no HiRISE layer covers the site), skirts down to the globe, vertical
 // exaggeration, and the data-center layout that the user drags and rotates while the checks update.
 // Ported from prototypes/globe-spike/web/app.js (ENU placement, mesh, drape, drag), with the look of
-// prototypes/terrain-diorama/web/app.js (palette, lighting, footprints, hover readout). The local frame
+// design-reference/map-prototype/web/app.js (palette, lighting, footprints, hover readout). The local frame
 // is y-up (x east, y up, z south); see frame.js.
 import * as THREE from 'three';
 import { CSS2DObject } from '../vendor/three/CSS2DRenderer.js';
@@ -10,7 +10,9 @@ import { sampleGrid, cellOf, findGrid } from './catalog.js';
 import { clampPlacement } from './layout.js';
 import { siteFrame, elevationAt, inBox } from './frame.js';
 import { createReadout } from './ui/readout.js';
+import { probeAt, activeProbeId } from './probes.js';
 import { mapHasFocus } from './ui/controls.js';
+import { LOOKS, lookUniforms, setLookUniforms, lookBlend, wallLines } from './looks.js';
 
 export { siteFrame } from './frame.js'; // the route module imports it from here when site.frame is absent
 
@@ -22,7 +24,7 @@ const TRIP_STRIDE = 4; // trip lattice: every 4th cell
 const TRIP_MARGIN_M = 3000; // the trip mesh covers the trip grid within 3 km of the site box and the base
 const MAX_VERTS = 400000; // per mesh; only an oversized grid (the 10 m study fallback) widens the stride
 const PICK_EVERY = 4; // pick lattices (raycasts) keep every 4th line of the drawn lattice
-const SKIRT_BELOW_M = 1; // skirts end 1 m under the sphere, so they always meet the globe
+const SKIRT_BELOW_M = 35; // skirts end 35 m under the lowest point: the sides of the lifted-out block (R33), under the globe too
 const SITE_ZOOM = 15, TRIP_ZOOM = 14, DRAPE_MAX_PX = 4096, TILE_PX = 256;
 const HIRISE = 'imagery_hirise_gray';
 // The HiRISE drape's tint, so the lit site terrain sits with the tinted HiRISE on the globe around it (ruling R31: fitted
@@ -167,6 +169,7 @@ function buildSkirt(frame, { nx, ny, lons, lats, pos, elev, uv, drawn, normal })
   }
   const n = edges.length / 2;
   const P = new Float32Array(n * 18), Nn = new Float32Array(n * 18), E = new Float32Array(n * 6), U = uv ? new Float32Array(n * 12) : null;
+  const WT = new Float32Array(n * 6); // 0 at the rim, 1 at the bottom: the block sides' colour ramp (looks.js)
   const bottom = new THREE.Vector3();
   let o = 0;
   const put = (k, low) => {
@@ -178,6 +181,7 @@ function buildSkirt(frame, { nx, ny, lons, lats, pos, elev, uv, drawn, normal })
     }
     Nn[3 * o] = normal[3 * k]; Nn[3 * o + 1] = normal[3 * k + 1]; Nn[3 * o + 2] = normal[3 * k + 2];
     E[o] = elev[k];
+    WT[o] = low ? 1 : 0;
     if (U) { U[2 * o] = uv[2 * k]; U[2 * o + 1] = uv[2 * k + 1]; }
     o += 1;
   };
@@ -190,6 +194,7 @@ function buildSkirt(frame, { nx, ny, lons, lats, pos, elev, uv, drawn, normal })
   g.setAttribute('position', new THREE.BufferAttribute(P, 3));
   g.setAttribute('normal', new THREE.BufferAttribute(Nn, 3));
   g.setAttribute('elevation', new THREE.BufferAttribute(E, 1));
+  g.setAttribute('wallT', new THREE.BufferAttribute(WT, 1));
   if (U) g.setAttribute('uv', new THREE.BufferAttribute(U, 2));
   g.computeBoundingSphere();
   return g;
@@ -658,14 +663,19 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
 
   const materials = [];
   const slopeMix = { value: 0 }; // the Terrain view's blend on the site terrain (setSlopeColouring)
-  const surfaceMaterial = (drape, slope) => {
+  const LU = lookUniforms(); // the look and the factor overlay, shared by every terrain material (looks.js)
+  const surfaceMaterial = (drape, slope, wall = false) => {
     const m = drape ? drapeMaterial(drape.texture) : new THREE.MeshLambertMaterial({ vertexColors: true });
+    m.userData.baseColor = m.color.clone(); // the tint (or white for the ramp), back after the HUD's true grey
+    lookBlend(m, LU, { wall });
     if (slope) slopeBlend(m, slopeMix);
     materials.push(m);
     return m;
   };
   // the slope colour per vertex starts empty (alpha 0) and is filled the first time the Terrain view is on
   if (S) for (const g of [S.geometry, S.skirt]) g.setAttribute('slopeColor', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 4), 4));
+  // lon/lat per vertex (offsets from the frame centre) for overlays; filled the first time one is shown
+  for (const s of [S, T]) if (s) for (const g of [s.geometry, s.skirt]) g.setAttribute('lonLat', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
 
   const group = new THREE.Group(); // placement: matrix = frame.matrix
   group.name = 'site:' + site.id;
@@ -681,7 +691,8 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     const material = surfaceMaterial(drape, slope);
     const m = new THREE.Mesh(surf.geometry, material);
     m.name = name;
-    const sk = new THREE.Mesh(surf.skirt, material); // same look; the walls carry the rim's uv or colour
+    // the same look (its own material, so the Survey sheet can paint walls solid); the walls carry the rim's uv or colour
+    const sk = new THREE.Mesh(surf.skirt, surfaceMaterial(drape, slope, true));
     sk.name = 'skirt';
     sk.raycast = () => {}; // decoration; ground hits come from the surface
     m.add(sk);
@@ -695,9 +706,11 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
 
   // lights (the globe tiles are unlit, so these only shade the site): a near-white sky over the diorama's
   // warm ground and a high north-west sun; flat ground comes out about as bright as the unlit globe.
+  const SUN_AT = new THREE.Vector3(-1700, 4300, -1300);
   const sun = new THREE.DirectionalLight(0xfffaf2, 2.2);
-  sun.position.set(-1700, 4300, -1300);
+  sun.position.copy(SUN_AT);
   const sky = new THREE.HemisphereLight(0xffffff, 0x7a4a33, 1.0);
+  const DIORAMA_LIGHTS = { sunColor: 0xfffaf2, sun: 2.2, hemiSky: 0xffffff, hemiGround: 0x7a4a33, hemi: 1.0 };
   group.add(sun, sun.target, sky);
 
   // ---- layout ----
@@ -1043,6 +1056,12 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     const { lon, lat } = frame.toLonLat(v);
     const inside = inBox(site.bounds, lon, lat);
     const eg = inside && g.elevation ? g.elevation : site.tripArea;
+    const probe = activeProbeId() ? probeAt(lon, lat) : null; // a factor view in force: its own data at this point
+    if (probe) {
+      readout.show({ title: (probe.title ? probe.title + ' · ' : '') + (inside ? site.name : 'around ' + site.name), lon, lat, small: true,
+        factor: activeProbeId(), rows: probe.rows }, x, y);
+      return;
+    }
     readout.show({
       title: inside ? site.name : 'Around ' + site.name,
       lon, lat, positionEvidence: eg && eg.evidence,
@@ -1173,6 +1192,137 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     root.updateMatrixWorld(true);
   }
 
+  // ---- the looks (Task 12, R32/R33): Diorama, Survey sheet, Helmet HUD (looks.js LOOKS), each its own scene ----
+  let look = null, walls = null, floor = null, grid = null;
+  // the floor under the block: a dark plinth that takes the block's soft shadow (Diorama), or a grid (HUD)
+  function buildFloor() {
+    const box = new THREE.Box3();
+    for (const m of surfaces) { m.geometry.computeBoundingBox(); box.union(m.geometry.boundingBox); }
+    const sx = box.max.x - box.min.x + 800, sz = box.max.z - box.min.z + 800, y = -SKIRT_BELOW_M - 0.5;
+    const cx = (box.max.x + box.min.x) / 2, cz = (box.max.z + box.min.z) / 2;
+    floor = new THREE.Mesh(new THREE.PlaneGeometry(sx, sz).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: LOOKS.diorama.floor }));
+    floor.position.set(cx, y, cz);
+    floor.name = 'plinth';
+    floor.receiveShadow = true;
+    floor.raycast = () => {};
+    const size = Math.max(sx, sz), [c1, c2] = LOOKS.hud.grid;
+    grid = new THREE.GridHelper(size, Math.round(size / 200), c1, c2);
+    grid.material.transparent = true;
+    grid.material.opacity = 0.5;
+    grid.position.set(cx, y, cz);
+    grid.name = 'grid-floor';
+    grid.raycast = () => {};
+    root.add(floor, grid);
+  }
+  function setLook(id) {
+    if (disposed || !LOOKS[id] || id === look) return;
+    look = id;
+    const t = LOOKS[id];
+    if (!floor && surfaces.length) buildFloor();
+    if (floor) { floor.visible = t.ground === 'shadow'; grid.visible = t.ground === 'grid'; }
+    if (globe.renderer.setClearColor) globe.renderer.setClearColor(t.background, 1);
+    setLookUniforms(LU, id);
+    const L = t.lights ? t : DIORAMA_LIGHTS, k = t.lights ? t.exposure : 1;
+    sun.color.set(L.sunColor); sun.intensity = L.sun * k;
+    sky.color.set(L.hemiSky); sky.groundColor.set(L.hemiGround); sky.intensity = L.hemi * k;
+    for (const m of materials) {
+      if (id === 'hud') m.color.setScalar(t.photoDim); // the true-grey photo, dimmed
+      else m.color.copy(m.userData.baseColor);
+    }
+    const lines = t.wallMode === 'lines';
+    if (lines && !walls) {
+      walls = surfaces.map((s) => {
+        const sk = s.children.find((c) => c.name === 'skirt');
+        const w = wallLines(sk.geometry, t.wallTop);
+        s.add(w);
+        return w;
+      });
+    }
+    for (const s of surfaces) s.children.find((c) => c.name === 'skirt').visible = !lines;
+    if (walls) for (const w of walls) { w.visible = lines; w.material.color.set(t.wallTop); }
+    setExaggeration(t.exag);
+    setSun(sunAt);
+  }
+
+  // ---- overlays: a factor view's PNG draped on the terrain by lon/lat, over the look ----
+  let lonLatFilled = false, overlay = null;
+  function fillLonLat() {
+    const v = new THREE.Vector3();
+    for (const s of [S, T]) {
+      if (!s) continue;
+      for (const g of [s.geometry, s.skirt]) {
+        const pos = g.attributes.position, a = g.attributes.lonLat.array;
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i);
+          const ll = frame.toLonLat(v);
+          a[2 * i] = ll.lon - frame.lon0; a[2 * i + 1] = ll.lat - frame.lat0;
+        }
+        g.attributes.lonLat.needsUpdate = true;
+      }
+    }
+    lonLatFilled = true;
+  }
+  // o: {texture, bounds: [w, s, e, n], opacity} or null
+  function setOverlay(o) {
+    if (disposed) return;
+    overlay = o || null;
+    if (overlay && !lonLatFilled) fillLonLat();
+    LU.overlayOn.value = overlay ? 1 : 0;
+    LU.overlayMap.value = overlay ? overlay.texture : null;
+    if (overlay) {
+      const [w, s, e, n] = overlay.bounds;
+      LU.overlayBox.value.set(w - frame.lon0, s - frame.lat0, e - frame.lon0, n - frame.lat0);
+      LU.overlayOpacity.value = Number.isFinite(overlay.opacity) ? overlay.opacity : 0.6;
+    }
+  }
+
+  // ---- the Solar view's sun: from an azimuth (0 north, clockwise) and elevation, with shadows; null: the look's ----
+  let sunAt = null;
+  function setSun(dir) {
+    if (disposed) return;
+    sunAt = dir || null;
+    const shadows = !!sunAt || (look && LOOKS[look].ground === 'shadow'); // the Solar view's sun, or the Diorama's soft shadow
+    if (sunAt) {
+      const az = sunAt.azDeg * DEG, el = Math.max(1, sunAt.elDeg) * DEG;
+      sun.position.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el)).multiplyScalar(8000);
+      globe.renderer.shadowMap.enabled = true;
+      const r = Math.max(...surfaces.map((m) => (m.geometry.boundingSphere ? m.geometry.boundingSphere.radius : 2000)));
+      Object.assign(sun.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 10, far: 20000 });
+      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.bias = -0.0005;
+      sun.shadow.normalBias = 1.5;
+      sun.shadow.camera.updateProjectionMatrix();
+    } else sun.position.copy(SUN_AT);
+    if (shadows && !sunAt) {
+      globe.renderer.shadowMap.enabled = true;
+      const r = Math.max(...surfaces.map((m) => (m.geometry.boundingSphere ? m.geometry.boundingSphere.radius : 2000))) + 800;
+      Object.assign(sun.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 10, far: 20000 });
+      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.bias = -0.0005;
+      sun.shadow.normalBias = 1.5;
+      sun.shadow.radius = 4;
+      sun.shadow.camera.updateProjectionMatrix();
+    }
+    if (sun.castShadow === shadows && surfaces.every((m) => m.castShadow === shadows)) return;
+    sun.castShadow = shadows;
+    for (const m of surfaces) { m.castShadow = m.receiveShadow = shadows; for (const c of m.children) if (c.name === 'skirt') c.castShadow = shadows; }
+    for (const m of materials) m.needsUpdate = true;
+    if (floor) floor.material.needsUpdate = true;
+  }
+
+  // A point on the drawn ground (root-local, so it follows the exaggeration), lift metres above it.
+  const groundPoint = (lon, lat, lift = 0) => onGround(lon, lat, lift);
+  debug.look = () => ({
+    look, mode: LU.lookMode.value, exaggeration: root.scale.y, contours: LU.contourOn.value ? LU.contourInterval.value : 0,
+    walls: walls && walls[0].visible ? 'lines' : 'solid', sun: sun.intensity, overlay: !!overlay, sunAt, shadows: sun.castShadow,
+    floor: floor && floor.visible ? 'plinth' : grid && grid.visible ? 'grid' : 'none',
+    background: '#' + new THREE.Color(LOOKS[look] ? LOOKS[look].background : 0).getHexString(), tiles: !hidTiles,
+  });
+  // The site stands alone as a lifted-out block: the globe tiles are hidden while it is open (R33).
+  let hidTiles = false;
+  if (globe.setTilesVisible) { globe.setTilesVisible(false); hidTiles = true; }
+  setLook('diorama');
+
   function dispose() {
     if (disposed) return;
     disposed = true;
@@ -1198,11 +1348,17 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     for (const s of [SP, TP]) if (s) s.geometry.dispose();
     for (const m of [...materials, ...[...fpMats.values()].flatMap((x) => Object.values(x)), stem.material]) m.dispose();
     for (const d of [siteDrape, tripDrape]) if (d) d.texture.dispose();
+    if (walls) for (const w of walls) w.material.dispose();
+    if (floor) { floor.material.dispose(); grid.material.dispose(); grid.geometry.dispose(); }
+    if (hidTiles) globe.setTilesVisible(true);
+    if (globe.renderer.setClearColor) globe.renderer.setClearColor(0x000000, 0); // the page background behind the planet again
+    sun.castShadow = false;
     canvas.style.cursor = '';
   }
 
   return {
     root, terrain, tripTerrain, frame, site, setExaggeration, dispose, debug, setFootprintStatus, flyTarget, deselect, setSlopeColouring,
+    setLook, setOverlay, setSun, groundPoint, get look() { return look; },
     get selected() { return selected; },
     // [{kind: 'imagery_incomplete' | 'no_elevation' | 'data_failed', message, datasetId?}]
     get problems() { return problems.slice(); },

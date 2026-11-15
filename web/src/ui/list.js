@@ -3,6 +3,7 @@
 // as the reason to investigate, and the five factor icons under their plain names). Choosing a card shows its next check.
 import { fieldCounts } from '../status.js';
 import { FACTORS, factorSentence, plainVerdict, plainIds, shortName } from '../plain.js';
+import { statusSvg } from './icons.js';
 
 export { shortName };
 
@@ -43,13 +44,14 @@ export function regionInView(catalog, target, altM, { maxAltM = LIST_MAX_ALT_M, 
 }
 
 // The five factor icons of a site (plain.js factorSentence, the same icons as the site card's rows), each named in words.
-export function factorCells(results, metrics) {
+export function factorCells(results, metrics, siteId = null) {
   return FACTORS.map((f) => {
-    const { icon } = factorSentence(f.id, results, metrics);
+    const { icon, simulated, text } = factorSentence(f.id, results, metrics, { siteId });
     const { fieldwork, design } = fieldCounts(results, metrics, f.id);
     return {
-      factor: f.id, name: f.name, icon, fieldwork, design,
-      title: f.name + ': ' + ICON_WORDS[icon] + '; ' + fieldwork + ' fieldwork and ' + design + ' design items open',
+      factor: f.id, name: f.name, icon, fieldwork, design, simulated: !!simulated,
+      tip: f.name + ' — ' + (simulated ? 'simulated for the demo, not a real result' : text), // the hover tooltip (R37)
+      title: f.name + ': ' + ICON_WORDS[icon] + (simulated ? ' (simulated for the demo)' : '') + '; ' + fieldwork + ' fieldwork and ' + design + ' design items open',
     };
   });
 }
@@ -66,9 +68,11 @@ export function iconEl(cell) {
   const s = h('span', 'icon ' + ICON_CLASS[cell.icon]);
   s.dataset.factor = cell.factor;
   s.dataset.icon = cell.icon;
-  s.title = cell.title;
-  s.setAttribute('aria-label', cell.name + ': ' + ICON_WORDS[cell.icon]);
-  s.append(h('span', 'glyph', cell.icon));
+  s.dataset.tip = cell.tip || cell.title; // an instant CSS tooltip (R37), not the slow native title
+  s.setAttribute('role', 'img'); // a named image, so the label is read (a bare span's aria-label isn't)
+  s.setAttribute('aria-label', cell.name + ': ' + ICON_WORDS[cell.icon] + (cell.simulated ? ', simulated' : ''));
+  s.append(statusSvg(cell.icon, { simulated: cell.simulated })); // the shape is the cue (R37)
+  if (cell.simulated) { s.classList.add('simulated'); s.dataset.simulated = 'true'; s.append(h('span', 'sim-mark', 'sim')); } // never only the colour
   return s;
 }
 
@@ -205,7 +209,7 @@ export function createList(el, { onSite, onRegion, onEdit }) {
       const verdict = h('span', 'verdict', plainVerdict(row, res, metrics));
       const facts = h('span', 'facts');
       const icons = h('span', 'icons');
-      for (const c of factorCells(res, metrics)) icons.append(iconEl(c));
+      for (const c of factorCells(res, metrics, row.siteId)) icons.append(iconEl(c));
       facts.append(icons);
       b.append(prio, nm, verdict, facts);
       const more = h('span', 'more');

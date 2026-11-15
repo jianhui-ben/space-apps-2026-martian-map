@@ -294,3 +294,97 @@ test('site drape material: photo where the drape has pixels, the ramp elsewhere,
   assert(outside[1] > 200 && outside[0] < 50, 'outside the drape shows the ramp, not the red edge texel, got ' + outside);
   rt.dispose(); mat.dispose(); tex.dispose(); geo.dispose();
 });
+
+// ---- the three looks (Task 12, R32) ----
+import { LOOKS, LOOK_ORDER, lookUniforms, setLookUniforms, lookBlend, SLOPE_BLUE } from '../src/looks.js';
+
+test('looks: the prototype THEMES constants, verbatim', () => {
+  assertEq(LOOK_ORDER, ['diorama', 'survey', 'hud']);
+  assertEq(LOOK_ORDER.map((k) => LOOKS[k].name), ['Diorama', 'Survey sheet', 'Helmet HUD']);
+  const pick = (t) => [t.exag, t.contours, t.contourInterval, t.contourColor, t.contourOpacity, t.wallTop, t.wallMode, t.ground, t.hemiSky, t.hemiGround, t.hemi, t.sun, t.sunColor, t.exposure, t.photoDim];
+  assertEq(pick(LOOKS.survey), [2, true, 10, 0x1d2226, 0.3, 0xdedbd2, 'solid', 'none', 0xffffff, 0xbdbdb4, 1.5, 1.3, 0xffffff, 1.0, 1]);
+  assertEq(pick(LOOKS.hud), [2.5, true, 5, 0x6fe3ff, 0.55, 0x6fe3ff, 'lines', 'grid', 0xa9dcff, 0x0a1422, 0.9, 1.7, 0xe6f6ff, 0.95, 0.72]);
+  assertEq(pick(LOOKS.diorama), [2, false, 5, 0x3a1d10, 0.35, 0x93583a, 'solid', 'shadow', 0xfff4e8, 0x7a4a33, 1.25, 2.3, 0xfff0dc, 1.0, 1]);
+  assertEq(LOOKS.survey.paper, 0xe9e6dd);
+});
+
+test('looks: Survey paints the slope ramp, the HUD true grey, and an overlay lies over the look by lon/lat', () => {
+  const r = renderer();
+  const U = lookUniforms();
+  const cv = document.createElement('canvas');
+  cv.width = 1; cv.height = 1;
+  const g2 = cv.getContext('2d');
+  g2.fillStyle = '#0000ff';
+  g2.fillRect(0, 0, 1, 1);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = lookBlend(new THREE.MeshLambertMaterial({ vertexColors: true }), U);
+  // two quads: the left at lon/lat offset (0, 0), the right at (5, 5)
+  const pos = [], col = [], nor = [], ll = [], el = [], idx = [];
+  [[0, 0], [5, 5]].forEach(([lo, la], q) => {
+    const k = pos.length / 3;
+    for (const [x, y] of [[q, 0], [q + 1, 0], [q, 1], [q + 1, 1]]) { pos.push(x, y, 0); col.push(0.8, 0.2, 0.1); nor.push(0, 1, 0); ll.push(lo, la); el.push(3); }
+    idx.push(k, k + 1, k + 2, k + 2, k + 1, k + 3);
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  geo.setAttribute('lonLat', new THREE.Float32BufferAttribute(ll, 2));
+  geo.setAttribute('elevation', new THREE.Float32BufferAttribute(el, 1));
+  geo.setIndex(idx);
+  const scene = new THREE.Scene();
+  scene.add(new THREE.Mesh(geo, mat), new THREE.AmbientLight(0xffffff, Math.PI)); // Lambert returns its albedo
+  const cam = new THREE.OrthographicCamera(0, 2, 1, 0, -1, 1);
+  const rt = new THREE.WebGLRenderTarget(20, 10);
+  const shot = () => {
+    r.setRenderTarget(rt); r.render(scene, cam); r.setRenderTarget(null);
+    const px = new Uint8Array(20 * 10 * 4);
+    r.readRenderTargetPixels(rt, 0, 0, 20, 10, px);
+    return [5, 15].map((x) => Array.from(px.slice((5 * 20 + x) * 4, (5 * 20 + x) * 4 + 3)));
+  };
+  const [dio] = shot();
+  assert(dio[0] > 180 && dio[2] < 120, 'Diorama keeps the colour, got ' + dio);
+  setLookUniforms(U, 'survey');
+  const [paper] = shot();
+  const want = new THREE.Color(SLOPE_BLUE[0]); // flat ground: the ramp's 0 degree stop (linear; the target holds linear values)
+  assertClose(paper[0] / 255, want.r, 0.03, 'ramp r'); assertClose(paper[2] / 255, want.b, 0.03, 'ramp b');
+  setLookUniforms(U, 'hud');
+  const [grey] = shot();
+  assert(Math.abs(grey[0] - grey[1]) <= 2 && Math.abs(grey[1] - grey[2]) <= 2, 'HUD is grey, got ' + grey);
+  // the overlay covers lon/lat offsets 4..6 only: the right quad turns blue, the left keeps the look
+  U.overlayOn.value = 1; U.overlayMap.value = tex; U.overlayBox.value.set(4, 4, 6, 6); U.overlayOpacity.value = 1;
+  const [left, right] = shot();
+  assert(right[2] > 200 && right[0] < 30, 'the overlay is drawn where it covers, got ' + right);
+  assertEq(left, grey, 'and nowhere else');
+  rt.dispose(); mat.dispose(); tex.dispose(); geo.dispose();
+});
+
+test('site setLook: lights, exaggeration, contours and line walls per look; Diorama comes back as it was', async () => {
+  const site = await getSite(fixtureCatalog(), 'site_a');
+  const v = openSite(fakeGlobe(), site, { layoutStore: storeFor(site) });
+  const before = v.debug.look();
+  assertEq([before.look, before.mode, before.exaggeration, before.contours, before.walls], ['diorama', 0, 2, 0, 'solid']);
+  const tint = v.terrain.material.color.getHex();
+  v.setLook('survey');
+  assertEq([v.debug.look().mode, v.debug.look().exaggeration, v.debug.look().contours, v.debug.look().walls], [1, 2, 10, 'solid']);
+  v.setLook('hud');
+  const hud = v.debug.look();
+  assertEq([hud.mode, hud.exaggeration, hud.contours, hud.walls], [2, 2.5, 5, 'lines']);
+  assertClose(v.terrain.material.color.r, 0.72, 1e-6, 'the photo dimmed to 0.72');
+  v.setLook('diorama');
+  const back = v.debug.look();
+  assertEq([back.mode, back.exaggeration, back.contours, back.walls, back.sun], [0, 2, 0, 'solid', before.sun]);
+  assertEq(v.terrain.material.color.getHex(), tint);
+  // the Solar view's sun and the overlay come and go without touching the look
+  v.setSun({ azDeg: 90, elDeg: 30 });
+  assert(v.debug.look().shadows && v.debug.look().sunAt.azDeg === 90, 'the sun moved, with shadows');
+  v.setSun(null);
+  assert(v.debug.look().sunAt === null && v.debug.look().shadows, 'the Diorama keeps its soft shadow on the plinth');
+  assertEq([v.debug.look().floor, v.debug.look().background, v.debug.look().tiles], ['plinth', '#070b0f', true]); // the fake globe has no tiles to hide
+  v.setLook('survey');
+  assertEq([v.debug.look().floor, v.debug.look().background, v.debug.look().shadows], ['none', '#e9e6dd', false]);
+  v.setLook('hud');
+  assertEq([v.debug.look().floor, v.debug.look().background], ['grid', '#06101a']);
+  v.dispose();
+});

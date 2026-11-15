@@ -162,15 +162,24 @@ export function createGlobe(container, catalog, { labelsElement = null } = {}) {
 
   // Each tile's material: after the overlay plugin has wrapped it (processTileModel runs before load-model), grade the
   // Viking layer's texel in its own unrolled loop step; the other layers' steps are left as they are.
+  // If the plugin's shader or overlay list ever changes shape, the grade is skipped: said once on the console (and
+  // counted in stats.gradeSkipped) rather than silently showing Trek's ungraded colours.
   const grade = { value: VIKING_GRADE.clone() };
+  stats.gradeSkipped = 0;
   const gradeMaterial = (m) => {
     if (m[GRADED]) return;
     m[GRADED] = true;
     const prev = m.onBeforeCompile;
     m.onBeforeCompile = function gradeViking(sh, r) {
-      prev.call(this, sh, r);
+      if (prev) prev.call(this, sh, r);
       const k = imagery.overlays.indexOf(overlays.viking);
-      if (k < 0 || !LAYER_TINT.test(sh.fragmentShader)) return; // nothing to grade: the colours stay as Trek serves them
+      if (k < 0 || !LAYER_TINT.test(sh.fragmentShader)) { // nothing to grade: the colours stay as Trek serves them
+        if (!stats.gradeSkipped++) {
+          console.warn('globe: Viking colour grade not applied (' + (k < 0 ? 'Viking overlay not in the plugin'
+            : "the overlay plugin's tint line was not found in the shader") + '); the globe shows ungraded colours');
+        }
+        return;
+      }
       sh.uniforms.vikingGrade = grade;
       sh.fragmentShader = sh.fragmentShader
         .replace(/void main\(/, 'uniform vec4 vikingGrade;\nvoid main(')
@@ -188,6 +197,12 @@ export function createGlobe(container, catalog, { labelsElement = null } = {}) {
   const controls = new GlobeControls(scene, camera, renderer.domElement);
   controls.setEllipsoid(tiles.ellipsoid, tiles.group);
   controls.enableDamping = true;
+  // The user's wheel or press during a flight takes over: the flight ends where it is and the controls (disabled while
+  // flying) handle the input, rather than dropping it. Capture phase, so this runs before the controls' own listeners;
+  // a wheel over a pin reaches the canvas too (addPin).
+  const takeOver = () => { if (flight) endFlight(); };
+  renderer.domElement.addEventListener('wheel', takeOver, { capture: true, passive: true });
+  renderer.domElement.addEventListener('pointerdown', takeOver, { capture: true });
 
   // ---------- camera ----------
   // Look at (lon, lat) from altM; straight down with north up unless opts tilts it (see cameraPose).

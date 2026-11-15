@@ -4,7 +4,7 @@ const R = 3396190;
 const RAD = Math.PI / 180;
 const M_PER_DEG = R * RAD;
 const GAP = 10;
-const LOADS = { 60: 100, 150: 225, 250: 350 };
+export const LOADS = { 60: 100, 150: 225, 250: 350 }; // IT load (kW) -> total facility load L (kW)
 
 export function footprintSpecs(setup) {
   const L = LOADS[setup.loadKw];

@@ -42,10 +42,12 @@ const button = (cls, text, id) => {
 };
 
 // The opening: the Guided brief's outlined line beside its globe, one supporting line, one primary action that starts
-// the brief. The globe is live beside it.
+// the brief ("Define construction project", then "Continue project brief" once begun, as in
+// design-reference/mars-guided-flow.html; the brief keeps its values). The globe is live beside it.
+export const LANDING_START = 'Define construction project', LANDING_CONTINUE = 'Continue project brief';
 export function createLanding(el, { onStart }) {
-  const start = button('primary', 'Start the brief →', 'landing-start');
-  start.addEventListener('click', onStart);
+  const start = button('primary', LANDING_START, 'landing-start');
+  start.addEventListener('click', () => { start.textContent = LANDING_CONTINUE; onStart(); });
   el.replaceChildren(h('h1', '', 'Built for your mission.'),
     h('p', 'support', 'Describe your construction project to explore locations for its supporting data center.'), start);
   return { focus: () => start.focus({ preventScroll: true }) };
@@ -53,7 +55,8 @@ export function createLanding(el, { onStart }) {
 
 // "1 Construction brief · 2 Facility specifications · 3 Location assessment" under the header, on every screen (on the
 // landing none is current yet). The current step is marked; earlier steps are buttons (onStep(stage)), later ones are
-// reached by Continue.
+// reached by Continue. On the brief and the facility step, "Back to globe" returns to the landing (onStep('landing')),
+// as the guided-flow reference's header link does.
 export function createStepper(el, { onStep }) {
   el.setAttribute('aria-label', 'Planning stages');
   let shown = null;
@@ -74,6 +77,11 @@ export function createStepper(el, { onStep }) {
         ol.append(li);
       });
       el.replaceChildren(ol);
+      if (stage === 'brief' || stage === 'facility') {
+        const home = button('text-action home-link', 'Back to globe', 'home-link');
+        home.addEventListener('click', () => onStep('landing'));
+        el.append(home);
+      }
     },
   };
 }

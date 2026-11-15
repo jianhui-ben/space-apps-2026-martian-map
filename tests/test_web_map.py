@@ -475,7 +475,8 @@ def _errors_besides_404s(page):
 
 
 def test_site_tile_failures_are_reported(page, server_url):
-    """HiRISE tiles that fail show the elevation ramp and are listed in view.problems (fix round 1)."""
+    """HiRISE tiles that fail show the elevation ramp and are listed in view.problems (fix round 1); the site's drape,
+    not the hidden globe layer, reports them (R33)."""
     _open_globe(page, server_url)
     failed = []
 
@@ -499,7 +500,10 @@ def test_site_tile_failures_are_reported(page, server_url):
     assert len(img) == 1 and img[0]["datasetId"] == "imagery_hirise_gray", problems
     assert "of the site" in img[0]["message"] and "tiles failed to load" in img[0]["message"], img
     _shot(page, "site-imagery-gaps.png")  # failed tiles show as elevation-ramp squares, not as tan ground
-    assert _layers(page)["hirise"]["bad"] > 0  # the globe hit the same failures and kept running
+    # R33 hides the globe's tiles while a site is open, so the globe's HiRISE layer fetches nothing here: the site's own
+    # drape (above) is the imagery in use, and it is the one that counts and reports the failures
+    assert page.evaluate("__map.globe.tiles.group.visible") is False
+    assert d["site"]["bad"] <= len(failed), (d, len(failed))  # every failure it counts is one the route served
     assert _errors_besides_404s(page) == []  # no uncaught errors, from the drape or the globe's overlay
 
 
@@ -686,7 +690,7 @@ def test_flow_card_sections(page, server_url):
     page.wait_for_timeout(1500)
     _shot(page, "flow-card-near_base_north.png")
     page.locator("#references-open").click()  # one References page: what is on screen, then every source
-    assert "HiRISE" in page.locator('#references [data-part="screen"]').inner_text()
+    page.wait_for_function("document.querySelector('#references [data-part=\"screen\"]').innerText.includes('HiRISE')", timeout=10000)
     refs = page.evaluate("Object.keys(__map.catalog.raw.references).length")
     assert page.locator('#references [data-part="all"] .ref').count() == refs
     page.locator("#references-close").click()
@@ -799,7 +803,6 @@ def test_drag_failure_reads_plainly(page, server_url):
     pin = page.locator('.pin[data-region=gale] .pin-row[data-site="%s"]' % SITE)
     assert pin.locator(".icon[data-factor=BT]").get_attribute("data-icon") == "✗"
     assert pin.locator(".nr").text_content().startswith(lead)
-    assert page.locator('#factors .seg[data-view="BT"] .seg-icon').text_content() == "✗"  # the bar shows it too
     assert page.console_errors == []
 
 
@@ -807,7 +810,8 @@ def test_drag_failure_reads_plainly(page, server_url):
 
 LANDING_HEADLINE = "Built for your mission."  # the Guided brief's outlined line beside its globe (Task 9d)
 LANDING_SUPPORT = "Describe your construction project to explore locations for its supporting data center."
-LANDING_ACTION = "Start the brief →"
+LANDING_ACTION = "Define construction project"  # design-reference/mars-construction-twin-trails.html
+LANDING_CONTINUE = "Continue project brief"
 ASSUMPTIONS = ("Base services included. Firm power plus supplemental solar assumed; capacity unverified. "
                "Facility sizing requires workload validation.")
 FACILITY = "150 kW IT, 225 kW total; compound 60 × 60 m, radiator 60 × 64 m, solar 100 × 100 m"
@@ -1155,6 +1159,7 @@ def test_globe_colour_matches_mockup(page, server_url):
     mean = page.evaluate(_DISC_MEAN_JS)
     assert mean and mean[3] > 100000, mean  # the disc, not a sliver
     assert all(abs(m - t) <= 12 for m, t in zip(mean[:3], MOCKUP_DISC)), (mean, MOCKUP_DISC)
+    assert page.evaluate("__map.globe.stats.gradeSkipped") == 0  # the grade found its shader line on every tile
     _shot(page, "landing.png")
     assert page.console_errors == []
 
@@ -1190,7 +1195,8 @@ def test_references_replaces_legend_and_chips(page, server_url):
     body = page.locator("#references .disc-body")
     body.wait_for(state="visible", timeout=5000)
     parts = page.evaluate("[...document.querySelectorAll('#references [data-part]')].map((p) => [p.dataset.part, p.querySelector('h3').textContent])")
-    assert parts == [["read", "How to read the map"], ["screen", "Data on screen"], ["all", "All the data"]], parts
+    assert parts == [["read", "How to read the map"], ["screen", "Data on screen"], ["all", "All the data"],
+                     ["demo", "Demo parts"]], parts  # Task 12: the demo parts, last (spec, Visual design)
     read = page.locator('#references [data-part="read"]').inner_text()
     for icon in "✓✗?—":
         assert icon in read, (icon, read)
@@ -1225,14 +1231,17 @@ def test_card_plain_first(page, server_url):
     assert [r[2] for r in rows] == ["Terrain", "Ground & ice", "Solar", "Thermal", "Routes"], rows
     assert all(r[1] in "✓✗?—" and len(r[3]) > 8 for r in rows), rows
     want = page.evaluate("""async (id) => { const { factorSentence } = await import('/src/plain.js');
-        return ['BT', 'GI', 'SC', 'TC', 'IR'].map((f) => factorSentence(f, __map.results(id), __map.metrics)); }""", SITE)
+        return ['BT', 'GI', 'SC', 'TC', 'IR'].map((f) => factorSentence(f, __map.results(id), __map.metrics, { siteId: id })); }""", SITE)
     assert [[r[1], r[3]] for r in rows] == [[w["icon"], w["text"]] for w in want], (rows, want)
     verdict = page.locator("#card .card-head .verdict").text_content()
     assert verdict.startswith("No failures"), verdict  # near_base_north fails nothing at its best spot
     seen = page.evaluate(_VISIBLE_TEXT_JS, "#card")
     assert not METRIC_ID.search(seen), METRIC_ID.search(seen) and seen[max(0, METRIC_ID.search(seen).start() - 60):][:120]
-    for words in ("Why this priority", "Next check", "Settled by"):
+    for words in ("About this site", "Next check"):  # the compact panel: their summaries show, the rest is collapsed
         assert words in seen, (words, seen)
+    everything = page.locator("#card").text_content()
+    for words in ("Why this priority", "Settled by"):  # still on the card, behind About this site and Next check
+        assert words in everything, (words, everything[:400])
     assert page.locator("#card > .card-body > .facility, #card > .card-body > .howto").count() == 0  # moved into Terrain's Details
     _no_tiny_text_or_small_targets(page, "plain card")
     assert settle_tiles(page)
@@ -1245,6 +1254,39 @@ def test_card_plain_first(page, server_url):
     assert "Facility" in terrain and "arrow keys" in terrain  # the facility line and the drag help
     assert "settled by" in terrain
     assert hosts <= GLOBE_HOSTS, hosts
+    assert page.console_errors == []
+
+
+def test_site_panel_compact(page, server_url):
+    """The open-site panel at 1280x800: the three looks and the five one-line factor rows show without scrolling;
+    the rest (About this site, Next check, each row's Details) is collapsed, and each row's sentence is its hover tip."""
+    _boot(page, server_url)
+    _start(page)
+    _enter(page, "gale")
+    _open_row(page, SITE)
+    boxes = page.evaluate("""() => {
+        const r = (s) => [...document.querySelectorAll(s)].map((e) => { const b = e.getBoundingClientRect();
+            return { top: b.top, bottom: b.bottom, left: b.left, right: b.right }; });
+        const body = document.querySelector('#card .card-body').getBoundingClientRect();
+        return { looks: r('#factors .look'), rows: r('#card .factor[data-factor]:not([data-factor=other])'),
+                 body: { top: body.top, bottom: body.bottom }, vw: innerWidth, vh: innerHeight }; }""")
+    assert len(boxes["looks"]) == 3 and len(boxes["rows"]) == 5, boxes
+    for b in boxes["looks"] + boxes["rows"]:
+        assert b["top"] >= 0 and b["left"] >= 0 and b["bottom"] <= boxes["vh"] and b["right"] <= boxes["vw"], (b, boxes)
+    for b in boxes["rows"]:  # inside the card body as drawn, not under its scroll, and one line each (no wrapping)
+        assert b["bottom"] <= boxes["body"]["bottom"] + 0.5 and b["bottom"] - b["top"] < 60, (b, boxes["body"])
+    assert page.locator("#card details.about").count() == 1
+    assert page.locator("#card details.about > summary").text_content() == "About this site"
+    assert not page.evaluate("document.querySelector('#card details.about').open")  # closed by default
+    assert "Why this priority" in page.locator("#card details.about").text_content()  # collapsed, not deleted
+    tips = page.evaluate("[...document.querySelectorAll('#card .factor[data-factor]')].map((f) => [f.dataset.factor, f.dataset.tip || ''])")
+    assert len(tips) >= 5 and all(t.strip() for _, t in tips), tips
+    heads = page.evaluate("[...document.querySelectorAll('#card .factor .f-head')].map((h) => h.textContent)")
+    assert len(heads) == 5 and all(0 < len(h.split()) <= 5 for h in heads), heads
+    assert not METRIC_ID.search(" ".join(t for _, t in tips) + " ".join(heads))
+    assert "Photo: HiRISE" in page.locator("#view-key").text_content()  # the look's caption, a tip now
+    _no_tiny_text_or_small_targets(page, "compact panel")
+    _shot(page, "site-panel-compact.png")
     assert page.console_errors == []
 
 
@@ -1269,20 +1311,20 @@ def test_factor_view_terrain(page, server_url):
     _boot(page, server_url)
     _start(page)
     _enter(page, "gale")
-    bar = page.locator("#factors")
-    bar.wait_for(state="visible", timeout=10000)
-    segs = page.evaluate("[...document.querySelectorAll('#factors .seg')].map((b) => [b.dataset.view, b.querySelector('.seg-name').textContent])")
-    assert segs == [["photo", "Photo"], ["BT", "Terrain"]], segs  # only the registered views (Task 12 adds four)
-    assert page.evaluate("__map.store.get('view')") == "photo"
+    assert page.locator("#factors").is_hidden()  # R33: no view control and no factor overlay in the region view
+    assert page.evaluate("__map.store.get('view')") is None
     _open_row(page, SITE)
     assert settle_tiles(page)
+    assert page.locator("#factors .seg").count() == 0  # the looks only: factor views come from the card rows
     p = page.evaluate(_TERRAIN_POINT_JS, SITE)
     assert p and 0 < p["x"] < 880 and 0 < p["y"] < 720 and p["slope"] == p["slope"], p
     before = page.evaluate(_PIXEL_JS, [p["x"], p["y"]])
-    page.locator('#card .factor[data-factor="BT"] .view').click()  # the Terrain row's View
+    view = page.locator('#card .factor[data-factor="BT"] .view')
+    view.click()  # the Terrain row's View
     page.wait_for_function("__map.store.get('view') === 'BT'", timeout=5000)
     page.wait_for_function("__map.siteView.debug.slope().on", timeout=10000)
-    assert page.locator('#factors .seg[data-view="BT"]').get_attribute("aria-pressed") == "true"
+    page.wait_for_function("document.querySelector('#card .factor[data-factor=\"BT\"] .view').getAttribute('aria-pressed') === 'true'", timeout=5000)
+    assert view.text_content() == "Viewing" and page.locator("#view-hide").is_visible()
     s = page.evaluate("__map.siteView.debug.slope()")
     assert s["share"] > 0.95, s  # nearly every drawn vertex of the site has a slope colour
     after = page.evaluate(_PIXEL_JS, [p["x"], p["y"]])
@@ -1293,21 +1335,261 @@ def test_factor_view_terrain(page, server_url):
     assert settle_tiles(page)
     page.wait_for_timeout(1000)
     _shot(page, "view-terrain.png")
-    page.locator('#factors .seg[data-view="photo"]').click()  # back to the photo: restored exactly
+    view.click()  # the row's View again: off, the photo restored exactly
     page.wait_for_function("!__map.siteView.debug.slope().on", timeout=10000)
+    assert page.evaluate("__map.store.get('view')") is None
     again = page.evaluate(_PIXEL_JS, [p["x"], p["y"]])
     assert max(abs(a - b) for a, b in zip(before, again)) <= 2, (before, again)
-    # the region view: the study slope goes on the globe as a patch, with the same key
-    page.locator('#factors .seg[data-view="BT"]').click()
+    view.click()  # and "Hide factor view" turns it off too
+    page.wait_for_function("__map.siteView.debug.slope().on", timeout=10000)
+    page.locator("#view-hide").click()
+    page.wait_for_function("!__map.siteView.debug.slope().on && __map.store.get('view') === null", timeout=10000)
+    view.click()
+    page.locator("#card .back").click()  # closing the site ends the factor view; the region gets none
+    _wait_list(page, "gale")
+    assert page.evaluate("__map.store.get('view')") is None
+    assert page.evaluate("!__map.globe.scene.getObjectByName('slope-patch:gale')")
+    assert page.console_errors == []
+
+
+# ---------- the three looks and the factor views (Task 12, R32 and R33) ----------
+
+LOOK_NAMES = (("diorama", "Diorama"), ("survey", "Survey sheet"), ("hud", "Helmet HUD"))
+
+
+_LOOK_STATE = {  # R33: each look its own scene
+    "diorama": {"exaggeration": 2, "contours": 0, "walls": "solid", "floor": "plinth", "background": "#070b0f", "shadows": True},
+    "survey": {"exaggeration": 2, "contours": 10, "walls": "solid", "floor": "none", "background": "#e9e6dd", "shadows": False},
+    "hud": {"exaggeration": 2.5, "contours": 5, "walls": "lines", "floor": "grid", "background": "#06101a", "shadows": False},
+}
+_LOOK_CAMERA = {"diorama": (2600, 50), "survey": (1500, 8), "hud": (150, 76)}
+
+
+def test_three_looks(page, server_url):
+    _boot(page, server_url)
+    _start(page)
+    _enter(page, "gale")
+    _open_row(page, SITE)
+    assert settle_tiles(page)
+    looks = page.evaluate("[...document.querySelectorAll('#factors .look')].map((b) => [b.dataset.look, b.textContent, b.getAttribute('aria-pressed')])")
+    assert looks == [[k, n, "true" if k == "diorama" else "false"] for k, n in LOOK_NAMES], looks
+    assert page.evaluate("__map.store.get('look')") == "diorama"
+    assert page.evaluate("__map.siteView.debug.look().tiles") is False  # the globe tiles are hidden: a lifted-out block
+    centre = []
+    for look, _ in LOOK_NAMES:
+        page.locator('#factors .look[data-look="%s"]' % look).click()
+        page.wait_for_function("(l) => __map.siteView.debug.look().look === l", arg=look, timeout=10000)
+        page.evaluate("new Promise((r) => setTimeout(r, 1200))")
+        page.wait_for_function("!__map.globe.flying()", timeout=20000)
+        st = page.evaluate("__map.siteView.debug.look()")
+        assert {k: st[k] for k in _LOOK_STATE[look]} == _LOOK_STATE[look], (look, st)
+        alt, tilt = _LOOK_CAMERA[look]
+        cam_alt = page.evaluate("__map.globe.altitude()") - page.evaluate("__map.siteView.flyTarget().targetAltM")
+        assert abs(cam_alt - alt) < alt * 0.25 + 30, (look, cam_alt)
+        assert abs(_tilt(page) - tilt) < 6, (look, _tilt(page))
+        key = page.locator("#view-key").text_content()
+        assert {"diorama": "Photo: HiRISE", "survey": "Survey sheet", "hud": "Helmet HUD"}[look] in key, key
+        fps = page.evaluate("__map.siteView.debug.footprints().map((f) => f.colour)")  # the assessment colours in every look
+        assert set(fps) <= {"#b8dfc2", "#ffb19b", "#e3c78f"}, fps
+        page.wait_for_timeout(800)
+        centre.append(page.evaluate(_PIXEL_JS, [640, 300]))
+        _shot(page, "look-%s.png" % look)
+    d, sv, hd = centre
+    dist = lambda a, b: max(abs(x - y) for x, y in zip(a, b))
+    assert dist(d, sv) > 40 and dist(sv, hd) > 40 and dist(d, hd) > 20, centre  # three clearly different scenes
+    assert sv[2] > sv[0], centre  # the survey's blue slope ramp
     page.locator("#card .back").click()
     _wait_list(page, "gale")
-    page.wait_for_function("(() => { const o = __map.globe.scene.getObjectByName('slope-patch:gale'); return o && o.visible && o.userData.ready; })()",
-                           timeout=60000)
-    assert page.locator("#view-key").text_content() == TERRAIN_KEY
+    page.wait_for_function("(() => { const f = document.getElementById('factors'); return f.hidden || f.querySelector('.looks').hidden; })()", timeout=10000)
+    assert page.evaluate("__map.globe.tiles.group.visible")  # the globe is back
+    assert page.console_errors == []
+
+
+def _tab(page, view):
+    """Click a factor row's View on the site card (R33) and wait for the store and the key to show it."""
+    page.locator('#card .factor[data-factor="%s"] .view' % view).click()
+    page.wait_for_function("(v) => __map.store.get('view') === v && document.getElementById('view-key').dataset.view === v",
+                           arg=view, timeout=10000)
+
+
+def _key(page):
+    return page.locator("#view-key").text_content()
+
+
+def _view_options(page):
+    """Open the factor view's own panel (its layer and case choices, a chart), collapsed under the key."""
+    d = page.locator("#factors .view-more")
+    if not d.evaluate("(d) => d.open"):
+        d.locator(":scope > summary").click()
+
+
+def _key_has(page, text):
+    page.wait_for_function("(t) => document.getElementById('view-key').textContent.includes(t)", arg=text, timeout=30000)
+
+
+def test_factor_views_site(page, server_url):
+    _boot(page, server_url)
+    _start(page)
+    _enter(page, "gale")
+    _open_row(page, SITE)
     assert settle_tiles(page)
-    _shot(page, "view-terrain-region.png")
-    page.locator('#factors .seg[data-view="photo"]').click()
-    page.wait_for_function("(() => { const o = __map.globe.scene.getObjectByName('slope-patch:gale'); return !o || !o.visible; })()", timeout=10000)
+    for f in ("GI", "SC", "TC", "IR"):  # every factor row has its View now
+        assert page.locator('#card .factor[data-factor="%s"] .view' % f).count() == 1, f
+    p = page.evaluate(_TERRAIN_POINT_JS, SITE)
+    base = page.evaluate(_PIXEL_JS, [p["x"], p["y"]])
+    # Ground & ice: the GRS tint over the terrain, a Demo view, with the site's own bin in the key
+    _tab(page, "GI")
+    page.wait_for_function("__map.siteView.debug.look().overlay", timeout=30000)
+    k = _key(page)
+    assert "wt% H₂O" in k and "5.4 ± 0.4" in k and "Demo" in k and "SWIM" in k, k
+    page.wait_for_timeout(800)
+    assert page.evaluate(_PIXEL_JS, [p["x"], p["y"]]) != base  # the tint is drawn
+    _shot(page, "view-ground.png")
+    _view_options(page)
+    page.locator('#view-panel .choice[data-layer="ti"]').click()
+    page.wait_for_function("__map.view('GI').debug().layer === 'ti'", timeout=10000)
+    _key_has(page, "Thermal inertia")
+    # Solar: the worst-season noon sun with shadows, and the skyline chart
+    _tab(page, "SC")
+    page.wait_for_function("__map.siteView.debug.look().shadows", timeout=10000)
+    page.wait_for_function("__map.view('SC').debug().tilt", timeout=10000)  # the GI overlay went; the sun-on-ground tint is the Solar view's own
+    k = _key(page)
+    assert "worst-season noon sun" in k and "Demo" in k, k
+    assert page.locator("#view-panel svg.skyline path.sun").count() == 2
+    page.wait_for_timeout(1500)
+    _shot(page, "view-solar.png")
+    # Thermal: a THEMIS case over the terrain, a selector with the missing case marked
+    _tab(page, "TC")
+    assert page.evaluate("__map.siteView.debug.look().sunAt") is None  # the Solar sun went with its view
+    page.wait_for_function("__map.siteView.debug.look().overlay", timeout=30000)
+    cases = page.evaluate("[...document.querySelectorAll('#view-panel .choice')].map((b) => [b.dataset.case, b.disabled, b.textContent])")
+    assert [c[0] for c in cases] == ["dayAph", "dayPeri", "nightAph", "nightPeri"], cases
+    assert "Surface temperature" in _key(page), _key(page)
+    _view_options(page)
+    page.locator('#view-panel .choice[data-case="nightPeri"]').click()
+    page.wait_for_function("__map.view('TC').debug().caseKey === 'nightPeri'", timeout=10000)
+    _key_has(page, "night, perihelion")
+    page.wait_for_timeout(800)
+    _shot(page, "view-thermal.png")
+    # Routes: the cable to the base with its length, the rover's path and stops, the trip-area slope
+    _tab(page, "IR")
+    page.wait_for_function("__map.view('IR').debug().vectors >= 2", timeout=60000)
+    bt21 = page.evaluate("__map.results('%s').get('BT-21').display" % SITE)
+    k = _key(page)
+    assert ("Cable to the base (cyan): %s in a straight line" % bt21) in k and "Demo" in k, k
+    assert page.evaluate("__map.siteView.root.getObjectByName('cable') !== undefined")
+    page.wait_for_timeout(800)
+    _shot(page, "view-routes.png")
+    # the active tab again: back to the look, exactly as it was
+    page.locator('#card .factor[data-factor="IR"] .view').click()  # the row's View again: off
+    page.wait_for_function("__map.store.get('view') === null", timeout=10000)
+    page.wait_for_function("!__map.siteView.root.getObjectByName('cable')", timeout=10000)
+    page.wait_for_timeout(800)
+    again = page.evaluate(_PIXEL_JS, [p["x"], p["y"]])
+    assert max(abs(a - b) for a, b in zip(again, base)) <= 3, (base, again)
+    # References lists the demo parts
+    page.locator("#references-open").click()
+    demo = page.locator('#references [data-part="demo"]').inner_text()
+    assert "Ground & ice" in demo and "Routes" in demo and "Solar" in demo, demo
+    # R33: a factor with no orbital estimate here shows a seeded simulated one, chip and words, listed as a demo part
+    ir = page.locator('#card .factor[data-factor="IR"]')
+    assert ir.locator(".sim-chip").count() == 1 and ir.locator(".f-text").text_content().startswith("Simulated for the demo: ")
+    assert "Routes estimate" in demo, demo
+    icons = page.evaluate("[...document.querySelectorAll('#card .factor')].map((f) => f.dataset.icon)")
+    # R36, by availability: Terrain and Thermal each have an orbital estimate not computed yet (?), Ground & ice has no
+    # orbital estimate (simulated, chip), Solar's are all computed and met
+    assert [icons[0], icons[2], icons[3]] == ["?", "✓", "?"], icons
+    assert page.locator('#card .factor[data-factor="GI"] .sim-chip').count() == 1
+    assert "is not estimated yet" in page.locator('#card .factor[data-factor="BT"] .f-text').text_content()
+    assert "is not estimated yet" in page.locator('#card .factor[data-factor="TC"] .f-text').text_content()
+    page.locator("#references-close").click()
+    # the views never touch a status or the priority
+    before = page.evaluate("JSON.stringify([...__map.results('%s')].map(([k, r]) => [k, r.status]))" % SITE)
+    for v in ("GI", "SC", "TC", "IR"):
+        _tab(page, v)
+        page.wait_for_timeout(300)
+    after = page.evaluate("JSON.stringify([...__map.results('%s')].map(([k, r]) => [k, r.status]))" % SITE)
+    assert before == after
+    assert page.console_errors == []
+
+
+def _hover_rows(page, xy, factor):
+    """Hover a screen point and return the readout's row labels and text once the factor's probe has its data."""
+    page.mouse.move(xy["x"] + 3, xy["y"] + 3)
+    page.mouse.move(xy["x"], xy["y"])
+    page.wait_for_function("(f) => { const r = document.getElementById('readout'); return r && !r.hidden && r.dataset.factor === f; }",
+                           arg=factor, timeout=20000)
+    page.wait_for_timeout(1500)  # the probe's loads; hover again to read them
+    page.mouse.move(xy["x"] + 2, xy["y"])
+    page.mouse.move(xy["x"], xy["y"])
+    page.wait_for_timeout(400)
+    labels = page.evaluate("[...document.querySelectorAll('#readout dt')].map((d) => d.textContent)")
+    return labels, page.locator("#readout").inner_text()
+
+
+def test_factor_probe_rows(page, server_url):
+    """Each factor view's hover reads that factor's own data at the point, not the same terrain rows."""
+    _boot(page, server_url)
+    _start(page)
+    _enter(page, "gale")
+    _open_row(page, SITE)
+    assert settle_tiles(page)
+    c = page.evaluate("__map.siteView.debug.lonLatScreen(__map.siteView.frame.lon0, __map.siteView.frame.lat0)")
+    specific = {
+        "BT": {"On a dune field", "Buildable here"},
+        "GI": {"Geologic unit", "Nearest mineral find", "Thermal inertia", "Ground ice depth"},
+        "SC": {"Ground faces", "Worst-season noon sun", "Sun above skyline"},
+        "TC": {"Surface temperature", "Temperature case"},
+        "IR": {"To the base", "Grade from the base", "To Curiosity's path"},
+    }
+    seen = {}
+    for f in ("BT", "GI", "SC", "TC", "IR"):
+        _tab(page, f)
+        labels, text = _hover_rows(page, c, f)
+        seen[f] = labels
+        assert len(specific[f] & set(labels)) >= 2, (f, labels)
+        assert "Position" not in labels, labels  # the position is the small line under the title
+        assert not re.search(r"\b(BT|GI|SC|TC|IR)-\d\d\b", text), text  # no metric ids in visible text
+        if f == "GI":
+            assert "Simulated" in text, text  # the ice depth is labelled, never data
+        if f == "TC":
+            assert re.search(r"\d+ K", text) or "no data" in text, text
+            _shot(page, "probe-thermal.png")
+        if f == "SC":
+            _shot(page, "probe-solar.png")
+    assert len({tuple(v) for v in seen.values()}) == 5, seen
+    assert page.console_errors == []
+
+
+def test_factor_views_jezero(page, server_url):
+    _boot(page, server_url)
+    _start(page)
+    # Jezero: its own data, and needs confirmation (never Gale's) where it has none
+    _enter(page, "jezero")
+    _open_row(page, "jezero_north")
+    res = page.evaluate("Object.fromEntries([...__map.results('jezero_north')].filter(([k]) => ['BT-15', 'BT-16', 'GI-05', 'TC-01', 'SC-01'].includes(k)).map(([k, r]) => [k, [r.status, r.value]]))")
+    assert res["BT-15"][0] == "needs_confirmation" and res["BT-16"][0] == "needs_confirmation", res
+    assert res["GI-05"][1] != 5.415 and res["SC-01"][0] in ("met", "not_met"), res
+    ids = page.evaluate("Object.values(__map.env('jezero').ids)")
+    assert ids and all(i.endswith("__jezero") for i in ids), ids
+    _tab(page, "TC")
+    k = _key(page)
+    assert "Demo" in k and "1 of 4" in k, k
+    cases = page.evaluate("[...document.querySelectorAll('#view-panel .choice')].map((b) => [b.dataset.case, b.disabled])")
+    assert cases == [["dayAph", True], ["dayPeri", True], ["nightAph", False], ["nightPeri", True]], cases
+    assert "(missing)" in page.locator('#view-panel .choice[data-case="dayAph"]').text_content()
+    page.wait_for_function("__map.siteView.debug.look().overlay", timeout=30000)
+    _open_details(page, "BT")
+    assert "no dune fields mapped here" in page.locator('#card .line[data-metric="BT-15"]').text_content()
+    assert settle_tiles(page)
+    page.wait_for_timeout(1000)
+    _shot(page, "view-thermal-jezero.png")
+    page.locator("#view-hide").click()  # Hide factor view
+    page.wait_for_function("__map.store.get('view') === null && !__map.siteView.debug.look().overlay", timeout=10000)
+    # back in the region view: no factor overlays (R33)
+    page.locator("#card .back").click()
+    _wait_list(page, "jezero")
+    assert page.evaluate("!__map.globe.scene.children.some((o) => /^(patch|geology|rover|cables):/.test(o.name) && o.visible)")
     assert page.console_errors == []
 
 
@@ -1489,6 +1771,15 @@ def test_stepper_keeps_values(page, server_url):
     page.locator("#landing-start").click()
     page.locator("#brief").wait_for(state="visible", timeout=10000)
     page.locator("#brief-name").fill("North field utility trench")
+    # "Back to globe" (the guided-flow reference's link) returns to the landing; its action now continues the brief
+    assert page.locator("#home-link").text_content() == "Back to globe"
+    page.locator("#home-link").click()
+    page.wait_for_function("__map.store.get('stage') === 'landing'", timeout=10000)
+    assert page.locator("#home-link").count() == 0 and page.locator("#brief").is_hidden()
+    assert page.locator("#landing-start").text_content() == LANDING_CONTINUE
+    page.locator("#landing-start").click()
+    page.locator("#brief").wait_for(state="visible", timeout=10000)
+    assert page.locator("#brief-name").input_value() == "North field utility trench"
     _continue(page, 1)
     page.locator('#brief input[aria-label="Excavation total robots"]').fill("12")
     for tab in (2, 3):
@@ -1498,6 +1789,7 @@ def test_stepper_keeps_values(page, server_url):
     page.locator("#facility-assess").click()
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     assert page.locator("#panel .brief-line").text_content() == "North field utility trench · 22 robots"
+    assert page.locator("#home-link").count() == 0  # the globe is already here
     # step 1 from step 3: the brief as it was left, every value kept
     page.locator('#stepper [data-step="1"] button').click()
     page.wait_for_function("__map.store.get('stage') === 'brief'", timeout=10000)
@@ -1521,3 +1813,194 @@ def test_stepper_keeps_values(page, server_url):
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     assert page.locator("#panel .brief-line").text_content() == "North field utility trench · 22 robots"
     assert page.console_errors == []
+
+
+# ---------- the Diorama's plaque, callouts and profiles (Task 10) ----------
+
+_METRIC_ID = re.compile(r"\b(BT|GI|SC|TC|IR)-\d\d\b")
+_DIORAMA_JS = """() => {
+    const vis = (el) => !!el && !el.hidden && el.getClientRects().length > 0;
+    const plaque = document.getElementById('diorama-plaque'), prof = document.getElementById('diorama-profiles');
+    const callouts = [...document.querySelectorAll('#labels .callout')];
+    return {
+        plaque: vis(plaque) ? plaque.innerText : null,
+        profiles: vis(prof) ? prof.querySelectorAll('svg polyline').length : 0,
+        profileText: vis(prof) ? prof.innerText : '',
+        callouts: callouts.length,
+        shown: callouts.filter((c) => vis(c) && !c.classList.contains('culled')).map((c) => c.innerText),
+        where: callouts.map((c) => c.dataset.footprint),
+    };
+}"""
+
+
+def _diorama(page):
+    return page.evaluate(_DIORAMA_JS)
+
+
+def _wait_diorama(page, on):
+    page.wait_for_function(
+        "(on) => { const p = document.getElementById('diorama-plaque'); const n = document.querySelectorAll('#labels .callout').length;"
+        " return on ? (!!p && !p.hidden && n >= 3) : ((!p || p.hidden) && n === 0); }",
+        arg=on, timeout=20000)
+
+
+def test_diorama_plaque_callouts_profiles(page, server_url):
+    _boot(page, server_url)
+    _start(page)
+    _enter(page, "gale")
+    _open_row(page, SITE)
+    assert settle_tiles(page)
+    _wait_diorama(page, True)
+    page.wait_for_timeout(1500)  # the declutter pass runs on the frame loop
+    d = _diorama(page)
+    _shot(page, "diorama-extras.png")
+    name = page.locator("#card .card-head h2").text_content()
+    prio = page.locator("#card .prio-badge").text_content()
+    verdict = page.locator("#card .verdict").text_content()
+    assert name in d["plaque"] and prio in d["plaque"] and verdict in d["plaque"], (d["plaque"], name, prio, verdict)
+    assert sorted(d["where"]) == ["compound", "radiator", "solar"], d
+    assert len(d["shown"]) >= 2, d  # at 1280x800 the declutter may hide the third behind the profile panel
+    factor_names = ("Terrain", "Solar", "Thermal")
+    assert sum(any(f in t for t in d["shown"]) for f in factor_names) >= 2, d["shown"]
+    assert d["profiles"] == 2 and "West" in d["profileText"] and "South" in d["profileText"], d
+    visible = d["plaque"] + " ".join(d["shown"]) + d["profileText"]
+    assert not _METRIC_ID.search(visible), visible
+    for look in ("survey", "hud"):
+        page.locator('#factors .look[data-look="%s"]' % look).click()
+        page.wait_for_function("(l) => __map.siteView.debug.look().look === l", arg=look, timeout=10000)
+        _wait_diorama(page, False)
+        assert _diorama(page)["profiles"] == 0
+    page.locator('#factors .look[data-look="diorama"]').click()
+    _wait_diorama(page, True)
+    assert _diorama(page)["profiles"] == 2
+    page.locator("#card .back").click()
+    _wait_list(page, "gale")
+    _wait_diorama(page, False)
+    assert page.console_errors == []
+
+
+# ---------- end to end: the whole app, hooked up ----------
+
+E2E_FACTORS = ("BT", "GI", "SC", "TC", "IR")
+
+
+def _no_metric_ids(page, sel, where):
+    """No metric id in an element's visible text (closed <details> folded)."""
+    seen = page.evaluate(_VISIBLE_TEXT_JS, sel)
+    m = _METRIC_ID.search(seen)
+    assert not m, (where, seen[max(0, m.start() - 60):][:120])
+
+
+def _assert_card(page, site_id):
+    card = page.locator("#card")
+    assert card.get_attribute("data-site") == site_id
+    assert card.locator(".card-head h2").text_content().strip(), site_id
+    assert re.search(r"\d", card.locator(".prio-badge").text_content()), site_id
+    assert card.locator(".card-head .verdict").text_content().strip(), site_id
+    assert [f.get_attribute("data-factor") for f in card.locator(".factor").all()] == list(E2E_FACTORS), site_id
+    _no_metric_ids(page, "#card", site_id)
+    _no_metric_ids(page, "#panel", site_id)
+
+
+def test_e2e_full_flow(page, server_url):
+    """Landing to brief to facility to globe to region to every Gale site, its looks and factor views, then Jezero and
+    References: every step is wired to the next, with no console or page errors anywhere."""
+    t0 = time.time()
+    _boot(page, server_url)
+    # 1. landing -> the four brief tabs (Project, Robots, Operations, Review) -> facility -> Assess locations
+    page.locator("#landing-start").click()
+    page.locator("#brief").wait_for(state="visible", timeout=10000)
+    assert page.evaluate("__map.store.get('briefTab')") == 0
+    for tab in (1, 2, 3):
+        _continue(page, tab)
+    page.locator("#brief-next").click()
+    page.locator("#facility").wait_for(state="visible", timeout=10000)
+    page.locator("#facility-assess").click()
+    page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
+    page.locator("#panel").wait_for(state="visible", timeout=10000)
+    assert page.evaluate("__map.store.get('stage')") == "explore"
+
+    # 2. the globe's three region pins; Gale's candidate list with five factor icons per site, each with a tip
+    assert page.locator(".pin").count() == 3
+    for region, name in (("gale", "Gale"), ("jezero", "Jezero"), ("arcadia", "Arcadia")):
+        assert name in page.locator(".pin[data-region=%s]" % region).inner_text(), region
+    _enter(page, "gale")
+    rows = page.locator("#panel .site-row")
+    assert rows.count() == 3
+    gale_sites = [r.get_attribute("data-site") for r in rows.all()]
+    for i in range(3):
+        icons = rows.nth(i).locator(".icon")
+        assert icons.count() == 5, gale_sites[i]
+        tips = [icons.nth(j).get_attribute("data-tip") or "" for j in range(5)]
+        assert all(t.strip() for t in tips), (gale_sites[i], tips)
+
+    # 3. each Gale site in turn: the card's name, priority, verdict and five factor rows; no metric ids on screen
+    for i, site in enumerate(gale_sites):
+        if i:
+            page.locator("#card .back").click()
+            _wait_list(page, "gale")
+        _open_row(page, site)
+        _assert_card(page, site)
+        if i:
+            continue
+        # 4a. the first site: Diorama -> Survey sheet -> Helmet HUD -> Diorama; the plaque only in the Diorama
+        assert page.evaluate("__map.store.get('look')") == "diorama"
+        _wait_diorama(page, True)
+        for look in ("survey", "hud", "diorama"):
+            before = page.evaluate("__map.store.get('look')")
+            page.locator('#factors .look[data-look="%s"]' % look).click()
+            page.wait_for_function("(l) => __map.store.get('look') === l && __map.siteView.debug.look().look === l",
+                                   arg=look, timeout=10000)
+            assert page.evaluate("__map.store.get('look')") != before
+            _wait_diorama(page, look == "diorama")
+            page.wait_for_function("!__map.globe.flying()", timeout=20000)
+            _shot(page, "e2e-look-%s.png" % look)
+        # 4b. each factor row's View: the store's view, the readout's own rows at the site centre, then View off
+        c = page.evaluate("__map.siteView.debug.lonLatScreen(__map.siteView.frame.lon0, __map.siteView.frame.lat0)")
+        seen = {}
+        for f in E2E_FACTORS:
+            _tab(page, f)
+            assert page.evaluate("__map.store.get('view')") == f
+            labels, text = _hover_rows(page, c, f)
+            assert labels, (f, text)
+            assert not _METRIC_ID.search(text), (f, text)
+            seen[f] = tuple(labels)
+            page.locator('#card .factor[data-factor="%s"] .view' % f).click()
+            page.wait_for_function(
+                "(f) => __map.store.get('view') === null && document.getElementById('view-key').dataset.view !== f"
+                " && document.querySelector('#card .factor[data-factor=\"' + f + '\"] .view').getAttribute('aria-pressed') === 'false'",
+                arg=f, timeout=10000)
+        assert len(set(seen.values())) == 5, seen
+
+    # 5. back to the region list, back to the whole globe, then Jezero and its first site
+    page.locator("#card .back").click()
+    page.wait_for_function("__map.siteView === null && document.getElementById('card').children.length === 0", timeout=20000)
+    _wait_list(page, "gale")
+    for _ in range(12):  # zoom out until the panel lists the regions again
+        if page.locator("#panel .region-card").count() == 3:
+            break
+        page.locator("#globe-out").click()
+        page.wait_for_function("!__map.globe.flying()", timeout=20000)
+    page.locator('#panel .region-card[data-region="jezero"]').wait_for(state="visible", timeout=20000)
+    page.locator('#panel .region-card[data-region="jezero"]').click()
+    _wait_list(page, "jezero")
+    jrows = page.locator("#panel .site-row")
+    assert jrows.count() == 2
+    assert all(r.locator(".icon").count() == 5 for r in jrows.all())
+    first = jrows.first.get_attribute("data-site")
+    _open_row(page, first)
+    _assert_card(page, first)
+
+    # 6. References lists the datasets with links; Escape closes it
+    page.locator("#references-open").click()
+    page.locator('#references [data-part="all"]').wait_for(state="visible", timeout=10000)
+    assert page.locator('#references [data-part="all"] .ref').count() >= 10
+    hrefs = page.evaluate("[...document.querySelectorAll('#references [data-part=all] a[href]')].map((a) => a.href)")
+    assert len(hrefs) >= 10 and all(h.startswith("http") for h in hrefs), hrefs[:5]
+    page.keyboard.press("Escape")
+    page.locator('#references [data-part="all"]').wait_for(state="hidden", timeout=5000)
+    assert not page.evaluate("document.getElementById('references').open")
+
+    # 7. no console errors and no page errors anywhere on the way
+    assert page.console_errors == [], page.console_errors
+    print("e2e flow: %.1f s" % (time.time() - t0))

@@ -31,7 +31,7 @@ keeps the ARES header (wordmark left, base context right) and one working panel 
 map takes the rest. A three-step stepper under the header (Construction brief · Facility
 specifications · Location assessment) shows where the user is. This follows the teammate's
 construction-driven reframe: `docs/design-guidance.md` §7, `docs/construction-project-inputs.md`,
-and the "Guided brief" variant of `design-reference/mars-construction-intake.html`.
+and the "Guided brief" variant of `design-reference/mars-construction-twin-trails.html`.
 
 **Landing:** "Describe your construction project to explore locations for its supporting data
 center.", with one primary action that starts the brief. The globe is live behind it.
@@ -83,20 +83,21 @@ an area to see what needs checking.") holds the priority list. Each candidate ca
 priority, name and one reason to investigate it in plain words; selecting it shows its next check.
 The list updates live when a layout or a field record changes.
 
-**Three looks, five factor views.** The view control in the panel has two rows.
+**Three looks, five factor views.** The panel's only view control is the three looks. They are the
+universal ways to read a 3D model, taken from `design-reference/map-prototype/` and its
+screenshots. Each look is its own scene, with its own camera and background, and the globe fades
+while a site is open:
 
-- **Top row: three looks.** These are the universal ways to read a 3D model, taken from
-  `design-reference/map-prototype/`. They apply to the site terrain and its surround, and to the
-  lifted diorama.
-  - **Diorama:** the HiRISE photo tinted to Mars colour, solid sides and a soft shadow (today's view).
-  - **Survey sheet:** a light paper-toned shaded relief with 10 m contours, seen from a steeper camera.
-  - **Helmet HUD:** the true-grey photo with 5 m cyan contour lines, line-drawn sides and a grid
-    floor.
+- **Diorama:** the site lifted out as a terrain block, with solid brown sides, a soft shadow on a
+  dark plinth, the warm tinted photo and an oblique camera. This is the lift-out.
+- **Survey sheet:** a light paper scene, terrain coloured by the slope blue ramp with the 5° tick,
+  dark 10 m contours, light block sides and a steep, near top-down camera.
+- **Helmet HUD:** a dark scene with the dimmed true-grey photo, cyan 5 m contours, cyan line walls,
+  a grid floor and a low oblique camera.
 
-  The panels keep the ARES style in every look, and nothing glows. Footprints always use the
-  assessment colours.
-- **Second row: the five factor tabs.** All five are always shown. A tab lays its factor's data over
-  the current look; selecting it again turns it off.
+The panels keep the ARES style in every look, and nothing glows. Footprints always use the
+assessment colours. The five factors live only in the site card's vertical list. Each row's "View"
+lays that factor's data over the current look (site scale), and selecting it again turns it off.
 
 The five factors are the project plan's own:
 
@@ -108,7 +109,6 @@ The five factors are the project plan's own:
 | Thermal | Thermal conditions (TC) | THEMIS surface temperature (day/night, aphelion/perihelion) where it covers |
 | Routes | Investigation routes (IR) | The cable route to the base with its length, the rover's traverse and stops, trip-area slope |
 
-- The factor tabs work in the region view as well as the site view.
 - Each view has a one-line key in the panel saying what the colours mean and where the data comes
   from.
 - Where the data behind a view is thin, the view is labelled **Demo** and its key says what it rests
@@ -198,7 +198,12 @@ Placed footprints:
   Colour is never the only cue: each status also has its label and icon.
 - If a value's uncertainty straddles the threshold, the status is `needs fieldwork`.
 - **Factor icon** covers only metrics orbital data can settle at the site: ✗ if any is not met,
-  ? if any is unresolved, ✓ if all are met, — if none apply. Icons carry the factor's plain name
+  ? if any is unresolved, ✓ if all are met, — if none apply. Field-check metrics never make it ?;
+  they show as "N field checks to confirm". If a factor has no orbital estimate at a site, the
+  card shows a deterministic **simulated** estimate (✓/✗/?), with a "Simulated" chip and "Simulated
+  for the demo: …". Simulated values never change a status, the priority or the verdict, and the
+  References page lists them under Demo parts. A factor view with no data shows a simulated
+  overlay labelled "Simulated view: data not collected for this site". Icons carry the factor's plain name
   (Terrain, Ground & ice, Solar, Thermal, Routes), never a BT/GI/SC/TC/IR code. Counts of fieldwork
   and design items live in the factor's Details.
 - Thresholds are the teammate's baseline and ideal benchmarks, shown next to every value. Where a

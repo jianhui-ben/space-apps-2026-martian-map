@@ -1,20 +1,25 @@
-// The factor bar and its views (Task 9c): a segmented control under the header in the region and site views (Photo ·
-// Terrain · Ground & ice · Solar · Thermal · Routes), the registry the views join, and the current view's one-line key.
+// The view control (Task 9c; R32, then R33): the three looks (Diorama · Survey sheet · Helmet HUD) over the open site,
+// the registry the factor views join, the current view's one-line key, "Hide factor view" while one is on, and a place
+// under the key, in a closed "View options", for a view's own panel (a chart, a case selector). Factor views are switched by the site card's rows
+// ("View"); they are site-scale only (R33), so the control shows only with a site open.
 //
-// A view is {apply(ctx), clear(ctx), key(ctx) -> {text, source, missing}, datasets?(ctx) -> [dataset ids]}, with
-// ctx = {globe, siteView, site, regionId}. The bar applies the chosen view, and clears it again when the view or its
-// place (the open site, the region) changes. Views that aren't registered are not shown. This task registers the photo
-// view and Terrain; Task 12 calls registerView() for Ground & ice, Solar, Thermal and Routes, with no change here or in
-// the card (its rows show "View" for whatever is registered).
+// A view is {apply(ctx), clear(ctx), key(ctx) -> {text, source, missing, demo?}, datasets?(ctx) -> [dataset ids],
+// panel?(ctx) -> Node | null, probe?(lon, lat, ctx) -> {title?, rows} (the view's own data at a hovered point of the
+// open site, probes.js)}, with ctx = {globe, siteView, site, regionId}. The control applies the chosen view, and
+// clears it again when the view or the open site changes. A factor view lies over the current look. key().demo names
+// what a demo view rests on: the key then carries a "Demo" chip, and References lists it under "Demo parts". Demo and
+// simulated views never touch statuses.
 import * as THREE from 'three';
-import { FACTORS, factorSentence } from '../plain.js';
-import { ICON_WORDS, ICON_CLASS } from './list.js';
+import { FACTORS } from '../plain.js';
 import { datasetsInRegion } from '../catalog.js';
 import { SLOPE_CLASSES, SLOPE_MIX, slopeClass } from '../site.js';
+import { LOOKS, LOOK_ORDER } from '../looks.js';
+import { showSimulated, simulatedKey } from '../layers.js';
+import { setActiveProbe, terrainProbe } from '../probes.js';
 
-export const VIEW_ORDER = ['photo', 'BT', 'GI', 'SC', 'TC', 'IR'];
+export const VIEW_ORDER = ['BT', 'GI', 'SC', 'TC', 'IR'];
 const R = 3396190; // the Mars sphere the globe draws (globe.js)
-const VIEW_NAMES = { photo: 'Photo', ...Object.fromEntries(FACTORS.map((f) => [f.id, f.name])) };
+const VIEW_NAMES = Object.fromEntries(FACTORS.map((f) => [f.id, f.name]));
 
 export function createViewRegistry() {
   const views = new Map();
@@ -25,7 +30,7 @@ export function createViewRegistry() {
     },
     get: (id) => views.get(id) || null,
     has: (id) => views.has(id),
-    ids: () => VIEW_ORDER.filter((id) => views.has(id)), // the bar's order, whatever the order of registration
+    ids: () => VIEW_ORDER.filter((id) => views.has(id)),
   };
 }
 const registry = createViewRegistry();
@@ -39,56 +44,85 @@ const h = (tag, cls, text) => {
   if (text !== undefined && text !== null) e.textContent = text;
   return e;
 };
+const demoChip = () => h('span', 'demo-chip', 'Demo');
+const keyOf = (v, ctx) => { try { return v.key(ctx); } catch (e) { return { text: 'This view failed: needs confirmation', source: '', missing: true }; } };
 
-// el: the bar's container. onView(id) asks for a view (main.js sets the store's view key).
-export function createFactorBar(el, { registry: reg = registry, onView = () => {} } = {}) {
+// Every registered view's demo text at the open site, for References' "Demo parts": [{id, name, text}].
+export function demoParts(reg = registry, ctx = {}) {
+  const out = [];
+  if (!ctx.siteView) return out;
+  for (const id of reg.ids()) {
+    const k = keyOf(reg.get(id), ctx);
+    if (k && k.demo) out.push({ id, name: VIEW_NAMES[id], text: k.demo });
+  }
+  return out;
+}
+
+// el: the control's container. onView(id | null) asks for a factor view (null: none); onLook(id) for a look.
+// lookKey(look, ctx) is the key line when no factor view is on.
+export function createFactorBar(el, { registry: reg = registry, onView = () => {}, onLook = () => {}, lookKey = () => null } = {}) {
   el.classList.add('factor-bar');
-  const segs = h('div', 'segs');
-  segs.setAttribute('role', 'group');
-  segs.setAttribute('aria-label', 'Map view');
+  const looks = h('div', 'looks');
+  looks.setAttribute('role', 'group');
+  looks.setAttribute('aria-label', 'Look');
+  const lookButtons = new Map();
+  for (const id of LOOK_ORDER) {
+    const b = h('button', 'look', LOOKS[id].name);
+    b.type = 'button';
+    b.dataset.look = id;
+    b.addEventListener('click', () => onLook(id));
+    looks.append(b);
+    lookButtons.set(id, b);
+  }
+  // The key line: with no factor view on it is the look's long caption, shown at once on hover or focus of the
+  // active look (or the small i, which also pins it); with a factor view on it shows in place, as that view's legend.
   const key = h('p', 'view-key');
   key.id = 'view-key';
   key.setAttribute('aria-live', 'polite');
-  el.replaceChildren(segs, key);
-  let shownIds = null, active = null, keyShown = null;
-  const buttons = new Map();
+  const info = h('button', 'look-info');
+  info.append(h('span', 'i-dot', 'i'));
+  info.type = 'button';
+  info.setAttribute('aria-label', 'About this look');
+  info.setAttribute('aria-controls', 'view-key');
+  info.setAttribute('aria-expanded', 'false');
+  info.addEventListener('click', () => {
+    const pin = !key.classList.contains('pinned');
+    key.classList.toggle('pinned', pin);
+    info.setAttribute('aria-expanded', String(pin));
+  });
+  looks.append(info);
+  const hide = h('button', 'view-hide secondary', 'Hide factor view');
+  hide.type = 'button';
+  hide.id = 'view-hide';
+  hide.hidden = true;
+  hide.addEventListener('click', () => onView(null));
+  const panel = h('div', 'view-panel');
+  panel.id = 'view-panel';
+  const more = h('details', 'view-more'); // a view's own panel (layer and case choices, a chart), collapsed
+  more.append(h('summary', '', 'View options'), panel);
+  el.replaceChildren(looks, key, hide, more);
+  let active = null, keyShown = null, panelNode = null;
 
-  function build(ids) {
-    buttons.clear();
-    segs.replaceChildren();
-    for (const id of ids) {
-      const b = h('button', 'seg');
-      b.type = 'button';
-      b.dataset.view = id;
-      const icon = h('span', 'seg-icon');
-      icon.hidden = true;
-      b.append(icon, h('span', 'seg-name', VIEW_NAMES[id]));
-      b.addEventListener('click', () => onView(id));
-      segs.append(b);
-      buttons.set(id, { b, icon });
-    }
-    shownIds = ids.join('|');
-  }
-
-  // state: {show, view (the store's), ctx, results (the open site's, or null), metrics}
-  function render({ show, view, ctx, results = null, metrics = [] }) {
-    el.hidden = !show;
-    const ids = reg.ids();
-    if (ids.join('|') !== shownIds) build(ids);
-    // the view in force: the chosen one where the bar is shown and it is registered, else the photo view
-    const id = show && reg.has(view) ? view : reg.has('photo') ? 'photo' : null;
-    if (!active || active.id !== id || active.ctx.siteView !== ctx.siteView || active.ctx.regionId !== ctx.regionId) {
+  // state: {show, view (the store's: null or a factor id), look, ctx}
+  function render({ show, view = null, look = 'diorama', ctx }) {
+    const on = !!(show && ctx.siteView);
+    el.hidden = !on;
+    if (ctx.siteView && ctx.siteView.setLook) ctx.siteView.setLook(look);
+    for (const [id, b] of lookButtons) b.setAttribute('aria-pressed', String(id === look));
+    // the factor view in force: the chosen one with a site open, if registered; else none
+    const id = on && view && reg.has(view) ? view : null;
+    if (!active || active.id !== id || active.ctx.siteView !== ctx.siteView) {
       if (active && active.id && reg.has(active.id)) reg.get(active.id).clear(active.ctx);
       if (id) reg.get(id).apply(ctx);
       active = { id, ctx };
     } else active.ctx = ctx;
-    for (const [vid, { b, icon }] of buttons) {
-      b.setAttribute('aria-pressed', String(vid === id));
-      const f = vid !== 'photo' && ctx.siteView && results ? factorSentence(vid, results, metrics).icon : null;
-      icon.hidden = !f;
-      if (f) { icon.textContent = f; icon.className = 'seg-icon ' + ICON_CLASS[f]; b.setAttribute('aria-label', VIEW_NAMES[vid] + ': ' + ICON_WORDS[f]); } else b.removeAttribute('aria-label');
+    setActiveProbe(id && ctx.siteView && ctx.site ? { id, view: reg.get(id), ctx } : null);
+    hide.hidden = !id;
+    el.classList.toggle('view-on', !!id);
+    for (const [lid, b] of lookButtons) {
+      if (lid === look) b.setAttribute('aria-describedby', 'view-key'); else b.removeAttribute('aria-describedby');
     }
-    const k = id && show ? reg.get(id).key(ctx) : null;
+    const k = on ? (id ? keyOf(reg.get(id), ctx) : lookKey(look, ctx)) : null;
     const kk = JSON.stringify(k);
     if (kk !== keyShown) {
       keyShown = kk;
@@ -96,11 +130,17 @@ export function createFactorBar(el, { registry: reg = registry, onView = () => {
       key.dataset.view = id || '';
       key.classList.toggle('missing', !!(k && k.missing));
       if (k) {
+        if (k.demo) key.append(demoChip(), ' ');
         if (k.missing) key.append(h('span', 'st-icon k-unresolved', '?'), ' ');
         key.append(h('span', 'k-text', k.text));
         if (k.source) key.append(' ', h('span', 'k-source', k.source));
+        if (k.demo) key.append(' ', h('span', 'k-demo', 'Demo: ' + k.demo + '.'));
       }
     }
+    const node = id && reg.get(id).panel ? reg.get(id).panel(ctx) : null;
+    if (node !== panelNode) { panelNode = node; panel.replaceChildren(...(node ? [node] : [])); }
+    panel.hidden = !node;
+    more.hidden = !node;
   }
   return { render, active: () => (active ? active.id : null) };
 }
@@ -111,7 +151,7 @@ export function viewDatasets(id, ctx) {
   return v && v.datasets ? v.datasets(ctx) : [];
 }
 
-// ---------- the photo view: the map as it is drawn, with its key ----------
+// ---------- the looks' key: the map as it is drawn ----------
 
 const metres = (v) => Math.round(v).toLocaleString('en-US').replace('-', '−') + ' m';
 const intersects = (a, b) => a && b && a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
@@ -134,27 +174,33 @@ export function rampRange(view) {
   return out;
 }
 
-export function photoView({ catalog }) {
+// The key line with no factor view on: the look's (a site) or the globe's photo (the region view).
+export function lookKey({ catalog }) {
   const ctxBox = catalog.byId.get('imagery_ctx'), ctxBounds = ctxBox && ctxBox.coverage && ctxBox.coverage.bounds;
   const TREK = 'From NASA Mars Trek.';
-  return {
-    apply() {}, clear() {}, // the map as drawn
-    key({ siteView, regionId }) {
-      if (siteView) {
-        const range = rampRange(siteView), k = siteView.root.scale.y;
-        if (siteView.debug.drape().mode === 'hirise') {
-          return { text: 'Photo: HiRISE (tinted) on the 1 m elevation model, heights ×' + k + '; any gaps are coloured by elevation.', source: TREK, missing: false };
-        }
-        const span = range ? 'dark (' + metres(range.lo) + ') to light (' + metres(range.hi) + ')' : 'dark low to light high';
-        return { text: 'Coloured by elevation, ' + span + ': no HiRISE photo covers this site. Heights ×' + k + '.',
+  return (look, { siteView, regionId }) => {
+    if (siteView) {
+      const range = rampRange(siteView), k = siteView.root.scale.y, hirise = siteView.debug.drape().mode === 'hirise';
+      const span = range ? 'dark (' + metres(range.lo) + ') to light (' + metres(range.hi) + ')' : 'dark low to light high';
+      if (look === 'survey') {
+        return { text: 'Survey sheet: slope, light blue flat to dark blue 30° and steeper (the build limit is 5°), dark contours every 10 m (heavier every 50 m). Heights ×' + k + '.',
           source: 'From the 1 m HiRISE elevation model (derived).', missing: false };
       }
-      const region = catalog.regions.find((r) => r.id === regionId);
-      if (region && intersects(ctxBounds, region.bounds)) {
-        return { text: 'Photo: CTX and HiRISE (tinted) over the Viking mosaic, graded warmer for display.', source: TREK, missing: false };
+      if (look === 'hud') {
+        return { text: (hirise ? 'Helmet HUD: the HiRISE photo in true grey, dimmed' : 'Helmet HUD: grey by elevation, ' + span + ' (no HiRISE photo here)')
+          + ', cyan contours every 5 m, line-drawn sides. Heights ×' + k + '.', source: hirise ? TREK : 'From the 1 m HiRISE elevation model (derived).', missing: false };
       }
-      return { text: 'Photo: the Viking mosaic, graded warmer for display; no CTX or HiRISE here.', source: TREK, missing: false };
-    },
+      if (hirise) {
+        return { text: 'Photo: HiRISE (tinted) on the 1 m elevation model, heights ×' + k + '; any gaps are coloured by elevation.', source: TREK, missing: false };
+      }
+      return { text: 'Coloured by elevation, ' + span + ': no HiRISE photo covers this site. Heights ×' + k + '.',
+        source: 'From the 1 m HiRISE elevation model (derived).', missing: false };
+    }
+    const region = catalog.regions.find((r) => r.id === regionId);
+    if (region && intersects(ctxBounds, region.bounds)) {
+      return { text: 'Photo: CTX and HiRISE (tinted) over the Viking mosaic, graded warmer for display.', source: TREK, missing: false };
+    }
+    return { text: 'Photo: the Viking mosaic, graded warmer for display; no CTX or HiRISE here.', source: TREK, missing: false };
   };
 }
 
@@ -261,17 +307,18 @@ export function terrainView({ catalog, onChange = () => {} }) {
   }
   return {
     apply(ctx) {
-      if (ctx.siteView) ctx.siteView.setSlopeColouring(true); // the site's own 10 m window slope; the patch stays off
+      if (ctx.siteView && ctx.site && ctx.site.grids && ctx.site.grids.slope10) ctx.siteView.setSlopeColouring(true); // the site's own 10 m window slope
+      else if (ctx.siteView) showSimulated(ctx, 'BT'); // no slope grid here: a simulated field, labelled so
       else if (ctx.regionId) showPatch(ctx.globe, ctx.regionId, true);
     },
     clear(ctx) {
-      if (ctx.siteView) ctx.siteView.setSlopeColouring(false);
+      if (ctx.siteView) { ctx.siteView.setSlopeColouring(false); ctx.siteView.setOverlay(null); }
       if (ctx.regionId) showPatch(ctx.globe, ctx.regionId, false);
     },
     key(ctx) {
       if (ctx.siteView) {
         const g = ctx.site && ctx.site.grids && ctx.site.grids.slope10, entry = g && catalog.byId.get(g.datasetId);
-        return entry ? slopeKey(entry) : MISSING_SLOPE;
+        return entry ? slopeKey(entry) : simulatedKey('slope');
       }
       const entry = ctx.regionId && studyOf(ctx.regionId);
       if (!entry) return MISSING_SLOPE;
@@ -279,6 +326,7 @@ export function terrainView({ catalog, onChange = () => {} }) {
       if (p && p.state === 'failed') return { text: 'The slope data failed to load here: needs confirmation', source: '', missing: true };
       return slopeKey(entry);
     },
+    probe: terrainProbe(catalog),
     datasets(ctx) {
       if (ctx.siteView) { const g = ctx.site && ctx.site.grids && ctx.site.grids.slope10; return g ? [g.datasetId] : []; }
       const entry = ctx.regionId && studyOf(ctx.regionId);

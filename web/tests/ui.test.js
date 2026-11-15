@@ -1,14 +1,15 @@
 // Pure parts of the construction brief, priority list, site card, chips, references and the factor bar (Tasks 9-9d).
 import { STATUS, initialStatuses, mergeResults } from '../src/status.js';
-import { regionInView, cameraTarget, factorCells, shortName, nextCheck } from '../src/ui/list.js';
+import { regionInView, cameraTarget, factorCells, iconEl, shortName, nextCheck } from '../src/ui/list.js';
 import { cardModel, createCard, statusLabel, footprintStatus } from '../src/ui/card.js';
 import { resultChips, alignmentCaveat } from '../src/ui/chips.js';
 import { facilityLine, FACILITY_LABEL } from '../src/ui/landing.js';
 import { qtext, quantityError, ERRORS, fleetTotal, activeTotal, briefLine, summaryRows, reviewRows, stillToConfirm,
   stillToConfirmText, tabError, REVIEW_FACTORS, createBrief, SOL_HOURS } from '../src/ui/brief.js';
-import { referencesFor } from '../src/ui/references.js';
-import { FACTORS, PLAIN, plainVerdict, factorSentence, plainWhy } from '../src/plain.js';
-import { createViewRegistry, createFactorBar, slopeFromLegend } from '../src/ui/factors.js';
+import { referencesFor, createReferences } from '../src/ui/references.js';
+import { FACTORS, PLAIN, plainVerdict, factorSentence, plainWhy, simulatedEstimate } from '../src/plain.js';
+import { createViewRegistry, createFactorBar, slopeFromLegend, demoParts } from '../src/ui/factors.js';
+import { simulatedTexture, simulatedKey, SIMULATED_TEXT } from '../src/layers.js';
 import { slopeClass } from '../src/site.js';
 import { placeCard } from '../src/ui/pins.js';
 import { FIXED_SETUP, DEFAULT_BRIEF, defaultBrief } from '../src/state.js';
@@ -44,15 +45,38 @@ test('ui factorCells: five factors in order, with the icon and the fieldwork and
   const res = initialStatuses(metrics, TOPUP);
   const cells = factorCells(res, metrics);
   assertEq(cells.map((c) => c.factor), ['BT', 'GI', 'SC', 'TC', 'IR']);
-  // no GI metric is an estimate today, but its field checks are open: unresolved, never "none apply" (Task 9c)
+  // nothing computed yet and no site to seed a simulation: unresolved, never "none apply" and never fine
   assertEq(cells.find((c) => c.factor === 'GI').icon, '?');
-  assertEq(cells.find((c) => c.factor === 'BT').icon, '?'); // estimates not computed are unresolved, never fine
+  assertEq(cells.find((c) => c.factor === 'BT').icon, '?');
+  // before any check has run, a site's factors read "?", not simulated (R36)
+  assert(factorCells(res, metrics, 'near_base_north').every((c) => c.icon === '?' && !c.simulated), 'simulated before results');
+  // once results exist: a factor with no computed orbital estimate is simulated, and marked so; Terrain has one
+  const some = new Map(res).set('BT-04', computed('BT-04', { value: 0.4, display: '0.4°' }));
+  const simCells = factorCells(some, metrics, 'near_base_north');
+  const simulated = simCells.filter((c) => c.factor !== 'BT');
+  assert(simulated.every((c) => c.simulated && /simulated/.test(c.title)), JSON.stringify(simCells.map((c) => c.title)));
+  assertEq(simCells.find((c) => c.factor === 'BT').simulated, false);
   const gi = cells.find((c) => c.factor === 'GI');
   assert(/^Ground & ice: /.test(gi.title), gi.title); // the plain name, never the code
   assert(gi.fieldwork > 0 && gi.design > 0, JSON.stringify(gi));
   assert(/fieldwork/.test(gi.title) && /design/.test(gi.title), gi.title);
   const sc = factorCells(initialStatuses(metrics, { loadKw: 150, power: 'base_only' }), metrics).find((c) => c.factor === 'SC');
   assertEq([sc.icon, sc.fieldwork, sc.design], ['—', 0, 0]);
+  // each icon is a named image for screen readers (an aria-label on a bare span is not read)
+  const el = iconEl(gi);
+  assertEq([el.getAttribute('role'), el.getAttribute('aria-label')], ['img', 'Ground & ice: unresolved']);
+  // R37: a shape per status, not colour alone; an instant tooltip from factorSentence (no native title); a simulated
+  // icon is a dashed hollow ring, still marked "sim"
+  assertEq(el.querySelector('svg.st-svg').dataset.shape, '?');
+  assert(el.querySelector('svg .dot') && !el.hasAttribute('title') && !el.querySelector('[tabindex]'), el.outerHTML);
+  assertEq(el.dataset.tip, 'Ground & ice — ' + factorSentence('GI', res, metrics).text);
+  const shapes = ['✓', '✗', '?', '—'].map((i) => iconEl({ ...gi, icon: i }).querySelector('svg'));
+  assertEq(shapes.map((v) => [v.dataset.shape, v.querySelectorAll('circle.ring').length]), [['✓', 1], ['✗', 1], ['?', 1], ['—', 0]]);
+  assertEq(new Set(shapes.map((v) => v.querySelector('path').getAttribute('d'))).size, 4);
+  const simEl = iconEl(simulated[0]);
+  assert(simEl.querySelector('svg').classList.contains('sim') && simEl.querySelector('.sim-mark'), simEl.outerHTML);
+  assertEq(simEl.dataset.tip, simulated[0].name + ' — simulated for the demo, not a real result');
+  assert(!iconEl(simCells.find((c) => c.factor === 'BT')).querySelector('svg').classList.contains('sim'), 'a real result is not dashed');
 });
 
 test('ui shortName drops the bracketed description', () => {
@@ -392,6 +416,25 @@ test('nextCheck: the first critical unknown and what settles it', () => {
 });
 
 // ---- references (Task 9c: the credits' helper moved into ui/references.js) ----
+test('References: Escape closes it only while open and focus is in it, never from a focused layout', () => {
+  const host = document.createElement('div'), outside = document.createElement('button');
+  document.body.append(host, outside);
+  try {
+    createReferences(host, { raw: { references: {} }, byId: new Map() }, { onScreen: () => [] });
+    const d = host.querySelector('#references');
+    const esc = () => dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    esc(); // closed: nothing to do
+    assertEq(d.open, false);
+    d.open = true;
+    outside.focus(); // focus elsewhere (the facility layout): its own Escape deselects; References stays open
+    esc();
+    assertEq(d.open, true);
+    host.querySelector('#references-close').focus();
+    esc();
+    assertEq(d.open, false);
+  } finally { host.remove(); outside.remove(); }
+});
+
 test('ui credits: references of the given datasets, each once, in order', () => {
   const catalog = {
     byId: new Map([['a', { id: 'a', references: ['r1', 'r2'] }], ['b', { id: 'b', references: ['r2', 'r3', 'nope'] }]]),
@@ -504,7 +547,13 @@ test('plainVerdict for failing, unresolved and clean sites', () => {
     ['BT-02', "the layout doesn't fit on usable ground"], ['SC-10', "the solar plot doesn't fit on usable ground"],
     ['TC-08', "the radiator plot doesn't fit on usable ground"], ['BT-01', 'not enough connected flat ground'],
     ['BT-21', 'the cable route to the base is too long'],
+    // Task 12's environment metrics, after the terrain ones
+    ['BT-15', 'too close to a dune field'], ['BT-16', 'in the path of moving sand'], ['GI-05', 'possible ground ice under the compound'],
+    ['SC-01', 'the skyline blocks too much sun'], ['SC-03', 'not enough solar energy on average'],
+    ['SC-04', 'not enough solar energy in the worst season'], ['TC-01', 'temperature cases not covered'],
   ]);
+  assertEq(plainVerdict({ failures: ['SC-03', 'BT-05'], criticalUnknowns: [] }, new Map(), metrics),
+    'Not recommended: too steep in places under the compound and not enough solar energy on average');
   const v = (failures, criticalUnknowns = []) => plainVerdict({ failures, criticalUnknowns }, new Map(), metrics);
   assertEq(v(['BT-01', 'BT-02', 'BT-05', 'BT-08', 'SC-10', 'TC-08']),
     'Not recommended: too steep in places under the compound and too rough under the layout, and 4 more');
@@ -512,21 +561,33 @@ test('plainVerdict for failing, unresolved and clean sites', () => {
   assertEq(v(['BT-21', 'BT-02']), "Not recommended: the layout doesn't fit on usable ground and the cable route to the base is too long");
   assertEq(v(['SC-10']), "Not recommended: the solar plot doesn't fit on usable ground");
   assertEq(v(['GI-01']), 'Not recommended: bearing-capacity adequacy'); // no phrase yet: the metric's name, lowercased
-  assertEq(v([], ['BT-08', 'BT-10', 'GI-01', 'SC-05']), 'No failures; 3 factors still need field checks');
-  assertEq(v([], ['GI-01']), 'No failures; 1 factor still needs field checks');
+  assertEq(v([], ['BT-08', 'BT-10', 'GI-01', 'SC-05']), 'No failures from orbit; field checks open in 3 factors');
+  assertEq(v([], ['GI-01']), 'No failures from orbit; field checks open in 1 factor');
   assertEq(v([]), 'No failures found from orbit');
+  // missing data never reads as fine (triage MUST-FIX): needs_confirmation counts as unresolved, row or not
+  const nc = new Map([['SC-03', computed('SC-03', { status: STATUS.NEEDS_CONFIRMATION, note: 'data failed to load' })]]);
+  assertEq(plainVerdict({ failures: [], criticalUnknowns: [] }, nc, metrics), 'No failures from orbit; data missing in 1 factor');
+  assertEq(plainVerdict(null, nc, metrics), 'No failures from orbit; data missing in 1 factor');
+  assertEq(plainVerdict({ failures: [], criticalUnknowns: ['GI-01', 'SC-05'] }, nc, metrics), 'No failures from orbit; data missing or field checks open in 2 factors');
+  assertEq(plainVerdict(null, initialStatuses(metrics, TOPUP), metrics).startsWith('No failures from orbit; data missing'), true); // nothing computed yet
   // before the region is ranked, the site's own Results say the same
   const res = new Map([['BT-05', computed('BT-05', { status: STATUS.NOT_MET })], ['GI-01', computed('GI-01', { status: STATUS.NEEDS_FIELDWORK })]]);
   assertEq(plainVerdict(null, res, metrics), 'Not recommended: too steep in places under the compound');
   for (const t of [v(['BT-01', 'BT-02', 'BT-05']), v([], ['GI-01'])]) assert(!ID_RE.test(t), t);
 });
 
-test('factorSentence per status', () => {
+test('factorSentence per status (R33, R36: the icon from orbital estimates by availability, field checks counted)', () => {
   const base = initialStatuses(metrics, TOPUP);
-  const orbital = (f) => metrics.filter((m) => m.factor === f && m.availability === 'estimate_today').map((m) => m.id);
+  const computedBT = ['BT-01', 'BT-02', 'BT-04', 'BT-05', 'BT-06', 'BT-21']; // what checks.js computes
   const met = new Map(base);
-  for (const id of orbital('BT')) met.set(id, computed(id, { value: 1, display: '1' }));
-  assertEq(factorSentence('BT', met, metrics), { icon: '✓', text: 'meets the screening criteria' });
+  for (const id of computedBT) met.set(id, computed(id, { value: 1, display: '1' }));
+  // R36: an estimate not computed yet (BT-13, BT-17, BT-18, BT-19) keeps the icon at ?, named; the rest still needing
+  // data and the open field checks are counted, so the sentence never reads as fine
+  assertEq(factorSentence('BT', met, metrics),
+    { icon: '?', text: 'not settled from orbit: residual clearance margin is not estimated yet · 11 field checks to confirm · 3 still need data' });
+  const allMet = new Map(met);
+  for (const id of ['BT-13', 'BT-17', 'BT-18', 'BT-19']) allMet.set(id, computed(id, { value: 1, display: '1' }));
+  assertEq(factorSentence('BT', allMet, metrics), { icon: '✓', text: 'meets the screening criteria from orbit · 11 field checks to confirm' });
   const bad = new Map(met);
   bad.set('BT-05', computed('BT-05', { value: 14.2, status: STATUS.NOT_MET }));
   bad.set('BT-02', computed('BT-02', { value: 66, status: STATUS.NOT_MET }));
@@ -537,17 +598,32 @@ test('factorSentence per status', () => {
   // a field result that fails counts too, whatever the metric's availability
   const gi = new Map(base).set('GI-01', computed('GI-01', { status: STATUS.NOT_MET, evidence: 'observation' }));
   assertEq(factorSentence('GI', gi, metrics), { icon: '✗', text: 'bearing-capacity adequacy' });
-  // unresolved: what settles it, counted, first one named
-  assertEq(factorSentence('GI', base, metrics), { icon: '?', text: 'not settled from orbit: 9 field checks, starting with bearing-capacity adequacy' });
-  assertEq(factorSentence('BT', base, metrics), { icon: '?', text: 'not settled from orbit: 11 field checks, starting with required spatial connections' });
-  const one = new Map(base);
-  for (const id of ['TC-01', 'TC-06', 'TC-10']) one.set(id, computed(id, { status: STATUS.MET }));
-  assertEq(factorSentence('TC', one, metrics).text, 'not settled from orbit: 1 field check, starting with model validation utilization');
-  const data = new Map(base); // IR's field checks done, its one orbital estimate not computed yet
-  for (const id of ['IR-03', 'IR-12', 'IR-14']) data.set(id, computed(id, { status: STATUS.MET }));
-  assertEq(factorSentence('IR', data, metrics), { icon: '?', text: 'not settled from orbit: estimates still need data' });
+  // an estimate with no data reads ?, named; a field check (needs fieldwork, no straddle) never makes it ?
+  const nc = new Map(met).set('SC-01', computed('SC-01', { status: STATUS.NEEDS_CONFIRMATION, evidence: 'model' }));
+  assertEq(factorSentence('SC', nc, metrics).icon, '?');
+  assert(/^not settled from orbit: terrain-shading energy loss needs data/.test(factorSentence('SC', nc, metrics).text), factorSentence('SC', nc, metrics).text);
+  const tc = new Map(base).set('TC-08', computed('TC-08')).set('TC-01', computed('TC-01', { status: STATUS.NEEDS_FIELDWORK, evidence: 'observation' }));
+  // R36 regression: TC-07 not computed, so Thermal can't read ✓ (it did, keyed on evidence)
+  assertEq(factorSentence('TC', tc, metrics, { siteId: 'near_base_north' }),
+    { icon: '?', text: 'not settled from orbit: adverse-environment rejection penalty is not estimated yet · 4 field checks to confirm' });
+  tc.set('TC-07', computed('TC-07'));
+  assertEq(factorSentence('TC', tc, metrics).icon, '✓'); // every orbital estimate computed and met
+  const straddle = new Map(met).set('BT-05', computed('BT-05', { status: STATUS.NEEDS_FIELDWORK, straddles: true }));
+  assertEq(factorSentence('BT', straddle, metrics).icon, '?'); // an estimate straddling its target can't be settled from orbit
+  // no computed orbital estimate here (R36: IR-10 not computed): a simulated one once results exist, seeded by site and
+  // factor, the same every time, and saying so; before any result, ? rather than simulated
+  assertEq(factorSentence('IR', base, metrics, { siteId: 'near_base_north' }).simulated, undefined);
+  assertEq(factorSentence('IR', base, metrics, { siteId: 'near_base_north' }).icon, '?');
+  const sim = factorSentence('IR', met, metrics, { siteId: 'near_base_north' });
+  assertEq(sim, factorSentence('IR', met, metrics, { siteId: 'near_base_north' }));
+  assert(/ · 1 still needs data$/.test(sim.text), sim.text); // IR-10 is still missing, and says so
+  assert(sim.simulated && ['✓', '?', '✗'].includes(sim.icon) && /^Simulated for the demo: /.test(sim.text), JSON.stringify(sim));
+  assertEq(simulatedEstimate('near_base_north', 'IR'), simulatedEstimate('near_base_north', 'IR'));
+  const icons = new Set(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'].map((s) => simulatedEstimate(s, 'IR').icon));
+  assert(icons.size >= 2, 'different sites get different simulated results');
+  assertEq(factorSentence('IR', base, metrics).icon, '?'); // without a site: unresolved, never fine
   // nothing applies: no solar plot under base power only
-  assertEq(factorSentence('SC', initialStatuses(metrics, { loadKw: 150, power: 'base_only' }), metrics), { icon: '—', text: 'not applicable here' });
+  assertEq(factorSentence('SC', initialStatuses(metrics, { loadKw: 150, power: 'base_only' }), metrics, { siteId: 's' }), { icon: '—', text: 'not applicable here' });
 });
 
 test('plainWhy says which step placed the site, in plain words', () => {
@@ -605,51 +681,64 @@ test('no factor codes outside Details', () => {
     createCard(el, { onBack() {} }).render(m, { regionName: 'Region R', setup: TOPUP, metrics, problems: [{ kind: 'data_failed', message: 'BT-08 at s1: no dataset in the catalog' }] });
     const seen = visibleText(el), hit = seen.match(new RegExp('.{0,60}' + ID_RE.source + '.{0,20}'));
     assert(!hit, 'visible text has a metric id: ' + (hit && hit[0]));
-    assert(/Terrain/.test(seen) && /Why this priority/.test(seen) && /Next check/.test(seen), seen);
+    assert(/Terrain/.test(seen) && /About this site/.test(seen) && /Next check/.test(seen), seen); // the rest is collapsed
+    assert(/Why this priority/.test(el.textContent), 'Why this priority, inside About this site');
     for (const d of el.querySelectorAll('details')) d.open = true; // expert detail on demand: the ids are there
     assert(/BT-04/.test(visibleText(el)) && /GI-01/.test(visibleText(el)), 'Details list the metric ids');
   }
-  assertEq(clean.verdict, 'No failures; 2 factors still need field checks');
+  assertEq(clean.verdict, 'No failures from orbit; data missing or field checks open in 5 factors'); // most estimates have no data here
   assertEq(clean.why.plain, 'No rule separates it from Site two; the trade-off: less grading, longer cable.');
   assert(/same priority as s2/.test(clean.why.text), 'the technical text stays for the Details');
 });
 
-test('registerView: unregistered views are not in the bar', () => {
+test('view control: the three looks only; factor views from the card, site-scale, with Hide (R33)', () => {
   const reg = createViewRegistry();
   const calls = [];
-  const view = (id, key) => ({ apply: (ctx) => calls.push('apply ' + id + ' ' + ctx.regionId), clear: () => calls.push('clear ' + id), key: () => key });
+  const view = (id, key) => ({ apply: (ctx) => calls.push('apply ' + id), clear: () => calls.push('clear ' + id), key: () => key });
+  assert(!(() => { try { reg.register('photo', view('photo', {})); return true; } catch (e) { return false; } })(), 'photo is a look now, not a view');
   reg.register('BT', view('BT', { text: 'Slope key.', source: 'From a grid (derived).', missing: false }));
-  reg.register('photo', view('photo', { text: 'Photo key.', source: '', missing: false }));
+  reg.register('GI', view('GI', { text: 'Water tint.', source: 'From Odyssey GRS (derived).', missing: false, demo: 'cells about 300 km across' }));
   const el = document.createElement('nav');
-  const asked = [];
-  const bar = createFactorBar(el, { registry: reg, onView: (id) => asked.push(id) });
-  const ctx = { globe: null, siteView: null, site: null, regionId: 'gale' };
-  const segs = () => [...el.querySelectorAll('.seg')].map((b) => [b.dataset.view, b.querySelector('.seg-name').textContent, b.getAttribute('aria-pressed')]);
-  bar.render({ show: true, view: 'photo', ctx, results: null, metrics });
-  assertEq(segs(), [['photo', 'Photo', 'true'], ['BT', 'Terrain', 'false']]); // only what is registered, in the bar's order
-  assertEq(el.querySelector('.view-key').textContent, 'Photo key.');
-  assertEq(calls, ['apply photo gale']);
-  el.querySelector('.seg[data-view="BT"]').click();
-  assertEq(asked, ['BT']);
-  bar.render({ show: true, view: 'BT', ctx, results: null, metrics });
-  assertEq(calls, ['apply photo gale', 'clear photo', 'apply BT gale']);
+  const asked = [], looked = [], applied = [];
+  const bar = createFactorBar(el, { registry: reg, onView: (id) => asked.push(id), onLook: (id) => looked.push(id),
+    lookKey: (look) => ({ text: 'Look ' + look + '.', source: '', missing: false }) });
+  const looks = () => [...el.querySelectorAll('.look')].map((b) => [b.dataset.look, b.textContent, b.getAttribute('aria-pressed')]);
+  const region = { globe: null, siteView: null, site: null, regionId: 'gale' };
+  const site = { ...region, siteView: { setLook: (l) => applied.push(l) }, site: {} };
+  // the region view: no control and no factor overlay
+  bar.render({ show: true, view: 'BT', look: 'diorama', ctx: region });
+  assert(el.hidden, 'nothing in the region view');
+  assertEq(calls, []);
+  assertEq(el.querySelectorAll('.seg').length, 0); // no factor tabs any more
+  // a site open: the three looks, the look's key
+  bar.render({ show: true, view: null, look: 'survey', ctx: site });
+  assert(!el.hidden, 'shown with a site open');
+  assertEq(looks(), [['diorama', 'Diorama', 'false'], ['survey', 'Survey sheet', 'true'], ['hud', 'Helmet HUD', 'false']]);
+  assertEq(applied, ['survey']);
+  assertEq(el.querySelector('.view-key').textContent, 'Look survey.');
+  assert(el.querySelector('#view-hide').hidden, 'no Hide without a factor view');
+  el.querySelector('.look[data-look="hud"]').click();
+  assertEq(looked, ['hud']);
+  // a factor view (asked for by the card): applied over the look, its key, Hide shown
+  bar.render({ show: true, view: 'BT', look: 'survey', ctx: site });
+  assertEq(calls, ['apply BT']);
+  assertEq(bar.active(), 'BT');
   assertEq(el.querySelector('.view-key').textContent, 'Slope key. From a grid (derived).');
-  bar.render({ show: true, view: 'BT', ctx: { ...ctx }, results: null, metrics }); // the same view and place: nothing re-applied
-  assertEq(calls.length, 3);
-  bar.render({ show: true, view: 'SC', ctx, results: null, metrics }); // not registered: the photo view
-  assertEq(segs().map((x) => x[2]), ['true', 'false']);
-  assertEq(calls.slice(3), ['clear BT', 'apply photo gale']);
-  // Task 12 registers a view: it takes its place in the bar, with nothing else changed
-  reg.register('GI', view('GI', { text: 'No ground-ice data here: needs confirmation', source: '', missing: true }));
-  bar.render({ show: true, view: 'GI', ctx: { ...ctx, siteView: {}, site: {} }, results: initialStatuses(metrics, TOPUP), metrics });
-  assertEq(segs().map((x) => x[0] + ':' + x[2]), ['photo:false', 'BT:false', 'GI:true']);
-  assert(el.querySelector('.view-key').classList.contains('missing'), 'no data reads as missing, never as fine');
-  // with a site open each factor segment carries its icon, so a failing or unresolved factor shows at a glance
-  assertEq([...el.querySelectorAll('.seg')].map((b) => (b.querySelector('.seg-icon') || {}).textContent || ''), ['', '?', '?']);
-  assert(/Terrain: unresolved/.test(el.querySelector('.seg[data-view="BT"]').getAttribute('aria-label')), 'the icon has words');
-  bar.render({ show: false, view: 'GI', ctx, results: null, metrics }); // the whole globe: no bar, the photo view
-  assert(el.hidden, 'hidden off the region and site views');
-  assertEq(calls.slice(-2), ['clear GI', 'apply photo gale']);
+  assert(!el.querySelector('#view-hide').hidden, 'Hide factor view shows while one is on');
+  el.querySelector('#view-hide').click();
+  assertEq(asked, [null]);
+  bar.render({ show: true, view: 'BT', look: 'survey', ctx: { ...site } }); // the same view and site: nothing re-applied
+  assertEq(calls.length, 1);
+  // a demo view: the key carries a Demo chip and says what it rests on; References lists it
+  bar.render({ show: true, view: 'GI', look: 'survey', ctx: site });
+  assertEq(calls, ['apply BT', 'clear BT', 'apply GI']);
+  assert(el.querySelector('.view-key .demo-chip'), 'the key has a Demo chip');
+  assert(/Demo: cells about 300 km across/.test(el.querySelector('.view-key').textContent), el.querySelector('.view-key').textContent);
+  assertEq(demoParts(reg, site), [{ id: 'GI', name: 'Ground & ice', text: 'cells about 300 km across' }]);
+  assertEq(demoParts(reg, region), []); // site-scale only
+  bar.render({ show: true, view: 'GI', look: 'survey', ctx: region }); // back to the region: the view goes
+  assert(el.hidden, 'hidden off the site');
+  assertEq(calls.slice(-1), ['clear GI']);
 });
 
 test('terrain view: slope classes, and the study legend read back to degrees', () => {
@@ -662,4 +751,13 @@ test('terrain view: slope classes, and the study legend read back to degrees', (
   assertClose(slopeFromLegend(87, 171, 96, stops), 2.7, 0.1); // the commonest Gale study colour
   assertClose(slopeFromLegend(244, 109, 67, stops), 20, 0.01);
   assertClose(slopeFromLegend(165, 0, 38, stops), 35, 0.01);
+});
+
+test('simulated views: the same seeded field per site and factor, labelled as simulated (R33)', () => {
+  const px = (t) => Array.from(t.image.getContext('2d').getImageData(0, 0, 64, 64).data.filter((_, i) => i % 97 === 0));
+  assertEq(px(simulatedTexture('site_x', 'TC')), px(simulatedTexture('site_x', 'TC')));
+  assert(JSON.stringify(px(simulatedTexture('site_x', 'TC'))) !== JSON.stringify(px(simulatedTexture('site_y', 'TC'))), 'another site, another field');
+  const k = simulatedKey('surface temperature');
+  assertEq([k.text, k.missing, k.simulated], [SIMULATED_TEXT, true, true]);
+  assertEq(SIMULATED_TEXT, 'Simulated view: data not collected for this site');
 });

@@ -28,6 +28,12 @@
  "water_odyssey_grs",
  "geology_units",
  "geology_contacts",
+ {
+  "id": "thermal_inertia_themis_1km",
+  "formats": [
+   "png"
+  ]
+ },
  "rover_path",
  "rover_stops",
  {
@@ -60,6 +66,12 @@
  "water_odyssey_grs__jezero",
  "geology_units__jezero",
  "geology_contacts__jezero",
+ {
+  "id": "thermal_inertia_themis_1km__jezero",
+  "formats": [
+   "png"
+  ]
+ },
  "rover_path__jezero",
  "rover_stops__jezero",
  {
@@ -92,6 +104,12 @@
  "water_odyssey_grs__arcadia",
  "geology_units__arcadia",
  "geology_contacts__arcadia",
+ {
+  "id": "thermal_inertia_themis_1km__arcadia",
+  "formats": [
+   "png"
+  ]
+ },
  "rover_path__arcadia",
  "rover_stops__arcadia",
  {

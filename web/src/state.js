@@ -2,7 +2,7 @@
 // brief, Task 9d) and briefTab (its tab, 0-3: Project, Robots, Operations, Review), setup (always FIXED_SETUP;
 // __map.applySetup can change it in tests), layouts (siteId -> placement), results (siteId -> Map of id -> Result),
 // priority (regionId -> prioritize() rows), records, openSiteId, selectedSite (the candidate card last chosen), view (the
-// factor bar's view), plus region (the region in view) and regions (regionId -> {state, error}).
+// factor tab: null | 'BT' | 'GI' | 'SC' | 'TC' | 'IR'), look ('diorama' | 'survey' | 'hud', R32), plus region (the region in view) and regions (regionId -> {state, error}).
 // Values are replaced, never mutated in place, and every set notifies.
 
 // One fixed case, the reference facility: 150 kW IT (225 kW total), firm base power plus a solar top-up. The UI

@@ -99,15 +99,16 @@ export function mergeResults(initial, computed, fieldRecords) {
   const out = new Map(initial);
   if (computed) for (const [id, r] of computed) out.set(id, r);
   for (const rec of fieldRecords || []) {
+    if (rec.kind && rec.kind !== 'field') continue; // simulated tags never change a status
     if (rec.pass !== true && rec.pass !== false) continue;
     const base = out.get(rec.metricId);
-    if (!base) continue;
+    if (!base || base.status === STATUS.NOT_APPLICABLE) continue; // a field record can't make a metric apply
     out.set(rec.metricId, {
       ...base,
       value: Number.isFinite(rec.value) ? rec.value : base.value,
       display: Number.isFinite(rec.value) ? String(rec.value) + (base.unit ? ' ' + base.unit : '') : base.display,
       status: rec.pass ? STATUS.MET : STATUS.NOT_MET,
-      ideal: false, straddles: false, evidence: 'observation', note: 'field result',
+      ideal: false, straddles: false, assumption: false, evidence: 'observation', note: 'field result',
     });
   }
   return out;
