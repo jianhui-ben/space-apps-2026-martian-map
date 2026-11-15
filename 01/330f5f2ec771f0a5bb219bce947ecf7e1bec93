@@ -1,0 +1,51 @@
+README.md
+  s_10ff77521b063e::t_1d7e763fc238a6 40-50,57-61,63-64,160
+design-reference/mars-construction-intake.html
+  s_10ff77521b063e::t_8633da0712d489 1-90
+docs/construction-project-inputs.md
+  s_10ff77521b063e::t_f62d1d54073d39 1-43
+docs/construction-sizing-script-design.md
+  s_10ff77521b063e::t_ddc810d7f2f0c9 1-324
+docs/data-center-sizing.md
+  s_10ff77521b063e::t_66ceb941c3c901 1-41
+docs/data-sources.md
+  s_10ff77521b063e::t_df35e92fd7753d 3-8
+docs/design-guidance.md
+  s_10ff77521b063e::t_107487c6698cfb 62,125-126,128,135,137-141,145-153
+docs/facility-to-location-requirements.md
+  s_10ff77521b063e::t_c8a29ee63a2928 1-35
+docs/project-plan.md
+  s_10ff77521b063e::t_783b1165e39e45 5-20,24,26,28,80,123
+docs/reference-facility.md
+  s_10ff77521b063e::t_eee48a7bb5ebf7 5,7-9
+docs/requirements/buildable-terrain.md
+  s_10ff77521b063e::t_629870957be7a5 20
+docs/requirements/ground-and-ice.md
+  s_10ff77521b063e::t_f9b14929ba4f77 5,7
+docs/requirements/investigation-routes.md
+  s_10ff77521b063e::t_b6911654cf7e6e 7
+docs/requirements/metric-data-availability.md
+  s_10ff77521b063e::t_4784db84073a63 3-16
+docs/requirements/solar-conditions.md
+  s_10ff77521b063e::t_3703c817da1f5c 5,7
+docs/requirements/thermal-conditions.md
+  s_10ff77521b063e::t_24ae47b219cabd 7
+scenario/gale.json
+  s_10ff77521b063e::t_2484fa9ed7a2ba 2-3,13-43,45,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01330f5f2ec771f0a5bb219bce947ecf7e1bec93",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "unknown"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
