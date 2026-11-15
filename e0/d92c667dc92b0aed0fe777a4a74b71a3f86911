@@ -1,0 +1,19 @@
+README.md
+  s_10ff77521b063e::t_c1cae35906fda6 76,169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e0d92c667dc92b0aed0fe777a4a74b71a3f86911",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
