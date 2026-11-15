@@ -73,7 +73,7 @@ viable.
 | [Project plan](docs/project-plan.md) | Objective, scenario, the five factors and shared evidence rules |
 | [Reference facility](docs/reference-facility.md) | Assumed base, workloads, 60/150/250 kW IT load, power, cooling and layout |
 | [Design guidance](docs/design-guidance.md) | Visual and writing conventions for the ARES site-planning app: colors, typography, layout, components, copy |
-| [Design reference](docs/design-reference/) | HTML design mockups. `mars-copy-balance.html` shows the selected landing-page design; download it and open it in a browser |
+| [Design reference](docs/design-reference/) | HTML design mockups. `mars-copy-balance.html` compares two landing-page copy options, Practical guidance (selected) and Editorial balance; download it and open it in a browser |
 | [Buildable terrain](docs/requirements/buildable-terrain.md) | 21 metrics (BT-01 to BT-21): area, slope, roughness, obstacles, hazards, access |
 | [Ground and ice](docs/requirements/ground-and-ice.md) | 12 metrics (GI-01 to GI-12): bearing capacity, settlement, ice, excavation |
 | [Solar conditions](docs/requirements/solar-conditions.md) | 13 metrics (SC-01 to SC-13): shading, energy output, dust, storage, array layout |
