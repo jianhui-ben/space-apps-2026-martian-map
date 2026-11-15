@@ -1,0 +1,21 @@
+README.md
+  s_10ff77521b063e::t_e9346673498c85 75,171
+docs/design-guidance.md
+  s_10ff77521b063e::t_40067305de5961 1-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e50926bb42cb552af9c2832984f93f48140e8b92",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "unknown"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
