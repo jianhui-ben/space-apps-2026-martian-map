@@ -202,6 +202,59 @@ class Fetcher:
             if callable(close):
                 close()
 
+    def download(self, url: str, path: Path, max_bytes: int, timeout_s: Optional[float] = None,
+                 deadline_s: Optional[float] = None, ok_status: Tuple[int, ...] = (200,)) -> FetchResult:
+        """Like :meth:`get_bytes`, but streams the body to ``path`` (via a ``.part`` file) instead of memory.
+
+        The returned result has an empty ``body``; a redirect the caller accepted (``ok_status``) writes nothing.
+        """
+        host = self._check_url(url)
+        shown = redact_url(url)
+        self._wait_turn(host)
+        started = self._clock()
+        limit = deadline_s or self._deadline_s
+        try:
+            resp = self._session.get(url, timeout=timeout_s or self._timeout_s, stream=True, allow_redirects=False)
+        except Exception as exc:
+            raise FetchError(f"request to {shown} failed: {exc.__class__.__name__}: {exc}") from exc
+        path = Path(path)
+        part = path.with_suffix(path.suffix + ".part")
+        try:
+            status = getattr(resp, "status_code", None)
+            if status not in ok_status:
+                raise FetchError(f"GET {shown} returned HTTP {status}")
+            full_type = resp.headers.get("Content-Type") or ""
+            result = FetchResult(b"", full_type.split(";")[0].strip().lower(), url, status=status,
+                                 content_type_full=full_type, location=resp.headers.get("Location") or "")
+            if status != 200:
+                return result
+            declared = (resp.headers.get("Content-Length") or "").strip()
+            if _DIGITS_RE.fullmatch(declared) and int(declared) > max_bytes:
+                raise FetchError(f"GET {shown}: response is {declared} bytes, over the {max_bytes}-byte cap")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            total = 0
+            try:
+                with open(part, "wb") as out:
+                    for chunk in resp.iter_content(chunk_size=1 << 20):
+                        total += len(chunk)
+                        if total > max_bytes:
+                            raise FetchError(f"GET {shown}: response exceeded the {max_bytes}-byte cap")
+                        if self._clock() - started > limit:
+                            raise FetchError(f"GET {shown}: response took longer than {limit:g} s")
+                        out.write(chunk)
+            except FetchError:
+                raise
+            except Exception as exc:
+                raise FetchError(f"reading {shown} failed: {exc.__class__.__name__}: {exc}") from exc
+            os.replace(part, path)
+            return result
+        finally:
+            if part.exists():
+                part.unlink()
+            close = getattr(resp, "close", None)
+            if callable(close):
+                close()
+
     def get_json(self, url: str, max_bytes: int = 50 * 2**20) -> Any:
         result = self.get_bytes(url, max_bytes)
         text = result.body.lstrip()

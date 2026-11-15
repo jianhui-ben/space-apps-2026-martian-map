@@ -1,8 +1,16 @@
 # data/
 
 Downloaded and computed data for the data-center site study: Gale crater, plus Jezero crater and Arcadia
-Planitia for comparison. Every dataset is described in [`catalog.json`](catalog.json), which is the only file
-here (besides this README) that is committed to git. Recreate everything with:
+Planitia for comparison. Every dataset is described in [`catalog.json`](catalog.json). That file, this README
+and [`release.json`](release.json) are the only ones here committed to git.
+
+Download a copy of the data from the GitHub release named in `release.json` (about 780 MB) with:
+
+```bash
+python -m martian_map data fetch
+```
+
+Or recreate everything from the original sources with:
 
 ```bash
 python -m martian_map snapshot                                  # Gale

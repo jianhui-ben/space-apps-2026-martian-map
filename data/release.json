@@ -1,0 +1,32 @@
+{
+  "repo": "jianhui-ben/space-apps-2026-martian-map",
+  "tag": "data-2026-11-15",
+  "catalog_generated_at": "2026-11-15T02:20:15Z",
+  "assets": [
+    {
+      "region": "gale",
+      "name": "martian-map-gale-data-2026-11-15.zip",
+      "files": 84,
+      "bytes": 475575437,
+      "unpacked_bytes": 583853715,
+      "sha256": "d0c6f419bbc57e3e9a05cc94227bd3cc3acb80490d82b681e30128495c0f41a5"
+    },
+    {
+      "region": "arcadia",
+      "name": "martian-map-arcadia-data-2026-11-15.zip",
+      "files": 52,
+      "bytes": 181711954,
+      "unpacked_bytes": 237597709,
+      "sha256": "43a925db0673882a9117d947304706585a88d885c4092891a1917e9e1f72eefc"
+    },
+    {
+      "region": "jezero",
+      "name": "martian-map-jezero-data-2026-11-15.zip",
+      "files": 55,
+      "bytes": 161257449,
+      "unpacked_bytes": 213554497,
+      "sha256": "6ab8fa4d7509cf1553032b06d03f881e754fa05fceccb931c41338942243658a"
+    }
+  ],
+  "note": "Zips of the files data/catalog.json lists, per region; fetch them with python -m martian_map data fetch"
+}

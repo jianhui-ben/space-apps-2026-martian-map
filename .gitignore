@@ -32,6 +32,7 @@ data/*
 !data/.gitkeep
 !data/README.md
 !data/catalog.json
+!data/release.json
 .cache/
 *.log
 

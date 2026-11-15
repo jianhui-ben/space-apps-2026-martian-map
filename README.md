@@ -98,6 +98,9 @@ them is a NASA standard.
 - **`python -m martian_map snapshot --scenario scenario/jezero.json`** (or `arcadia.json`) does the same for
   Jezero crater and Arcadia Planitia, for comparison. Their files go in `data/regions/<id>/`, and their entries
   are added to the same index, with ids ending in `__jezero` or `__arcadia`.
+- **`python -m martian_map data fetch`** downloads a copy of all the data files (about 780 MB) from the GitHub
+  release named in [`data/release.json`](data/release.json), checked against the index, instead of
+  re-running the snapshot.
 - **`python -m martian_map catalog check|search|table`** inspects the index.
 - **[`scenario/gale.json`](scenario/gale.json)** holds the team's assumptions: base, candidate sites and placeholder
   limits. [`scenario/jezero.json`](scenario/jezero.json) and [`scenario/arcadia.json`](scenario/arcadia.json)

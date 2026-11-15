@@ -25,6 +25,7 @@ from .http import FetchError
 # Illustrative demo site: lower Mount Sharp (Aeolis Mons) in Gale crater, the
 # region the challenge cites for Curiosity's 2025 boxwork study. Coordinates
 # are approximate; elevations are ILLUSTRATIVE placeholders, not DEM samples.
+DATA_REPO = "jianhui-ben/space-apps-2026-martian-map"
 DEMO_SITE = {"name": "Lower Mount Sharp, Gale crater (approx.)", "lat": -4.72, "lon": 137.39}
 DEMO_WAYPOINTS = [
     Waypoint(lat=-4.700, lon=137.380, elevation_m=-4150.0, name="Habitat"),
@@ -128,6 +129,19 @@ def build_parser() -> argparse.ArgumentParser:
     cm.add_argument("--write", type=Path, default=None, help="replace the text between the metrics markers in this file")
     cm.add_argument("--requirements", type=Path, default=Path("docs/requirements/metric-data-availability.md"))
     for sp in (cc, cs, ct, cr, cm):
+        sp.add_argument("--data-root", type=Path, default=Path("data"))
+
+    dd = sub.add_parser("data", help="share the data files as GitHub Release assets (pack, publish, fetch)")
+    dsub = dd.add_subparsers(dest="data_command", required=True)
+    dp = dsub.add_parser("pack", help="zip each region's files, checked against the index, and write data/release.json")
+    dp.add_argument("--tag", required=True, help="release tag, for example data-2026-11-15")
+    dp.add_argument("--out", type=Path, default=Path("dist"))
+    dp.add_argument("--repo", default=DATA_REPO)
+    du = dsub.add_parser("publish", help="create the release and upload the zips (needs GITHUB_PERSONAL_ACCESS_TOKEN)")
+    du.add_argument("--dist", type=Path, default=Path("dist"))
+    df = dsub.add_parser("fetch", help="download the release's zips, check them and unpack them into data/")
+    df.add_argument("--region", default=None, help="comma-separated region ids (gale, jezero, arcadia); default all")
+    for sp in (dp, du, df):
         sp.add_argument("--data-root", type=Path, default=Path("data"))
     return p
 
@@ -345,6 +359,37 @@ def _join_dash_values(argv: List[str]) -> List[str]:
     return out
 
 
+def cmd_data(args, out=None) -> int:
+    import os
+
+    from . import data_release as dr
+    from .http import Fetcher
+
+    out = out if out is not None else sys.stdout
+    log = lambda m: print(m, file=out)  # noqa: E731
+    try:
+        if args.data_command == "pack":
+            manifest = dr.pack(args.data_root, args.out, args.tag, args.repo, log=log)
+            log(f"wrote {args.data_root / dr.RELEASE_FILE}; commit it, push, then run: python -m martian_map data publish")
+            return 0 if manifest["assets"] else 1
+        if args.data_command == "publish":
+            token = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN") or os.environ.get("GITHUB_TOKEN")
+            if not token:
+                print("error: set GITHUB_PERSONAL_ACCESS_TOKEN (a token that can create releases on the repo)",
+                      file=sys.stderr)
+                return 2
+            url = dr.publish(dr.load_manifest(args.data_root), args.dist, token=token, log=log)
+            log(f"published: {url}")
+            return 0
+        regions = {r.strip() for r in args.region.split(",") if r.strip()} if args.region else None
+        report = dr.fetch(args.data_root, Fetcher(allowed_hosts=dr.RELEASE_HOSTS), regions=regions, log=log)
+        log(f"{report['files_ok']} files ok" + (f"; problems: {', '.join(report['problems'])}" if report["problems"] else ""))
+        return 1 if report["problems"] else 0
+    except dr.ReleaseError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     raw = list(argv) if argv is not None else sys.argv[1:]
@@ -362,6 +407,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return cmd_snapshot(args)
         if args.command == "catalog":
             return cmd_catalog(args)
+        if args.command == "data":
+            return cmd_data(args)
     except (TrekError, FetchError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

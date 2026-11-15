@@ -14,6 +14,44 @@ pip install -e .
 
 No accounts or API keys are needed. Every source used today is public.
 
+## Get the data without running the snapshot
+
+The data files are about 1 GB, too big for git. A copy is attached to a GitHub release instead. To get it:
+
+```bash
+python -m martian_map data fetch                  # all three regions, about 780 MB to download
+python -m martian_map data fetch --region gale    # or only some: gale, jezero, arcadia
+```
+
+- It reads [`data/release.json`](../data/release.json): which release to use, and each zip's size and SHA-256.
+- A zip whose SHA-256 differs is not unpacked.
+- Only the files that `data/catalog.json` lists are unpacked. Then every file is checked against the
+  index, the same check as `catalog check --strict`.
+- The files are the ones the index describes, so a later `snapshot` skips almost everything.
+
+| Zip | Download | Unpacked |
+|---|---|---|
+| Gale | 454 MB | 557 MB |
+| Jezero | 154 MB | 204 MB |
+| Arcadia Planitia | 173 MB | 227 MB |
+
+### Making a new data release
+
+After a snapshot changes the data:
+
+1. `python -m martian_map data pack --tag data-YYYY-MM-DD`. This checks every file against the index, writes
+   one zip per region to `dist/` and updates `data/release.json`.
+2. Commit `data/catalog.json` and `data/release.json`, then push.
+3. In your own terminal, with a GitHub token that can create releases on the repo:
+
+   ```bash
+   read -s "GITHUB_PERSONAL_ACCESS_TOKEN?GitHub token: " && export GITHUB_PERSONAL_ACCESS_TOKEN
+   python -m martian_map data publish
+   ```
+
+   This creates the release on `main` and uploads the zips. Use a new tag each time: a tag that already
+   has a release is refused.
+
 ## Download everything
 
 ```bash
