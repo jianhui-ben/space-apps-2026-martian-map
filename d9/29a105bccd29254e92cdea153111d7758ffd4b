@@ -1,0 +1,27 @@
+design-reference/mars-copy-balance.html
+  s_10ff77521b063e::t_f963ee15105843 1
+docs/design-guidance.md
+  s_10ff77521b063e::t_f963ee15105843 147,149
+README.md
+  s_10ff77521b063e::t_f963ee15105843 63,99-103,131,195,199,210
+requirements.txt
+  s_10ff77521b063e::t_f963ee15105843 5
+design-reference/mars-construction-twin-trails.html
+  s_10ff77521b063e::t_e1296d3f538730 1-3015
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d929a105bccd29254e92cdea153111d7758ffd4b",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
