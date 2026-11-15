@@ -1,5 +1,7 @@
 import { footprintSpecs, placeLayout, clampPlacement, cellsUnder, bestSpot, createLayoutStore } from '../src/layout.js';
 import { makeGrid, fixtureSite } from './fixtures.js';
+import { sizeBrief, briefSetup } from '../src/sizing/index.js';
+import { loadBundle } from '../src/sizing/engine.js';
 
 const M = 3396190 * Math.PI / 180;
 const byId = (a) => Object.fromEntries(a.map((x) => [x.id, x]));
@@ -173,4 +175,31 @@ test('layout store get, set, final, per-site specs, unsubscribe', () => {
   off();
   st.set('A', pl);
   assertEq(seen.length, 3);
+});
+
+// ---- the facility sized from the brief ----
+const sizingBundle = await loadBundle(new URL('../sizing/screening-v1.json', import.meta.url));
+const sizingCases = Object.fromEntries((await (await fetch(new URL('./fixtures/sizing.json', import.meta.url))).json()).map((c) => [c.name, c]));
+const sizedSetup = (name) => { const b = sizingCases[name].brief; return briefSetup(sizeBrief(b, sizingBundle), b); };
+
+test('specs from a brief setup: modules in a row, radiator and solar squares of the plots', () => {
+  const setup = sizedSetup('example_filled');
+  const a = setup.sizing.assessed.specifications;
+  const s = byId(footprintSpecs(setup));
+  assertEq([s.compound.w, s.compound.h], [36, 10]);
+  assertClose(s.radiator.w, Math.sqrt(a.radiator_plot_m2.value), 1e-9);
+  assertClose(s.radiator.h, Math.sqrt(a.radiator_plot_m2.value), 1e-9);
+  assertClose(s.solar.w, Math.sqrt(a.solar_plot_m2.value), 1e-9);
+  assertClose(s.solar.h, s.solar.w, 1e-9);
+});
+
+test('specs from a brief setup use the site plot sizes when given', () => {
+  const s = byId(footprintSpecs(sizedSetup('example_filled'), { solarPlotM2: 400, radiatorPlotM2: 100 }));
+  assertEq([s.solar.w, s.solar.h, s.radiator.w, s.radiator.h], [20, 20, 10, 10]);
+});
+
+test('specs from a brief setup: a base connection has no solar part', () => {
+  const setup = sizedSetup('base_connection');
+  assertEq(setup.power, 'base_only');
+  assertEq(footprintSpecs(setup).map((x) => x.id), ['compound', 'radiator']);
 });

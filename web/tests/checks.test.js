@@ -171,3 +171,39 @@ test('BT-21 is the distance to base', async () => {
   assertEq(r.status, 'needs_design_input');
   assertEq(r.unit, 'm');
 });
+
+// ---- limits from the brief's calculated specifications ----
+const briefLimits = (pad, local, rough) => ({
+  source: 'brief', power: 'topup',
+  sizing: { assessed: { specifications: {
+    pad_slope_limit_deg: pad === null ? { status: 'unresolved' } : { status: 'resolved', value: pad, unit: 'deg' },
+    local_slope_limit_deg: { status: 'resolved', value: local, unit: 'deg' },
+    roughness_limit_m: { status: 'resolved', value: rough, unit: 'm' } } } },
+});
+
+test('a brief setup takes the BT-04, BT-05 and BT-08 limits from its specifications, ideals from the scenario', async () => {
+  const { site } = await setupSite();
+  const g = await setupSite({ slope10: mk(site, () => 3), roughness: mk(site, () => 0.1) });
+  const m = terrainChecks(g.site, g.layout, briefLimits(3, 6, 0.2), g.site.catalog.scenario);
+  assertEq(m.get('BT-04').target.baseline, '≤ 3°');
+  assertEq(m.get('BT-04').target.ideal, '≤ 2°');
+  assertEq(m.get('BT-05').target.baseline, '≤ 6°');
+  assertEq(m.get('BT-05').target.ideal, '≤ 5°');
+  assertEq(m.get('BT-08').target.baseline, '≤ 0.2 m');
+  for (const id of ['BT-04', 'BT-05', 'BT-08']) assertEq(m.get(id).assumption, true);
+  const ref = terrainChecks(g.site, g.layout, setup, g.site.catalog.scenario);
+  assertEq([ref.get('BT-04').target.baseline, ref.get('BT-05').target.baseline], ['≤ 5°', '≤ 10°']);
+});
+
+test('a limit the brief left unresolved keeps the scenario value', async () => {
+  const { site } = await setupSite();
+  const g = await setupSite({ slope10: mk(site, () => 3) });
+  assertEq(terrainChecks(g.site, g.layout, briefLimits(null, 6, 0.2), g.site.catalog.scenario).get('BT-04').target.baseline, '≤ 5°');
+});
+
+test('a tighter brief limit changes the verdict', async () => {
+  const { site } = await setupSite();
+  const g = await setupSite({ slope10: mk(site, (c, r) => (c === 200 && r === 200 ? 7 : 3)) });
+  assertEq(terrainChecks(g.site, g.layout, briefLimits(3, 4, 0.2), g.site.catalog.scenario).get('BT-05').status, 'not_met');
+  assertEq(terrainChecks(g.site, g.layout, setup, g.site.catalog.scenario).get('BT-05').status, 'met');
+});

@@ -136,7 +136,7 @@ The workflow is construction inputs → estimated facility → five location req
 
 Owners do not enter rack counts or complex dimensions. Offer “unknown” where appropriate, display important profile assumptions, and ask follow-up questions that materially change the estimate. Do not turn robot count into a fixed kW or land-area multiplier. Separate construction fleet quantities from computing-module delivery and investigation vehicles.
 
-The facility preview shows options or ranges for compute, storage, power, heat rejection, and complete footprint. Distinguish owner input, model assumption, equipment specification, and computed output. Until implemented, show the sizing stage as planned and label any sample result “Illustrative reference — not calculated from your project.” Never present the legacy reference facility as an interactive estimate.
+The facility preview shows options or ranges for compute, storage, power, heat rejection, and complete footprint. Distinguish owner input, model assumption, equipment specification, and computed output. Label a facility calculated from the brief “Calculated from your brief with screening assumptions — not a validated design.” The label “Illustrative reference — not calculated from your project.” applies to the legacy reference facility only, which is never presented as an interactive estimate.
 
 The requirement view explains why each site constraint exists. The comparison view records the facility version and any site-specific layout changes. Keep the existing visual direction; older HTML copy mockups are historical visual references where their intake conflicts with this workflow.
 
@@ -144,14 +144,11 @@ Candidate feedback must distinguish observations, derived estimates, modeled res
 
 ### Selected construction intake
 
-**Selected: Guided brief.** [The connected flow](../design-reference/mars-construction-twin-trails.html) opens on the interactive Mars globe. “Define construction project” opens the guided Project → Robots → Operations → Review sequence. “Back to globe” preserves entries and the current step; “Continue project brief” resumes them. The introduction now describes construction support rather than research workloads.
+**Selected: Twin Trails intake.** [The connected flow](../design-reference/mars-construction-twin-trails.html) opens on the interactive Mars globe: “Your project. Your next frontier.” and “Define construction project”. The stepper (Construction brief → Facility specifications → Location assessment) stays above the panel, and “Back to globe” or the panel’s “Close” return to the landing with the entries kept; “Continue project brief” resumes them.
 
-The earlier comparison mockup (removed from the repo; it remains in git history) offered two alternatives:
+The brief is one “Construction site” panel. Five required fields come first: type of work (site preparation & earthworks, or surveying & terrain mapping) and construction robots, then working time (h / sol, at most one sol), project duration and results needed within. “Planning defaults · optional to customize” is a collapsed disclosure, marked as an assumption, holding every other value as an editable default: project name, the robot mix (survey and excavation shares, the share of robots active together), processing frequency and precision, raw and processed-output retention, power approach, available base power and essential backup duration, closed by “Planning assumptions, not validated design recommendations.” There are no unknown or range answers; the defaults are used unless changed.
 
-- **Guided brief:** project, robots, operations, and review steps, with a persistent project summary and Mars illustration.
-- **Project worksheet:** project and fleet editing in one view, with expandable schedule/output details and a brief summary.
-
-Both use editable example values, known/range/unknown quantity controls, robot roles and active counts, requested outputs, deadlines, and a pending five-factor handoff. They are interaction prototypes, not the complete request-schema implementation. Detailed map selection, multi-phase schedules, technical profiles, sizing, and feasibility remain outside this mock. The earlier copy-balance mock remains a historical visual reference.
+“Find area” checks the values (the survey and excavation shares at most 100%, each number in its range, base power above zero for hybrid or base-connected operation), names the first problem beside the button and opens the disclosure when the problem is inside it. While the sizing coefficients are still loading it shows “Sizing in progress” with “Back to brief”; otherwise it sizes the facility at once. The outcome is the facility step: “Ready for location matching.” lists the calculated facility (labelled as calculated with screening assumptions, not a validated design) and what it needs from a site (buildable terrain, ground & ice, solar, thermal, investigation routes), with “Edit brief” and “Assess locations →”; or “Review your brief.” says what the sizing could not meet and offers only “Edit brief”, leaving location assessment unreachable.
 
 ## 8. Extending the style to later screens
 

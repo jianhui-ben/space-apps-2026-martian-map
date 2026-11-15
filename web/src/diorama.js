@@ -132,9 +132,12 @@ export function attachDiorama({ globe, store, app, metrics = [], layoutStore }) 
     if (!on) return;
     if (!built) build(view);
     refresh();
+    // the elevation profiles are terrain data: shown with no factor view or the Terrain view, hidden under the others
+    const fv = store.get('view'), prof = document.getElementById('diorama-profiles');
+    if (prof) prof.hidden = !!fv && fv !== 'BT';
   }
   const schedule = () => { if (!scheduled) { scheduled = true; requestAnimationFrame(update); } };
-  for (const k of ['openSiteId', 'look', 'results', 'priority', 'layouts', 'stage']) store.subscribe(k, schedule);
+  for (const k of ['openSiteId', 'look', 'view', 'results', 'priority', 'layouts', 'stage']) store.subscribe(k, schedule);
   if (layoutStore) layoutStore.onLayoutChange(schedule); // drags move the callouts with the layout
 
   globe.onFrame((dt, now) => {

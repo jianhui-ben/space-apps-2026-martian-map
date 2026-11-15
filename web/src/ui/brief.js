@@ -1,125 +1,118 @@
-// The construction brief (Task 9d): the Guided brief's four tabs (Project, Robots, Operations, Review) from
-// design-reference/mars-construction-intake.html, its visible variant, with its copy verbatim, and the "Project brief"
-// summary beside them. The brief is recorded and shown; it never sizes the facility, changes a status or the priority,
-// because the sizing model is planned, not implemented.
+// The construction brief (Task 9): the Twin Trails intake from design-reference/mars-construction-twin-trails.html, its
+// copy verbatim. One panel asks for the construction (type of work, robots) and the schedule (working time, duration,
+// turnaround); "Planning defaults" holds the editable assumptions (fleet mix, processing, retention, power, backup).
+// "Find area" checks the values and hands over (onDone); the facility is sized from toSizingBrief(values) in main.js,
+// and the outcome is the facility step (ui/landing.js createFacility). The brief never changes a status or the priority.
+import { assumptionChip } from './chips.js';
+import { markerLabel } from '../sizing/index.js';
 
-export const TABS = ['Project', 'Robots', 'Operations', 'Review'];
-export const ROLES = ['Survey', 'Excavation', 'Transport', 'Assembly', 'Inspection'];
-export const BUILD_TYPES = ['Landing pad', 'Road', 'Habitat', 'Power installation', 'Utility network', 'Other'];
-export const SOL_HOURS = 24.65; // a sol, in hours: operating time cannot exceed it
+export const SOL_HOURS = 24.65; // a sol, in hours: the working time cannot exceed it
 export const REVIEW_FACTORS = ['Buildable terrain', 'Ground & ice evidence', 'Solar conditions', 'Thermal conditions', 'Investigation routes'];
-const LOCATIONS = ['Gale study region — site not selected', 'Coordinates not yet known'];
-const PRECISION = ['Coarse survey', 'Earthworks check', 'Precision assembly', 'Unknown'];
-const JOBS = [['map', 'Terrain maps'], ['progress', 'Progress comparisons'], ['inspection', 'Inspection reports'], ['plan', 'Fleet work plans']];
-const CADENCES = ['Once per sol', 'Every 4 hours', 'At phase end', 'Unknown'];
-const LATE = ['Pause dependent work', 'Use previous result', 'Defer nonessential work', 'Unknown'];
-const POWER = ['Unknown', 'Base connection', 'Solar + storage', 'Hybrid'];
-const CONTINUITY = ['Unknown', 'Up to 1 hour', 'Up to 4 hours', 'Work can pause'];
-const DEPLOYMENT = ['Compare both', 'Inside the base', 'Dedicated installation'];
-const MODES = [['known', 'Known'], ['range', 'Range'], ['unknown', 'Unknown']];
+const WORK_TYPES = [['earthworks', 'Site preparation & earthworks'], ['survey', 'Surveying & terrain mapping']];
+const CADENCES = ['Once per sol', 'Every 4 hours', 'At phase end'];
+const PRECISIONS = ['Coarse survey', 'Earthworks check', 'Precision assembly'];
+const POWERS = ['Solar + storage', 'Hybrid', 'Base connection'];
+const TEXT_KEYS = new Set(['name', 'workType', 'power', 'precision', 'cadence']);
 
-// Each quantity: its field label, its name under "Still to confirm" (the mockup's), and the tab that asks for it.
-// The order is the mockup's, and the order of "Still to confirm".
-const QUANTITIES = {
-  area: { label: 'Survey area', missing: 'Survey area', tab: 0 },
-  road: { label: 'Road length', missing: 'Road length', tab: 0 },
-  hours: { label: 'Operating time', missing: 'Operating schedule', tab: 2, max: SOL_HOURS },
-  deadline: { label: 'Results needed within', missing: 'Turnaround', tab: 2 },
-  duration: { label: 'Project duration', missing: 'Project duration', tab: 2 },
-  retention: { label: 'Keep raw survey data', missing: 'Data retention', tab: 2 },
-};
-const asked = (brief, key) => key !== 'road' || brief.types.includes('Road'); // a road's length only when a road is built
+// The number fields in panel order, with the mockup's labels, units and limits; defaults: inside "Planning defaults".
+const NUMBERS = [
+  { key: 'robots', label: 'Construction robots', unit: 'robots', min: 1, max: 1000, whole: true },
+  { key: 'hours', label: 'Working time', unit: 'h / sol', min: 0.1, max: SOL_HOURS },
+  { key: 'duration', label: 'Project duration', unit: 'sols', min: 0.1, max: 10000 },
+  { key: 'deadline', label: 'Results needed within', unit: 'hours', min: 0.1, max: 8760 },
+  ...[['surveyPercent', 'Survey share'], ['excPercent', 'Excavation share'], ['surveyActive', 'Survey robots active together'],
+    ['otherActive', 'Other robots active together']].map(([key, label]) => ({ key, label, unit: '%', min: 0, max: 100, whole: true, defaults: true })),
+  { key: 'rawRetention', label: 'Keep raw data', unit: 'sols', min: 0, max: 10000, whole: true, defaults: true },
+  { key: 'productRetention', label: 'Keep processed outputs', unit: 'sols', min: 0, max: 10000, whole: true, defaults: true },
+  { key: 'basePower', label: 'Available base power', unit: 'kW', min: 0, max: 1000000, whole: true, defaults: true },
+  { key: 'backup', label: 'Essential backup duration', unit: 'hours', min: 0, max: 8760, whole: true, defaults: true },
+];
+const FIELD = Object.fromEntries(NUMBERS.map((f) => [f.key, f]));
 
-// The mockup's corrections, plus two it leaves to the browser (a known value, the other construction type).
 export const ERRORS = {
-  name: 'Enter a project name.',
-  types: 'Choose at least one construction type.',
-  other: 'Describe the other construction type.',
-  fleet: 'Add at least one robot group.',
-  counts: 'Active robots must be whole numbers between zero and the group total.',
-  jobs: 'Choose at least one required output.',
-  known: 'Enter a number greater than zero, or choose Range or Unknown.',
-  range: 'Enter a positive range with the minimum no greater than the maximum.',
-  hours: 'Operating time cannot exceed one Mars day (about 24.65 hours).',
+  shares: 'Survey and excavation shares must add up to 100% or less.', // the mockup's
+  basePower: 'Enter the available base power for hybrid or base-connected operation.',
 };
-
-const positive = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
-
-// null when the quantity is usable in its mode: unknown needs nothing, known a value above zero, range both ends above
-// zero with min ≤ max; and nothing above max (one sol, for the operating time).
-export function quantityError(q, { max = Infinity } = {}) {
-  if (!q || q.mode === 'unknown') return null;
-  if (q.mode === 'range') {
-    if (!positive(q.min) || !positive(q.max) || q.min > q.max) return ERRORS.range;
-    return q.max > max ? ERRORS.hours : null;
-  }
-  if (!positive(q.value)) return ERRORS.known;
-  return q.value > max ? ERRORS.hours : null;
-}
-
 const num = (v) => (Number.isFinite(v) ? v.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '?');
-// A quantity in words: "Unknown" (never zero), "10,000–30,000 m²", "12 h / sol", "1 hour".
-export function qtext(q, unit = q && q.unit) {
-  if (!q || q.mode === 'unknown') return 'Unknown';
-  if (q.mode === 'range') return num(q.min) + '–' + num(q.max) + ' ' + unit;
-  return num(q.value) + ' ' + (q.value === 1 && unit === 'hours' ? 'hour' : unit);
-}
+const rangeError = (f) => `${f.label}: enter a ${f.whole ? 'whole ' : ''}number from ${num(f.min)} to ${num(f.max)}${f.unit === '%' ? '%' : ' ' + f.unit}.`;
+const usesBase = (power) => power === 'Hybrid' || power === 'Base connection';
 
-const sum = (fleet, k) => fleet.reduce((n, f) => n + (Number.isFinite(f[k]) ? f[k] : 0), 0);
-export const fleetTotal = (brief) => sum(brief.fleet, 'count');
-export const activeTotal = (brief) => sum(brief.fleet, 'active');
-
-// "Gale landing pad & access road · 20 robots": the brief's name on the location-assessment panels.
-export function briefLine(brief) {
-  const n = fleetTotal(brief);
-  return ((brief.name || '').trim() || 'Untitled project') + ' · ' + n + (n === 1 ? ' robot' : ' robots');
-}
-
-// The "Project brief" summary beside the tabs.
-export const summaryRows = (b) => [
-  ['Build', b.types.join(' + ') || 'Not selected'],
-  ['Robots', fleetTotal(b) + ' total'],
-  ['Active together', String(activeTotal(b))],
-  ['Operating time', qtext(b.q.hours, 'h / sol')],
-  ['Turnaround', qtext(b.q.deadline, 'hours')],
-];
-
-// The quantities still unknown, by their mockup names.
-export const stillToConfirm = (b) => Object.keys(QUANTITIES).filter((k) => asked(b, k) && b.q[k].mode === 'unknown').map((k) => QUANTITIES[k].missing);
-export const stillToConfirmText = (b) => stillToConfirm(b).join(', ') || 'No unanswered quantity fields';
-
-export const reviewRows = (b) => [
-  ['Construction', b.types.join(', ') || 'Not selected'],
-  ['Work schedule', qtext(b.q.hours, 'hours per sol')],
-  ['Results needed', qtext(b.q.deadline, 'hours')],
-  ['Still to confirm', stillToConfirmText(b)],
-];
-
-// The first problem on a tab, or null; the review (tab 3) checks every tab, the first problem first.
-function problems(b, tab) {
-  const out = [];
-  if (tab === 0) {
-    if (!(b.name || '').trim()) out.push(ERRORS.name);
-    if (!b.types.length) out.push(ERRORS.types);
-    if (b.types.includes('Other') && !(b.other || '').trim()) out.push(ERRORS.other);
+// The first problem with the values, as the mockup's validate checks them (the shares first, then each field in panel
+// order), then base power for hybrid or base-connected operation: {message, key (the field to fix), defaults (it sits in
+// the disclosure)}, or null.
+export function intakeError(s) {
+  if (s.workType !== 'survey' && s.surveyPercent + s.excPercent > 100) return { message: ERRORS.shares, key: 'surveyPercent', defaults: true };
+  for (const f of NUMBERS) {
+    const v = s[f.key];
+    if (!Number.isFinite(v) || v < f.min || v > f.max || (f.whole && !Number.isInteger(v))) return { message: rangeError(f), key: f.key, defaults: !!f.defaults };
   }
-  if (tab === 1) {
-    if (!b.fleet.length) out.push(ERRORS.fleet);
-    else if (b.fleet.some((f) => !Number.isInteger(f.count) || !Number.isInteger(f.active) || f.count < 0 || f.active < 0 || f.active > f.count)) out.push(ERRORS.counts);
-  }
-  if (tab === 2 && !Object.values(b.jobs).some(Boolean)) out.push(ERRORS.jobs);
-  for (const [k, spec] of Object.entries(QUANTITIES)) {
-    if (spec.tab !== tab || !asked(b, k)) continue;
-    const e = quantityError(b.q[k], spec);
-    if (e) out.push(e);
-  }
-  return out;
-}
-function firstProblem(b, tab) {
-  for (const t of tab === 3 ? [0, 1, 2] : [tab]) { const p = problems(b, t); if (p.length) return { tab: t, message: p[0] }; }
+  if (usesBase(s.power) && !(s.basePower > 0)) return { message: ERRORS.basePower, key: 'basePower', defaults: true };
   return null;
 }
-export function tabError(b, tab) { const p = firstProblem(b, tab); return p ? p.message : null; }
+
+// The values as the brief the sizing engine reads (sizing/request.js fromBrief): the mockup's computeProfile. Survey work
+// is an all-survey fleet; earthworks splits it by the shares, rounding down, and transport takes the remainder. Groups
+// with no robots are left out.
+export function toSizingBrief(s) {
+  const n = s.robots, survey = s.workType === 'survey';
+  const sv = survey ? n : Math.floor(n * s.surveyPercent / 100), ex = survey ? 0 : Math.floor(n * s.excPercent / 100);
+  const fleet = [['Survey', sv, s.surveyActive], ['Excavation', ex, s.otherActive], ['Transport', n - sv - ex, s.otherActive]]
+    .map(([role, count, pct], i) => ({ id: i + 1, role, count, active: Math.floor(count * pct / 100) }))
+    .filter((f) => f.count > 0);
+  const known = (value, unit) => ({ mode: 'known', value, unit });
+  return {
+    name: s.name, types: [], fleet,
+    jobs: { map: true, progress: !survey, inspection: false, plan: !survey },
+    cadence: Object.fromEntries(['map', ...(survey ? [] : ['progress', 'plan'])].map((k) => [k, s.cadence])),
+    quality: s.precision, power: s.power, deployment: 'Dedicated installation',
+    q: {
+      hours: known(s.hours, 'h / sol'), duration: known(s.duration, 'sols'), deadline: known(s.deadline, 'hours'),
+      retention: known(s.rawRetention, 'sols'), products: known(s.productRetention, 'sols'), backup: known(s.backup, 'hours'),
+      basePower: known(s.basePower, 'kW'), // read only for hybrid or base-connected operation
+    },
+  };
+}
+
+// "Gale landing pad & access road · 20 robots": the brief's name on the location-assessment panels.
+export function briefLine(s) {
+  const n = Number.isFinite(s.robots) ? s.robots : 0;
+  return ((s.name || '').trim() || 'Untitled project') + ' · ' + n + (n === 1 ? ' robot' : ' robots');
+}
+
+// ---- what the facility needs from a site (shown on the facility step) ----
+const whole = (n) => Math.round(n).toLocaleString('en-US');
+const one = (n) => n.toFixed(1);
+const kilometres = (m) => String(Number((m / 1000).toFixed(1)));
+const REQUIREMENTS = [
+  ['Buildable terrain', ['full_reference_plot_m2', 'pad_slope_limit_deg', 'roughness_limit_m'],
+    ([plot, slope, bumps]) => `${whole(plot)} m² of flat ground · pad ≤ ${num(slope)}° · bumps ≤ ${num(bumps)} m`],
+  [REVIEW_FACTORS[1], ['required_allowable_bearing_kpa'], ([kpa]) => `ground must hold ≥ ${one(kpa)} kPa`],
+  [REVIEW_FACTORS[2], ['required_solar_average_kw', 'solar_panel_area_m2'], ([kw, m2]) => `≥ ${one(kw)} kW on average · ${whole(m2)} m² of panels · resized at each site`],
+  [REVIEW_FACTORS[3], ['heat_rejection_kw', 'radiator_emitting_area_m2'], ([kw, m2]) => `get rid of ${one(kw)} kW of heat · ${whole(m2)} m² of radiator · resized at each site`],
+  [REVIEW_FACTORS[4], ['service_distance_limit_m', 'vehicle_grade_limit_deg', 'corridor_width_m'],
+    ([m, grade, width]) => `≤ ${kilometres(m)} km from base · grade ≤ ${num(grade)}° · ${num(width)} m corridor`],
+];
+
+// The five requirement rows from the assessed option, for a sizing brief b: [{name, text, sized}]. An unsized row says
+// what it still needs, or why the brief cannot be sized.
+export function requirements(b, sizing) {
+  const specs = (sizing.assessed && sizing.assessed.specifications) || {};
+  const value = (k) => (specs[k] && specs[k].status === 'resolved' ? specs[k].value : null);
+  const resolved = (keys) => keys.every((k) => value(k) !== null);
+  const needs = (keys) => {
+    const labels = [...new Set(keys.flatMap((k) => ((specs[k] && specs[k].missing_inputs) || []).filter((m) => m.startsWith('input:')).map(markerLabel)))];
+    return labels.length ? labels : sizing.missing.map((m) => m.label);
+  };
+  return REQUIREMENTS.map(([name, keys, text]) => {
+    if (name === REVIEW_FACTORS[2] && sizing.status === 'sized' && b.power === 'Base connection') {
+      const base = b.q && b.q.basePower ? num(b.q.basePower.value) : '?';
+      return { name, sized: true, text: `No solar plot: the base supplies ${base} kW, the facility peaks at ${one(value('facility_peak_kw'))} kW` };
+    }
+    if (resolved(keys)) return { name, sized: true, text: text(keys.map(value)) };
+    if (sizing.status === 'cannot_size') return { name, sized: false, text: sizing.problems[0].message };
+    return { name, sized: false, text: 'Needs: ' + (needs(keys).join(', ') || 'more answers') };
+  });
+}
 
 // ---------- the panel ----------
 
@@ -135,291 +128,145 @@ const button = (cls, text, attrs = {}) => {
   for (const [k, v] of Object.entries(attrs)) b.setAttribute(k, v);
   return b;
 };
-const options = (sel, list, value) => { for (const x of list) { const o = h('option', '', x); o.value = x; o.selected = x === value; sel.append(o); } };
 
-// el: the brief panel; side: the "Project brief" summary beside it. onChange(brief) gets every change (so the stepper,
-// Back and Edit keep the values); onTab(tab) every tab change; onDone() follows Continue on the review.
-export function createBrief(el, side, { onChange = () => {}, onTab = () => {}, onDone = () => {} } = {}) {
-  let b = null, tab = 0;
-  const open = { outputs: true, more: false, next: true }; // disclosures keep their state across re-renders
+// el: the brief panel; side: the old "Project brief" summary aside, left empty. onChange(values) gets every edit (so the
+// stepper, Close and Edit keep them); onClose() follows Close; onDone() follows a valid "Find area". pending() -> null when
+// the sizing can run now, else a promise that settles when it can (the coefficients still loading): until then "Sizing in
+// progress" shows, and "Back to brief" cancels.
+export function createBrief(el, side, { onChange = () => {}, onDone = () => {}, onClose = () => {}, pending = () => null } = {}) {
+  let s = null, defaultsOpen = false, run = 0;
   el.setAttribute('aria-labelledby', 'brief-title');
-  side.setAttribute('aria-live', 'polite');
-  side.setAttribute('aria-label', 'Project brief');
+  side.replaceChildren();
 
-  const commit = () => { onChange(structuredClone(b)); paintSummary(); };
-
-  function paintSummary() {
-    const dl = h('dl', '');
-    for (const [k, v] of summaryRows(b)) {
-      const row = h('div', ''), dd = h('dd', '', v);
-      dd.dataset.summary = k;
-      row.append(h('dt', '', k), dd);
-      dl.append(row);
-    }
-    side.replaceChildren(h('h3', '', 'Project brief'), dl, h('p', 'help', 'This brief will inform compute, power, cooling and space requirements.'));
-    const t = el.querySelector('[data-total]');
-    if (t) t.textContent = String(fleetTotal(b));
-  }
-
-  // A field: its label, then the control (and a help line if any). Every control has a label or an aria-label.
-  function field(label, control, help) {
-    const f = h('label', 'field');
-    f.append(h('span', 'field-label', label), control);
-    if (help) f.append(h('span', 'help', help));
+  // A labelled field, the mockup's: "Label <small>Required</small>" then the control (with its unit).
+  function field(label, control, { tag = null, unit = null } = {}) {
+    const f = h('label', 'construction-field');
+    f.append(h('span', 'field-name', label));
+    if (tag) f.append(' ', h('small', tag.toLowerCase(), tag));
+    if (unit) { const u = h('span', 'input-unit'); u.append(control, h('span', 'unit', unit)); f.append(u); } else f.append(control);
     return f;
   }
-  function textInput(key, id) {
-    const i = document.createElement('input');
-    Object.assign(i, { type: 'text', value: b[key] || '', required: true, maxLength: 120 });
-    if (id) i.id = id;
-    i.dataset.focus = 'key:' + key;
-    i.addEventListener('input', () => { b[key] = i.value; commit(); });
-    return i;
+  function bind(control, key) {
+    control.dataset.input = key;
+    const text = TEXT_KEYS.has(key);
+    control.addEventListener(control.tagName === 'SELECT' ? 'change' : 'input', () => {
+      s = { ...s, [key]: text ? control.value : (control.value === '' ? null : Number(control.value)) };
+      onChange(s);
+    });
+    return control;
   }
-  function select(key, list) {
-    const s = document.createElement('select');
-    options(s, list, b[key]);
-    s.dataset.key = key;
-    s.dataset.focus = 'key:' + key;
-    s.addEventListener('change', () => { b[key] = s.value; commit(); });
-    return s;
-  }
-  function numberInput(q, key, bound, label) {
-    const i = document.createElement('input');
-    Object.assign(i, { type: 'number', min: '0.01', step: 'any', required: true });
-    if (QUANTITIES[key].max) i.max = String(QUANTITIES[key].max);
-    i.inputMode = 'decimal';
-    i.value = Number.isFinite(q[bound]) ? String(q[bound]) : '';
-    if (label) i.setAttribute('aria-label', label);
-    i.dataset.q = key;
-    i.dataset.bound = bound;
-    i.dataset.focus = 'q:' + key + ':' + bound;
-    i.addEventListener('input', () => { b.q[key] = { ...b.q[key], [bound]: i.value === '' ? null : Number(i.value) }; commit(); });
-    return i;
-  }
-  // Known / Range / Unknown, as a native select beside the label.
-  function quantity(key) {
-    const q = b.q[key], { label } = QUANTITIES[key], id = 'brief-q-' + key;
-    const f = h('div', 'field quantity');
-    const head = h('div', 'quantity-head');
-    const lab = h('label', 'field-label', label);
-    lab.htmlFor = id;
-    const mode = document.createElement('select');
-    for (const [v, t] of MODES) { const o = h('option', '', t); o.value = v; o.selected = q.mode === v; mode.append(o); }
-    mode.setAttribute('aria-label', label + ' certainty');
-    mode.dataset.mode = key;
-    mode.dataset.focus = 'mode:' + key;
-    mode.addEventListener('change', () => { b.q[key] = { ...b.q[key], mode: mode.value }; commit(); render(); });
-    head.append(lab, mode);
-    const vals = h('div', 'quantity-values');
-    if (q.mode === 'unknown') vals.append(h('span', 'unknown-value', 'To be confirmed'));
-    else if (q.mode === 'range') {
-      const lo = numberInput(q, key, 'min', label + ' minimum');
-      lo.id = id;
-      vals.append(lo, h('span', 'unit', 'to'), numberInput(q, key, 'max', label + ' maximum'), h('span', 'unit', q.unit));
-    } else {
-      const v = numberInput(q, key, 'value');
-      v.id = id;
-      vals.append(v, h('span', 'unit', q.unit));
+  function select(key, choices, label, tag) {
+    const c = document.createElement('select');
+    for (const ch of choices) {
+      const [v, t] = Array.isArray(ch) ? ch : [ch, ch];
+      const o = h('option', '', t);
+      o.value = v;
+      o.selected = v === s[key];
+      c.append(o);
     }
-    f.append(head, vals);
-    return f;
+    if (tag) c.required = true;
+    return field(label, bind(c, key), { tag });
   }
-  function disclosure(key, cls, summary) {
-    const d = h('details', cls);
-    d.open = open[key];
-    d.append(h('summary', '', summary));
-    d.addEventListener('toggle', () => { open[key] = d.open; });
+  function number(key, tag) {
+    const f = FIELD[key], i = document.createElement('input');
+    Object.assign(i, { type: 'number', min: String(f.min), max: String(f.max), step: f.whole ? '1' : 'any', required: true });
+    i.inputMode = f.whole ? 'numeric' : 'decimal';
+    i.value = Number.isFinite(s[key]) ? String(s[key]) : '';
+    i.setAttribute('aria-label', f.label);
+    return field(f.label, bind(i, key), { tag, unit: f.unit });
+  }
+  function section(title, ...fields) {
+    const d = h('div', 'input-section');
+    d.append(h('h3', '', title), ...fields);
+    return d;
+  }
+  function group(title, ...children) {
+    const d = h('div', 'default-group');
+    d.append(h('h3', '', title), ...children);
+    return d;
+  }
+  function defaults() {
+    const d = h('details', 'assumptions');
+    d.dataset.defaults = '';
+    d.open = defaultsOpen;
+    d.addEventListener('toggle', () => { defaultsOpen = d.open; });
+    const sum = h('summary', '', 'Planning defaults · optional to customize');
+    sum.append(' ', assumptionChip('planning assumptions, not validated design values'));
+    const name = document.createElement('input');
+    Object.assign(name, { type: 'text', maxLength: 100, value: s.name || '' });
+    d.append(sum, h('p', '', 'Change any assumption below. Your edits are used in the calculation.'),
+      field('Project name', bind(name, 'name'), { tag: 'Optional' }),
+      group('Robot mix', h('p', 'sub', 'Earthworks uses these shares; the remainder is transport. Survey-only work uses an all-survey fleet. Counts round down; transport takes the remainder.'),
+        number('surveyPercent'), number('excPercent'), number('surveyActive'), number('otherActive')),
+      group('Processing & retention', select('cadence', CADENCES, 'Processing frequency'), select('precision', PRECISIONS, 'Processing precision'),
+        number('rawRetention'), number('productRetention')),
+      group('Power & backup', select('power', POWERS, 'Power approach'), number('basePower'), number('backup')),
+      h('p', 'sub', 'Planning assumptions, not validated design recommendations. Base power applies to hybrid or base-connected operation.'));
     return d;
   }
 
-  function project() {
-    const fields = h('div', 'fields');
-    fields.append(field('Project name', textInput('name', 'brief-name')));
-    const build = h('div', 'field');
-    const bl = h('span', 'field-label', 'What are you building?');
-    bl.id = 'brief-build-label';
-    const list = h('div', 'choice-list');
-    list.setAttribute('role', 'group');
-    list.setAttribute('aria-labelledby', 'brief-build-label');
-    for (const t of BUILD_TYPES) {
-      const c = h('label', 'choice');
-      const cb = document.createElement('input');
-      Object.assign(cb, { type: 'checkbox', checked: b.types.includes(t) });
-      cb.dataset.type = t;
-      cb.dataset.focus = 'type:' + t;
-      cb.addEventListener('change', () => {
-        b.types = BUILD_TYPES.filter((x) => (x === t ? cb.checked : b.types.includes(x)));
-        commit();
-        render();
-      });
-      c.append(cb, h('span', '', t));
-      list.append(c);
+  function find() {
+    const problem = intakeError(s), alert = el.querySelector('.form-error');
+    for (const c of el.querySelectorAll('[aria-invalid]')) c.removeAttribute('aria-invalid');
+    if (problem) {
+      el.querySelector('[data-input="' + problem.key + '"]').setAttribute('aria-invalid', 'true');
+      if (problem.defaults) { defaultsOpen = true; el.querySelector('[data-defaults]').open = true; }
+      alert.textContent = problem.message; // beside Find area, as in the mockup; it names the field to change
+      return;
     }
-    build.append(bl, list);
-    fields.append(build);
-    if (b.types.includes('Other')) fields.append(field('Other construction type', textInput('other')));
-    fields.append(quantity('area'));
-    if (b.types.includes('Road')) fields.append(quantity('road'));
-    fields.append(field('Construction location', select('location', LOCATIONS), 'Detailed map selection comes after the project brief.'));
-    return [fields];
+    alert.textContent = '';
+    const wait = pending();
+    if (!wait) { onDone(); return; }
+    const token = ++run;
+    progress();
+    const settle = () => { if (token === run) { run++; onDone(); } }; // a failed load still settles: the outcome says so
+    wait.then(settle, settle);
   }
 
-  function robots() {
-    const head = h('div', 'fleet-head');
-    head.setAttribute('aria-hidden', 'true');
-    for (const t of ['Main task', 'Total', 'Active', '']) head.append(h('span', '', t));
-    const rows = h('div', 'robot-rows');
-    for (const f of b.fleet) {
-      const row = h('div', 'robot-row');
-      const role = document.createElement('select');
-      options(role, ROLES, f.role);
-      role.setAttribute('aria-label', 'Robot ' + f.id + ' main task');
-      Object.assign(role.dataset, { robot: f.id, prop: 'role', focus: 'robot:' + f.id + ':role' });
-      role.addEventListener('change', () => { f.role = role.value; commit(); render(); }); // the row's labels name the task
-      const count = (prop, label) => {
-        const i = document.createElement('input');
-        Object.assign(i, { type: 'number', min: '0', step: '1', required: true, value: Number.isFinite(f[prop]) ? String(f[prop]) : '' });
-        i.inputMode = 'numeric';
-        if (prop === 'active' && Number.isFinite(f.count)) i.max = String(f.count);
-        i.setAttribute('aria-label', f.role + ' ' + label);
-        Object.assign(i.dataset, { robot: f.id, prop, focus: 'robot:' + f.id + ':' + prop });
-        i.addEventListener('input', () => {
-          f[prop] = i.value === '' ? null : Number(i.value);
-          if (prop === 'count') { const a = row.querySelector('[data-prop="active"]'); if (a && Number.isFinite(f.count)) a.max = String(f.count); }
-          commit();
-        });
-        return i;
-      };
-      const remove = button('text-action remove', '×', { 'aria-label': 'Remove ' + f.role + ' group', 'data-remove': String(f.id) });
-      remove.addEventListener('click', () => { b.fleet = b.fleet.filter((x) => x !== f); commit(); render('add'); });
-      row.append(role, count('count', 'total robots'), count('active', 'active robots'), remove);
-      rows.append(row);
-    }
-    const add = button('secondary add', '+ Add robot group', { 'data-add': '' });
-    add.dataset.focus = 'add';
-    add.addEventListener('click', () => {
-      const id = b.fleet.reduce((m, f) => Math.max(m, f.id), 0) + 1;
-      b.fleet = [...b.fleet, { id, role: 'Inspection', count: 1, active: 1 }];
-      commit();
-      render('robot:' + id + ':role'); // the new group, ready to set
-    });
-    const total = h('div', 'fleet-total');
-    const n = h('span', '');
-    const strong = h('strong', '', String(fleetTotal(b)));
-    strong.dataset.total = '';
-    n.append(strong, ' robots');
-    total.append(h('span', '', 'Total fleet'), n);
-    return [h('p', 'help', 'Group robots by their main task. Active units work at the same time.'), head, rows, add, total,
-      h('p', 'help', 'Onboard driving and safety remain with each robot.')];
+  // While the sizing waits for the coefficients: "Sizing in progress", and "Back to brief" to cancel.
+  function progress() {
+    const box = h('div', 'sizing-progress');
+    const status = h('p', 'status', 'Sizing in progress');
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    const back = button('text-action', 'Back to brief', { id: 'brief-cancel' });
+    back.addEventListener('click', () => { run++; render(); el.querySelector('#brief-find').focus({ preventScroll: true }); });
+    box.append(status, back);
+    el.replaceChildren(box);
+    back.focus({ preventScroll: true });
   }
 
-  function operations() {
-    const fields = h('div', 'fields');
-    fields.append(field('Construction phase', textInput('phase')), quantity('hours'), quantity('duration'),
-      field('Construction precision', select('quality', PRECISION)), quantity('deadline'));
-    const outputs = disclosure('outputs', 'outputs', 'Required processing outputs');
-    for (const [key, label] of JOBS) {
-      const row = h('div', 'job');
-      const lab = h('label', '');
-      const cb = document.createElement('input');
-      Object.assign(cb, { type: 'checkbox', checked: !!b.jobs[key] });
-      cb.dataset.job = key;
-      cb.dataset.focus = 'job:' + key;
-      const cad = document.createElement('select');
-      options(cad, CADENCES, b.cadence[key]);
-      cad.setAttribute('aria-label', label + ' frequency');
-      cad.dataset.cadence = key;
-      cad.dataset.focus = 'cadence:' + key;
-      cad.disabled = !b.jobs[key];
-      cb.addEventListener('change', () => { b.jobs = { ...b.jobs, [key]: cb.checked }; cad.disabled = !cb.checked; commit(); });
-      cad.addEventListener('change', () => { b.cadence = { ...b.cadence, [key]: cad.value }; commit(); });
-      lab.append(cb, label);
-      row.append(lab, cad);
-      outputs.append(row);
-    }
-    outputs.append(h('p', 'help', 'Flexible processing jobs can run when power is available.'));
-    const more = disclosure('more', 'more', 'Retention, infrastructure & continuity');
-    const mf = h('div', 'fields');
-    mf.append(quantity('retention'), field('Available power', select('power', POWER)),
-      field('Allowed service interruption', select('continuity', CONTINUITY)), field('Computing installation', select('deployment', DEPLOYMENT)));
-    more.append(mf, h('p', 'help', 'Equipment and processing profiles are selected during sizing. Unknowns stay visible.'));
-    return [h('h3', '', 'How will the work run?'), fields,
-      h('p', 'help', 'Turnaround starts when survey collection finishes. A sol is a Mars day.'),
-      outputs, field('If a result is late', select('late', LATE)), more];
-  }
-
-  function review() {
-    const dl = h('dl', 'review-dl');
-    for (const [k, v] of reviewRows(b)) { const row = h('div', ''); row.append(h('dt', '', k), h('dd', '', v)); dl.append(row); }
-    const next = disclosure('next', 'next', 'What happens next');
-    const list = h('ul', 'factor-list');
-    for (const f of REVIEW_FACTORS) { const li = h('li', '', f); li.append(h('span', '', 'Awaiting sizing')); list.append(li); }
-    next.append(h('p', 'help', 'The sizing model will translate this brief into a facility option and the requirements below.'), list);
-    return [h('h3', '', 'Review before sizing'), h('p', 'help', briefLine(b)), dl, next];
-  }
-
-  let alert = null;
-  function go(t, focusKey) {
-    if (t > tab) { // moving on checks the tab being left
-      const p = firstProblem(b, tab);
-      if (p) { alert.textContent = p.message; return; } // the correction, where the problem is
-    }
-    tab = t;
-    onTab(tab);
-    render(focusKey);
-  }
-
-  // Re-render the panel. Focus goes to the control named by prefer (its data-focus key), else stays on the same control,
-  // else goes to the current tab; it is only moved when it was in the panel or prefer is given.
-  function render(prefer) {
-    const a = document.activeElement, was = a && el.contains(a) ? a.dataset.focus : null;
-    el.replaceChildren();
-    const intro = h('div', 'intro-line');
-    intro.append(h('span', 'sample-label', 'Editable example'), h('span', 'count', (tab + 1) + ' of 4'));
-    const title = h('h2', '');
+  function render() {
+    const form = document.createElement('form');
+    form.noValidate = true;
+    form.addEventListener('submit', (e) => { e.preventDefault(); find(); });
+    const top = h('div', 'panel-top');
+    const title = h('h2', '', 'Construction site');
     title.id = 'brief-title';
-    title.append(h('span', '', 'Plan the work.'), ' ', h('span', '', 'Find its foundation.'));
-    const tabs = h('nav', 'tabs');
-    tabs.setAttribute('aria-label', 'Brief sections');
-    TABS.forEach((name, i) => {
-      const t = button('tab', name, { 'data-tab': String(i), 'data-focus': 'tab:' + i });
-      if (i === tab) t.setAttribute('aria-current', 'step');
-      t.addEventListener('click', () => go(i, 'tab:' + i));
-      tabs.append(t);
-    });
-    const content = h('div', 'step-content');
-    content.append(...[project, robots, operations, review][tab]());
-    alert = h('p', 'alert');
+    const close = button('text-action', 'Close', { id: 'brief-close', 'aria-label': 'Close construction brief' });
+    close.addEventListener('click', () => { run++; onClose(); });
+    top.append(title, close);
+    const schedule = h('div', 'schedule-fields');
+    schedule.append(number('hours', 'Required'), number('duration', 'Required'), number('deadline', 'Required'));
+    const alert = h('p', 'form-error');
     alert.setAttribute('role', 'alert');
-    const actions = h('div', 'actions');
-    if (tab) {
-      const back = button('text-action', 'Back', { id: 'brief-back', 'data-focus': 'back' });
-      back.addEventListener('click', () => go(tab - 1, 'back'));
-      actions.append(back);
-    } else actions.append(h('small', '', 'Start with what you know.'));
-    const next = button('primary', 'Continue', { id: 'brief-next', 'data-focus': 'next' });
-    next.addEventListener('click', () => {
-      if (tab < 3) { go(tab + 1, 'next'); return; }
-      const p = firstProblem(b, 3);
-      if (p) { go(p.tab, 'tab:' + p.tab); alert.textContent = p.message; return; }
-      onDone();
-    });
-    actions.append(next);
-    el.append(intro, title, h('p', 'subhead', 'Start with the construction your robots will do.'), tabs, content, alert, actions);
-    paintSummary();
-    const target = [prefer, was, 'tab:' + tab].map((k) => k && el.querySelector('[data-focus="' + k + '"]')).find(Boolean);
-    if (was || prefer) target.focus({ preventScroll: true });
+    const actions = h('div', 'form-actions');
+    const go = button('primary', 'Find area', { id: 'brief-find' });
+    go.addEventListener('click', find);
+    actions.append(go);
+    form.append(top, h('p', 'panel-intro', 'A few project details. A place to begin.'),
+      section('01 · The construction', select('workType', WORK_TYPES, 'Type of work', 'Required'), number('robots', 'Required')),
+      section('02 · The schedule', schedule), defaults(), alert, h('p', 'input-caption', 'Editable defaults · required fields are marked'), actions);
+    el.replaceChildren(form);
   }
 
   return {
-    // Show the brief at a tab, with its values; focus goes to the tab's first control.
-    open(brief, t = 0) {
-      b = structuredClone(brief);
-      tab = t;
+    // Show the intake with these values; focus goes to its first control.
+    open(values) {
+      s = { ...values };
+      run++;
       render();
-      const first = el.querySelector('.step-content input, .step-content select, .step-content button');
-      (first || el.querySelector('[aria-current="step"]')).focus({ preventScroll: true });
+      el.querySelector('[data-input]').focus({ preventScroll: true });
     },
   };
 }

@@ -214,3 +214,12 @@ def test_package_replaces_old_output(tmp_path):
     (out / "stale.txt").write_text("x")
     package.build(web, data, out)
     assert not (out / "stale.txt").exists()
+
+
+def test_package_ships_the_sizing_coefficients(tmp_path):
+    web, data, out = _make(tmp_path, [], [])
+    (web / "sizing").mkdir()
+    (web / "sizing" / "screening-v1.json").write_text('{"parameters": {}}')
+    package.build(web, data, out)
+    assert (out / "sizing" / "screening-v1.json").read_text() == '{"parameters": {}}'
+    assert "sizing" in package.WEB_DIRS

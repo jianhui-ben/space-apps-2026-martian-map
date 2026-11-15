@@ -5,6 +5,7 @@
 import { datasetsInRegion } from './catalog.js';
 import { cellsUnder, LOADS } from './layout.js';
 import { STATUS, statusFor } from './status.js';
+import { siteSizing } from './requirements.js';
 
 const R = 3396190;
 const RAD = Math.PI / 180;
@@ -235,13 +236,48 @@ const km = (m) => (m >= 1000 ? fmt(m / 1000, 1) + ' km' : fmt(m, 0) + ' m');
 const NO_DATA = (what) => 'no ' + what + ' here: needs confirmation';
 const failed = (env, key) => env.errors && env.errors[key] ? key + ' failed to load: ' + env.errors[key] : null;
 
+// SC-03 and SC-04 for a brief setup: the panels are sized for this site (siteSizing), so SC-03 is met when that used site
+// data and SC-04 is the sized panels' worst-season output over the required average. Shading at the placed plot is SC-01's.
+function briefSolar(out, site, setup, env, { points, grid, table, storm, solarOnly, req }) {
+  const size = siteSizing(site, setup, env), L = req;
+  const known = size.solarFrom === 'site' && Number.isFinite(L);
+  const base03 = Number.isFinite(L) ? '≥ ' + fmt(L, 1) + ' kW (from your brief)' : '≥ the required average (not calculated yet)';
+  const missing = failed(env, 'mcdSolar') || NO_DATA('climate model, horizon or sun table');
+  if (known) {
+    const kw = size.solarPanelM2 * size.panelWm2 / 1000;
+    const basis = size.solarBasis === 'worst_season' ? 'for the worst season' : 'for the year\'s average';
+    out.set('SC-03', result('SC-03', { value: kw, display: fmt(kw, 1) + ' kW', baseline: base03, status: STATUS.MET, evidence: 'model', assumption: true,
+      note: 'panels sized for this site: ' + fmt(size.solarPanelM2, 0) + ' m² ' + basis + '; η 0.20, assumption; Mars Climate Database climatology flux (model)' }));
+  } else {
+    out.set('SC-03', result('SC-03', { status: STATUS.NEEDS_CONFIRMATION, baseline: base03, note: missing }));
+  }
+  if (!solarOnly) {
+    out.set('SC-04', result('SC-04', { status: STATUS.NEEDS_DESIGN_INPUT, baseline: '≥ 1.0', ideal: '≥ 1.2',
+      note: 'needs the solar share of the load: the solar option is a top-up here' }));
+  } else if (known && Number.isFinite(size.worstWm2)) {
+    const ratio = Math.round(size.solarPanelM2 * size.worstWm2 / 1000 / L * 1e9) / 1e9;
+    const sp = points && storm ? pvSeries(table, grid, points, storm, size.solarPanelM2) : null;
+    const stormRatio = sp ? Math.min(...sp.map((x) => mean(x.kw))) / L : NaN;
+    const s = statusFor({ value: ratio, baseline: 1.0, ideal: 1.2, compare: '>=' });
+    out.set('SC-04', result('SC-04', { value: ratio, display: fmt(ratio, 2), baseline: '≥ 1.0', ideal: '≥ 1.2', status: s.status, isIdeal: s.ideal,
+      evidence: 'model', assumption: true,
+      note: 'sized panels in the worst season of the climatology against the ' + fmt(L, 1) + ' kW required'
+        + (Number.isFinite(stormRatio) ? '; ' + fmt(stormRatio, 2) + ' in a global dust storm' : '') }));
+  } else {
+    out.set('SC-04', result('SC-04', { status: STATUS.NEEDS_CONFIRMATION, baseline: '≥ 1.0', ideal: '≥ 1.2', note: missing }));
+  }
+}
+
 // environmentChecks(site, layout, setup, env) -> Map<id, Result>. SC metrics are left out for base_only (their initial
 // not_applicable stands) and BT-16/BT-15/GI-05/TC-01 read needs_confirmation where the region has no data.
 export function environmentChecks(site, layout, setup, env) {
   const out = new Map();
   const fp = (id) => (layout && layout.footprints || []).find((f) => f.id === id) || null;
   const solar = fp('solar'), radiator = fp('radiator');
-  const power = setup && setup.power, L = LOADS[setup && setup.loadKw] || NaN;
+  const power = setup && setup.power, fromBrief = !!setup && setup.source === 'brief';
+  // The demand the solar plot must meet: the brief's required average, else the reference load.
+  const req = fromBrief && setup.sizing && setup.sizing.assessed && setup.sizing.assessed.specifications.required_solar_average_kw;
+  const L = fromBrief ? (req && req.status === 'resolved' && Number.isFinite(req.value) ? req.value : NaN) : LOADS[setup && setup.loadKw] || NaN;
   env = env || { errors: {}, themis: {} };
 
   // ---- solar: SC-01 shading, SC-03 average, SC-04 worst season ----
@@ -259,11 +295,14 @@ export function environmentChecks(site, layout, setup, env) {
     }
     const clim = env.mcdSolar && env.mcdSolar.scenarios && env.mcdSolar.scenarios.climatology;
     const storm = env.mcdSolar && env.mcdSolar.scenarios && env.mcdSolar.scenarios.dust_storm;
+    const solarOnly = power === 'solar_batteries';
+    if (fromBrief) briefSolar(out, site, setup, env, { points, grid, table, storm, solarOnly, req: L });
+    else {
     const area = solar ? solar.w * solar.h / 2 : NaN; // A_panel: half the plot (assumption)
     const pv = points && clim ? pvSeries(table, grid, points, clim, area) : null;
     const avg = pv ? mean(pv.flatMap((s) => s.kw)) : NaN;
-    const solarOnly = power === 'solar_batteries';
-    const sc03base = solarOnly ? '≥ ' + fmt(L, 0) + ' kW (the load, assumption)' : '≥ 100 kW', sc03ideal = solarOnly ? '' : '≥ 120 kW';
+    const sc03base = solarOnly ? '≥ ' + fmt(L, 0) + ' kW (the load, assumption)' : '≥ 100 kW';
+    const sc03ideal = solarOnly ? '' : '≥ 120 kW';
     const how = 'η 0.20 and panels on half the plot (' + fmt(area, 0) + ' m²), assumptions; Mars Climate Database climatology flux (model)';
     if (Number.isFinite(avg)) {
       const s = statusFor({ value: avg, baseline: solarOnly ? L : 100, ideal: solarOnly ? undefined : 120, compare: '>=' });
@@ -288,6 +327,7 @@ export function environmentChecks(site, layout, setup, env) {
     } else {
       out.set('SC-04', result('SC-04', { status: STATUS.NEEDS_DESIGN_INPUT, baseline: '≥ 1.0', ideal: '≥ 1.2',
         note: 'needs the solar share of the load: the solar option is a top-up here' }));
+    }
     }
   } else {
     for (const id of ['SC-03', 'SC-04']) out.set(id, result(id, { status: STATUS.NOT_APPLICABLE, note: 'no solar plot in this power option' }));

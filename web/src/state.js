@@ -1,47 +1,24 @@
-// A tiny keyed store. Keys used by the app: stage ('landing' | 'brief' | 'facility' | 'explore'), brief (the construction
-// brief, Task 9d) and briefTab (its tab, 0-3: Project, Robots, Operations, Review), setup (always FIXED_SETUP;
-// __map.applySetup can change it in tests), layouts (siteId -> placement), results (siteId -> Map of id -> Result),
-// priority (regionId -> prioritize() rows), records, openSiteId, selectedSite (the candidate card last chosen), view (the
-// factor tab: null | 'BT' | 'GI' | 'SC' | 'TC' | 'IR'), look ('diorama' | 'survey' | 'hud', R32), plus region (the region in view) and regions (regionId -> {state, error}).
+// A tiny keyed store. Keys used by the app: stage ('landing' | 'brief' | 'facility' | 'explore'), brief (the Twin Trails
+// intake's values, Task 9), setup (FIXED_SETUP until the brief is sized, then the facility sized from it; __map.applySetup
+// can change it in tests), layouts (siteId -> placement), results (siteId -> Map of id -> Result), priority (regionId ->
+// prioritize() rows), records, openSiteId, selectedSite (the candidate card last chosen), view (the factor tab: null | 'BT'
+// | 'GI' | 'SC' | 'TC' | 'IR'), look ('diorama' | 'survey' | 'hud', R32), plus region (the region in view) and regions
+// (regionId -> {state, error}).
 // Values are replaced, never mutated in place, and every set notifies.
 
-// One fixed case, the reference facility: 150 kW IT (225 kW total), firm base power plus a solar top-up. The UI
-// offers no load or power choice; every function that takes a setup gets this. It is shown as an illustrative
-// reference, never as an estimate from the brief: the sizing model is planned, not implemented.
+// The legacy reference facility: 150 kW IT (225 kW total), firm base power plus a solar top-up. It is the setup until the
+// brief is sized, and is shown as an illustrative reference, never as an estimate from the brief.
 export const FIXED_SETUP = Object.freeze({ loadKw: 150, power: 'topup' });
 
-// The construction brief's editable example, as in the Guided brief mockup (design-reference/mars-construction-intake.html)
-// and scenario/gale.json construction_project: 4 survey, 10 excavation and 6 transport robots, 12 h / sol, a one-hour
-// turnaround; the extent, duration and retention unknown. Each quantity is {mode: 'known' | 'range' | 'unknown', value,
-// min, max, unit}; only the parts its mode names count (the others are kept for when the mode changes back). The brief
-// is recorded and shown; it never sizes the facility, changes a status or the priority.
+// The construction brief's editable defaults, the Twin Trails intake's (design-reference/mars-construction-twin-trails.html):
+// 20 robots on site preparation & earthworks, 12 h / sol for 180 sols, results within 4 hours; the planning defaults split
+// the fleet (20% survey, 50% excavation, the rest transport) and set processing, retention, power and backup. Every value
+// is editable; ui/brief.js toSizingBrief turns them into the brief the sizing engine reads.
 export function defaultBrief() {
   return {
-    name: 'Gale landing pad & access road',
-    types: ['Landing pad', 'Road'],
-    other: '',
-    location: 'Gale study region — site not selected',
-    fleet: [
-      { id: 1, role: 'Survey', count: 4, active: 4 },
-      { id: 2, role: 'Excavation', count: 10, active: 8 },
-      { id: 3, role: 'Transport', count: 6, active: 4 },
-    ],
-    phase: 'Site preparation',
-    quality: 'Earthworks check',
-    jobs: { map: true, progress: true, inspection: false, plan: true },
-    cadence: { map: 'Once per sol', progress: 'Once per sol', inspection: 'At phase end', plan: 'Every 4 hours' },
-    late: 'Pause dependent work',
-    power: 'Unknown',
-    continuity: 'Unknown',
-    deployment: 'Compare both',
-    q: {
-      area: { mode: 'unknown', value: 20000, min: 10000, max: 30000, unit: 'm²' },
-      road: { mode: 'unknown', value: 1000, min: 500, max: 2000, unit: 'm' },
-      hours: { mode: 'known', value: 12, min: 8, max: 12, unit: 'h / sol' },
-      deadline: { mode: 'known', value: 1, min: 1, max: 4, unit: 'hours' },
-      duration: { mode: 'unknown', value: 180, min: 90, max: 180, unit: 'sols' },
-      retention: { mode: 'unknown', value: 30, min: 7, max: 30, unit: 'sols' },
-    },
+    workType: 'earthworks', robots: 20, hours: 12, duration: 180, deadline: 4, name: 'Gale landing pad & access road',
+    surveyPercent: 20, excPercent: 50, surveyActive: 100, otherActive: 80, cadence: 'Once per sol', precision: 'Earthworks check',
+    rawRetention: 30, productRetention: 180, power: 'Solar + storage', basePower: 0, backup: 12,
   };
 }
 const deepFreeze = (o) => { for (const v of Object.values(o)) if (v && typeof v === 'object') deepFreeze(v); return Object.freeze(o); };

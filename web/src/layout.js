@@ -6,7 +6,23 @@ const M_PER_DEG = R * RAD;
 const GAP = 10;
 export const LOADS = { 60: 100, 150: 225, 250: 350 }; // IT load (kW) -> total facility load L (kW)
 
-export function footprintSpecs(setup) {
+// A brief setup (briefSetup in sizing/index.js) is sized from the assessed option; `size` ({solarPlotM2, radiatorPlotM2}, from
+// requirements.js siteSizing) replaces the engine's generic plots with the site's own.
+function briefSpecs(setup, size) {
+  const { assessed, params } = setup.sizing;
+  const v = (k) => (assessed.specifications[k].status === 'resolved' ? assessed.specifications[k].value : 0);
+  const clr = 2 * params.module_clearance_m;
+  const modules = v('modules'), radiator = size ? size.radiatorPlotM2 : v('radiator_plot_m2'), solar = size ? size.solarPlotM2 : v('solar_plot_m2');
+  const specs = [
+    { id: 'compound', w: modules * (params.module_length_m + clr), h: params.module_width_m + clr },
+    { id: 'radiator', w: Math.sqrt(radiator), h: Math.sqrt(radiator) },
+  ];
+  if (setup.power !== 'base_only' && solar > 0) specs.push({ id: 'solar', w: Math.sqrt(solar), h: Math.sqrt(solar) });
+  return specs;
+}
+
+export function footprintSpecs(setup, size = null) {
+  if (setup.source === 'brief') return briefSpecs(setup, size);
   const L = LOADS[setup.loadKw];
   const specs = [
     { id: 'compound', w: 60, h: 60 },

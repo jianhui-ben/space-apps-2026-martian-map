@@ -54,7 +54,18 @@ def test_server_maps_data_prefix(serve, tmp_path):
         srv.server_close()
     assert status == 200
     assert body == b'{"ok": true}'
-    assert headers["cache-control"] == "no-store"
+    assert headers["cache-control"] == "public, max-age=86400"
+
+
+def test_server_caches_data_but_not_app_code_or_errors(serve, tmp_path):
+    srv = serve.make_server(WEB, tmp_path)
+    try:
+        _, app, _ = _get(srv, "/index.html")
+        status, missing, _ = _get(srv, "/data/nope.json")
+    finally:
+        srv.server_close()
+    assert app["cache-control"] == "no-store"
+    assert status == 404 and missing["cache-control"] == "no-store"
 
 
 @pytest.mark.parametrize(

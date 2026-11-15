@@ -1,11 +1,10 @@
 // Pure parts of the construction brief, priority list, site card, chips, references and the factor bar (Tasks 9-9d).
 import { STATUS, initialStatuses, mergeResults } from '../src/status.js';
-import { regionInView, cameraTarget, factorCells, iconEl, shortName, nextCheck } from '../src/ui/list.js';
+import { regionInView, cameraTarget, factorCells, iconEl, shortName, nextCheck, createList } from '../src/ui/list.js';
 import { cardModel, createCard, statusLabel, footprintStatus } from '../src/ui/card.js';
 import { resultChips, alignmentCaveat } from '../src/ui/chips.js';
-import { facilityLine, FACILITY_LABEL } from '../src/ui/landing.js';
-import { qtext, quantityError, ERRORS, fleetTotal, activeTotal, briefLine, summaryRows, reviewRows, stillToConfirm,
-  stillToConfirmText, tabError, REVIEW_FACTORS, createBrief, SOL_HOURS } from '../src/ui/brief.js';
+import { facilityLine, facilityEl, facilityLabel, createFacility, createLanding, FACILITY_LABEL } from '../src/ui/landing.js';
+import { briefLine, toSizingBrief, intakeError, REVIEW_FACTORS, createBrief } from '../src/ui/brief.js';
 import { referencesFor, createReferences } from '../src/ui/references.js';
 import { FACTORS, PLAIN, plainVerdict, factorSentence, plainWhy, simulatedEstimate } from '../src/plain.js';
 import { createViewRegistry, createFactorBar, slopeFromLegend, demoParts } from '../src/ui/factors.js';
@@ -13,7 +12,11 @@ import { simulatedTexture, simulatedKey, SIMULATED_TEXT } from '../src/layers.js
 import { slopeClass } from '../src/site.js';
 import { placeCard } from '../src/ui/pins.js';
 import { FIXED_SETUP, DEFAULT_BRIEF, defaultBrief } from '../src/state.js';
+import { sizeBrief, briefSetup } from '../src/sizing/index.js';
+import { loadBundle } from '../src/sizing/engine.js';
 
+const sizingBundle = await loadBundle(new URL('../sizing/screening-v1.json', import.meta.url));
+const sizingCases = await (await fetch(new URL('./fixtures/sizing.json', import.meta.url))).json();
 const metrics = (await (await fetch('../metrics.json')).json()).metrics;
 const R = 3396190;
 const TOPUP = { loadKw: 150, power: 'topup' };
@@ -222,159 +225,336 @@ test('ui facility: one fixed case, the reference facility, labelled illustrative
   assertEq(FACILITY_LABEL, 'Illustrative reference — not calculated from your project.');
 });
 
-// ---- the construction brief (Task 9d) ----
-test('brief defaults match the mockup example', () => {
-  const b = DEFAULT_BRIEF;
-  assertEq(b.name, 'Gale landing pad & access road');
-  assertEq(b.types, ['Landing pad', 'Road']);
-  assertEq(b.location, 'Gale study region — site not selected');
+const SIZED_LABEL = 'Calculated from your brief with screening assumptions — not a validated design.';
+const sizedSetup = (name) => { const b = sizingCases.find((c) => c.name === name).brief; return briefSetup(sizeBrief(b, sizingBundle), b); };
+const textOf = (el) => el.innerText.replace(/\s+/g, ' ').trim();
+
+test('ui facility: the label is the reference label for the reference facility, the sized label for a brief setup', () => {
+  assertEq(facilityLabel(FIXED_SETUP), FACILITY_LABEL);
+  assertEq(facilityLabel(sizedSetup('example_filled')), SIZED_LABEL);
+});
+
+test('ui facility: the compact line for a brief setup names computers, peak kW and the parts', () => {
+  const setup = sizedSetup('example_filled');
+  assertEq(facilityLine(setup), '13 computers, 9.6 kW peak; compound 36 × 10 m, radiator 9 × 9 m, solar 14 × 14 m');
+  const p = facilityEl(setup, { lead: 'Facility' });
+  assert(p.querySelector('.ev-assumption'), 'the assumption chip');
+  assertEq(p.querySelector('.illustrative').textContent, SIZED_LABEL);
+  assertEq(facilityEl(setup, { label: false }).querySelector('.illustrative'), null);
+  assertEq(facilityEl(FIXED_SETUP).querySelector('.illustrative').textContent, FACILITY_LABEL);
+});
+
+test('ui facility step: a brief setup lists the calculated facility, kept for the whole project', () => {
+  const el = document.createElement('section');
+  document.body.append(el);
+  try {
+    createFacility(el, { setup: () => sizedSetup('example_filled'), onAssess: () => {} }).open();
+    const t = textOf(el);
+    for (const want of ['13 computers', 'Results are kept for the whole project', SIZED_LABEL, '17 TB', '9.6 kW', '3.9 kW', '95.4 kWh', '97 m²', '193 m²', '55 m²', '82 m²',
+      '6.5 kWh', '360 m²', '636 m²', '6.2 kPa']) assert(t.includes(want), 'missing ' + want + ' in: ' + t);
+    assert(!t.includes(FACILITY_LABEL) && !t.includes('Sizing model: planned'), 'no reference label or planned line');
+    assert(el.querySelectorAll('.ev-assumption').length >= 10, 'every value carries the assumption chip');
+    assertEq(el.querySelector('#facility-assess').textContent, 'Assess locations →');
+  } finally { el.remove(); }
+});
+
+test('ui facility step: ranges show both scenarios and mark the assessed one; compare and inside-the-base lines', () => {
+  const show = (name) => { const el = document.createElement('section'); document.body.append(el); createFacility(el, { setup: () => sizedSetup(name), onAssess: () => {} }).open(); const t = textOf(el); el.remove(); return [t, el]; };
+  const [ranges] = show('ranges');
+  assert(ranges.includes('Lower end of your ranges') && ranges.includes('Upper end of your ranges'), ranges);
+  assertEq(ranges.split('Assessed on the map').length, 2);
+  assert(ranges.includes('Inside the base: needs the base\'s space and services'), ranges);
+  const [inside] = show('inside_base');
+  assert(inside.includes('the map still places the dedicated outline'), inside);
+  assert(!inside.includes('Inside the base: needs'), inside);
+  const [single] = show('example_filled');
+  assert(single.includes('Inside the base: needs the base\'s space and services'), single); // compare both is the default
+});
+
+test('ui facility step: a base connection says the base supplies the power', () => {
+  const el = document.createElement('section');
+  document.body.append(el);
+  try {
+    createFacility(el, { setup: () => sizedSetup('base_connection'), onAssess: () => {} }).open();
+    assert(textOf(el).includes('base supplies'), textOf(el));
+  } finally { el.remove(); }
+});
+
+// ---- the construction brief: the Twin Trails intake (Task 9) ----
+const TT_DEFAULTS = { workType: 'earthworks', robots: 20, hours: 12, duration: 180, deadline: 4, name: 'Gale landing pad & access road',
+  surveyPercent: 20, excPercent: 50, surveyActive: 100, otherActive: 80, cadence: 'Once per sol', precision: 'Earthworks check',
+  rawRetention: 30, productRetention: 180, power: 'Solar + storage', basePower: 0, backup: 12 };
+
+test('brief defaults: the Twin Trails example, frozen in the store default', () => {
+  assertEq(defaultBrief(), TT_DEFAULTS);
+  assertEq(DEFAULT_BRIEF, TT_DEFAULTS);
+  assert(Object.isFrozen(DEFAULT_BRIEF), 'the defaults cannot be changed in place');
+  assertEq(briefLine(DEFAULT_BRIEF), 'Gale landing pad & access road · 20 robots');
+  assertEq(briefLine({ ...DEFAULT_BRIEF, name: '  ', robots: 1 }), 'Untitled project · 1 robot');
+});
+
+test('toSizingBrief: the defaults are an earthworks fleet of 4 survey, 10 excavation and 6 transport robots', () => {
+  const b = toSizingBrief(defaultBrief());
   assertEq(b.fleet.map((f) => [f.role, f.count, f.active]), [['Survey', 4, 4], ['Excavation', 10, 8], ['Transport', 6, 4]]);
-  assertEq([fleetTotal(b), activeTotal(b)], [20, 16]);
-  assertEq([b.q.area.mode, b.q.area.unit, b.q.road.mode, b.q.road.unit], ['unknown', 'm²', 'unknown', 'm']); // survey area, road length
-  assertEq([b.q.hours.mode, b.q.hours.value, b.q.hours.unit], ['known', 12, 'h / sol']);
-  assertEq([b.q.deadline.mode, b.q.deadline.value, b.q.deadline.unit], ['known', 1, 'hours']);
-  assertEq([b.q.duration.mode, b.q.retention.mode], ['unknown', 'unknown']);
-  assertEq([b.phase, b.quality, b.late], ['Site preparation', 'Earthworks check', 'Pause dependent work']);
   assertEq(b.jobs, { map: true, progress: true, inspection: false, plan: true });
-  assertEq(b.cadence, { map: 'Once per sol', progress: 'Once per sol', inspection: 'At phase end', plan: 'Every 4 hours' });
-  assertEq([b.power, b.continuity, b.deployment], ['Unknown', 'Unknown', 'Compare both']);
-  assertEq(briefLine(b), 'Gale landing pad & access road · 20 robots');
-  assertEq(summaryRows(b), [['Build', 'Landing pad + Road'], ['Robots', '20 total'], ['Active together', '16'],
-    ['Operating time', '12 h / sol'], ['Turnaround', '1 hour']]);
-  assert(Object.isFrozen(b) && Object.isFrozen(b.fleet[0]) && Object.isFrozen(b.q.hours), 'the defaults cannot be changed in place');
-  const fresh = defaultBrief();
-  fresh.fleet[0].count = 5;
-  assertEq([DEFAULT_BRIEF.fleet[0].count, fleetTotal(fresh), briefLine(fresh)], [4, 21, 'Gale landing pad & access road · 21 robots']);
-  assertEq(briefLine({ ...fresh, name: '  ', fleet: [{ id: 1, role: 'Survey', count: 1, active: 1 }] }), 'Untitled project · 1 robot');
+  assertEq(b.cadence, { map: 'Once per sol', progress: 'Once per sol', plan: 'Once per sol' });
+  assertEq([b.quality, b.power, b.deployment, b.name, b.types], ['Earthworks check', 'Solar + storage', 'Dedicated installation', 'Gale landing pad & access road', []]);
+  assertEq(Object.fromEntries(Object.entries(b.q).map(([k, v]) => [k, [v.mode, v.value]])), {
+    hours: ['known', 12], duration: ['known', 180], deadline: ['known', 4], retention: ['known', 30], products: ['known', 180],
+    backup: ['known', 12], basePower: ['known', 0] });
 });
 
-test('quantity modes', () => {
-  // unknown needs nothing, even with an earlier value kept for when the mode changes back
-  assertEq(quantityError({ mode: 'unknown', unit: 'm²' }), null);
-  assertEq(quantityError({ mode: 'unknown', value: -1, unit: 'm²' }), null);
-  // known needs a value above zero
-  assertEq(quantityError({ mode: 'known', value: 20000, unit: 'm²' }), null);
-  for (const v of [undefined, null, '', 0, -5, NaN]) assertEq(quantityError({ mode: 'known', value: v, unit: 'm²' }), ERRORS.known, 'known ' + v);
-  // range needs both ends above zero and min ≤ max
-  assertEq(quantityError({ mode: 'range', min: 10000, max: 30000, unit: 'm²' }), null);
-  assertEq(quantityError({ mode: 'range', min: 500, max: 500, unit: 'm' }), null);
-  for (const [min, max] of [[30, 10], [0, 10], [undefined, 10], [10, undefined], [-1, 4]]) {
-    assertEq(quantityError({ mode: 'range', min, max, unit: 'm' }), ERRORS.range, 'range ' + min + '–' + max);
+test('toSizingBrief: the defaults are sized; survey work is an all-survey fleet making maps only; a 0.1 h turnaround cannot be sized', () => {
+  const s = sizeBrief(toSizingBrief(defaultBrief()), sizingBundle);
+  assertEq([s.status, s.missing, s.problems], ['sized', [], []]);
+  const survey = toSizingBrief({ ...defaultBrief(), workType: 'survey' });
+  assertEq(survey.fleet.map((f) => [f.role, f.count, f.active]), [['Survey', 20, 20]]);
+  assertEq(survey.jobs, { map: true, progress: false, inspection: false, plan: false });
+  assertEq(sizeBrief(survey, sizingBundle).status, 'sized');
+  const tight = sizeBrief(toSizingBrief({ ...defaultBrief(), deadline: 0.1 }), sizingBundle);
+  assertEq(tight.status, 'cannot_size');
+  assert(tight.problems.length && tight.problems[0].message.startsWith("The results can't be ready within 0.1 hours"), JSON.stringify(tight.problems));
+  // the shares round down, and transport takes the remainder; actives round down
+  const odd = toSizingBrief({ ...defaultBrief(), robots: 7, surveyPercent: 30, excPercent: 30, surveyActive: 50, otherActive: 50 });
+  assertEq(odd.fleet.map((f) => [f.role, f.count, f.active]), [['Survey', 2, 1], ['Excavation', 2, 1], ['Transport', 3, 1]]);
+});
+
+test('intakeError: the shares, each required number, then base power for hybrid or base-connected operation', () => {
+  const d = defaultBrief();
+  assertEq(intakeError(d), null);
+  assertEq(intakeError({ ...d, surveyPercent: 60, excPercent: 50 }), { message: 'Survey and excavation shares must add up to 100% or less.', key: 'surveyPercent', defaults: true });
+  assertEq(intakeError({ ...d, workType: 'survey', surveyPercent: 60, excPercent: 50 }), null); // survey work ignores the shares
+  assertEq(intakeError({ ...d, robots: 0 }), { message: 'Construction robots: enter a whole number from 1 to 1,000 robots.', key: 'robots', defaults: false });
+  assertEq(intakeError({ ...d, robots: 2.5 }).key, 'robots');
+  assertEq(intakeError({ ...d, hours: 25 }), { message: 'Working time: enter a number from 0.1 to 24.65 h / sol.', key: 'hours', defaults: false });
+  assertEq(intakeError({ ...d, duration: null }).key, 'duration');
+  assertEq(intakeError({ ...d, deadline: 0 }).message, 'Results needed within: enter a number from 0.1 to 8,760 hours.');
+  assertEq(intakeError({ ...d, surveyActive: 120 }), { message: 'Survey robots active together: enter a whole number from 0 to 100%.', key: 'surveyActive', defaults: true });
+  assertEq(intakeError({ ...d, power: 'Solar + storage', basePower: 0 }), null); // base power applies to hybrid or base connection only
+  for (const power of ['Hybrid', 'Base connection']) {
+    assertEq(intakeError({ ...d, power, basePower: 0 }), { message: 'Enter the available base power for hybrid or base-connected operation.', key: 'basePower', defaults: true });
+    assertEq(intakeError({ ...d, power, basePower: 20 }), null);
   }
-  // operating time cannot exceed one sol
-  assertEq(SOL_HOURS, 24.65);
-  assertEq(quantityError({ mode: 'known', value: 24.65, unit: 'h / sol' }, { max: SOL_HOURS }), null);
-  assertEq(quantityError({ mode: 'known', value: 25, unit: 'h / sol' }, { max: SOL_HOURS }), ERRORS.hours);
-  assertEq(quantityError({ mode: 'range', min: 8, max: 25, unit: 'h / sol' }, { max: SOL_HOURS }), ERRORS.hours);
-  assertEq(ERRORS.range, 'Enter a positive range with the minimum no greater than the maximum.');
-  assertEq(ERRORS.hours, 'Operating time cannot exceed one Mars day (about 24.65 hours).');
-  // the words for each mode: unknown never reads as zero
-  assertEq(qtext({ mode: 'unknown', value: 20000, unit: 'm²' }), 'Unknown');
-  assertEq(qtext({ mode: 'range', min: 10000, max: 30000, unit: 'm²' }), '10,000–30,000 m²');
-  assertEq(qtext({ mode: 'known', value: 12, unit: 'h / sol' }), '12 h / sol');
-  assertEq([qtext({ mode: 'known', value: 1, unit: 'hours' }), qtext({ mode: 'known', value: 2, unit: 'hours' })], ['1 hour', '2 hours']);
-  assertEq(qtext({ mode: 'known', value: 12, unit: 'h / sol' }, 'hours per sol'), '12 hours per sol');
-  // the tab that holds a bad value says so, and the others pass
-  const b = defaultBrief();
-  b.q.area = { ...b.q.area, mode: 'range', min: 3, max: 1 };
-  b.q.hours = { ...b.q.hours, value: 30 };
-  assertEq([tabError(b, 0), tabError(b, 1), tabError(b, 2)], [ERRORS.range, null, ERRORS.hours]);
-  const c = defaultBrief();
-  assertEq([0, 1, 2, 3].map((t) => tabError(c, t)), [null, null, null, null]);
-  assertEq(tabError({ ...c, name: ' ' }, 0), ERRORS.name);
-  assertEq(tabError({ ...c, types: [] }, 0), ERRORS.types);
-  assertEq(tabError({ ...c, types: ['Other'], other: '' }, 0), ERRORS.other);
-  assertEq(tabError({ ...c, fleet: [] }, 1), ERRORS.fleet);
-  for (const f of [{ count: 2, active: 3 }, { count: 1.5, active: 1 }, { count: -1, active: 0 }]) {
-    assertEq(tabError({ ...c, fleet: [{ id: 1, role: 'Survey', ...f }] }, 1), ERRORS.counts, JSON.stringify(f));
-  }
-  assertEq(tabError({ ...c, jobs: { map: false, progress: false, inspection: false, plan: false } }, 2), ERRORS.jobs);
-  assertEq(tabError({ ...c, q: { ...c.q, road: { mode: 'known', unit: 'm' } } }, 0), ERRORS.known); // a road is built: its length counts
-  assertEq(tabError({ ...c, types: ['Landing pad'], q: { ...c.q, road: { mode: 'known', unit: 'm' } } }, 0), null); // no road: not asked
-  assertEq(tabError(b, 3), ERRORS.range); // the review checks every tab, the first problem first
 });
 
-test('review lists what is still to confirm', () => {
-  const b = defaultBrief();
-  assertEq(stillToConfirm(b), ['Survey area', 'Road length', 'Project duration', 'Data retention']);
-  assertEq(stillToConfirmText(b), 'Survey area, Road length, Project duration, Data retention');
-  assertEq(stillToConfirm({ ...b, types: ['Landing pad'] }), ['Survey area', 'Project duration', 'Data retention']); // no road
-  b.q.area = { ...b.q.area, mode: 'known', value: 20000 };
-  b.q.hours = { ...b.q.hours, mode: 'unknown' };
-  b.q.deadline = { ...b.q.deadline, mode: 'unknown' };
-  assertEq(stillToConfirm(b), ['Road length', 'Operating schedule', 'Turnaround', 'Project duration', 'Data retention']);
-  const all = defaultBrief();
-  for (const k of Object.keys(all.q)) all.q[k] = { ...all.q[k], mode: 'known', value: 5 };
-  assertEq(stillToConfirmText(all), 'No unanswered quantity fields');
-  assertEq(reviewRows(defaultBrief()), [['Construction', 'Landing pad, Road'], ['Work schedule', '12 hours per sol'],
-    ['Results needed', '1 hour'], ['Still to confirm', 'Survey area, Road length, Project duration, Data retention']]);
-  assertEq(REVIEW_FACTORS, ['Buildable terrain', 'Ground & ice evidence', 'Solar conditions', 'Thermal conditions', 'Investigation routes']);
-});
-
-test('brief panel: a label on every control, robot groups added and removed by name, focus kept across tabs', () => {
+function intake(extra = {}, state = defaultBrief()) {
   const el = document.createElement('section'), side = document.createElement('aside');
   document.body.append(el, side);
-  let brief = defaultBrief(), tab = 0, done = 0;
-  const ui = createBrief(el, side, { onChange: (b) => { brief = b; }, onTab: (t) => { tab = t; }, onDone: () => { done += 1; } });
+  const seen = { done: 0, close: 0, state: null };
+  const ui = createBrief(el, side, { onChange: (s) => { seen.state = s; }, onDone: () => { seen.done += 1; }, onClose: () => { seen.close += 1; }, ...extra });
+  ui.open(state);
+  const set = (key, value) => {
+    const c = el.querySelector('[data-input="' + key + '"]');
+    c.value = String(value);
+    c.dispatchEvent(new Event(c.tagName === 'SELECT' ? 'change' : 'input'));
+  };
+  return { el, side, ui, seen, set, find: () => el.querySelector('#brief-find').click(), close: () => { el.remove(); side.remove(); } };
+}
+const texts = (root, sel) => [...root.querySelectorAll(sel)].map((e) => e.textContent.trim());
+
+test('intake panel: the mockup copy, every control labelled, the defaults filled in, the summary aside unused', () => {
+  const p = intake();
   try {
-    ui.open(brief, 0);
-    const labelled = (c) => c.labels.length > 0 || c.getAttribute('aria-label') || c.getAttribute('aria-labelledby');
-    const unlabelled = () => [...el.querySelectorAll('input, select, textarea')].filter((c) => !labelled(c)).map((c) => c.outerHTML.slice(0, 80));
-    assertEq(unlabelled(), []);
-    assertEq([...el.querySelectorAll('.tabs [data-tab]')].map((t) => t.textContent), ['Project', 'Robots', 'Operations', 'Review']);
-    assertEq(el.querySelector('.tabs [aria-current="step"]').dataset.tab, '0');
-    assertEq([...el.querySelectorAll('select[data-mode]')].map((s) => [s.getAttribute('aria-label'), s.value]),
-      [['Survey area certainty', 'unknown'], ['Road length certainty', 'unknown']]);
-    // the name is kept as typed, and the summary beside the tabs follows
-    const name = el.querySelector('#brief-name');
-    name.value = 'Pad B';
-    name.dispatchEvent(new Event('input'));
-    assertEq(brief.name, 'Pad B');
-    // a known area asks for its value with its unit, and keeps the example when switched back
-    const mode = el.querySelector('select[data-mode="area"]');
-    mode.value = 'range';
-    mode.dispatchEvent(new Event('change'));
-    assertEq([...el.querySelectorAll('input[data-q="area"]')].map((i) => i.getAttribute('aria-label')), ['Survey area minimum', 'Survey area maximum']);
-    // the Robots tab, focus on its tab button
-    el.querySelector('.tabs [data-tab="1"]').focus();
-    el.querySelector('.tabs [data-tab="1"]').click();
-    assertEq([tab, document.activeElement && document.activeElement.dataset.tab], [1, '1']);
-    assertEq(unlabelled(), []);
-    const rows = () => [...el.querySelectorAll('.robot-row')].map((r) => [r.querySelector('select').value, ...[...r.querySelectorAll('input')].map((i) => i.value)]);
-    assertEq(rows(), [['Survey', '4', '4'], ['Excavation', '10', '8'], ['Transport', '6', '4']]);
-    assertEq([...el.querySelectorAll('[data-remove]')].map((b) => b.getAttribute('aria-label')), ['Remove Survey group', 'Remove Excavation group', 'Remove Transport group']);
-    const total = el.querySelector('input[data-prop="count"]');
-    total.value = '5';
-    total.dispatchEvent(new Event('input'));
-    assertEq([fleetTotal(brief), el.querySelector('[data-total]').textContent], [21, '21']);
-    assertEq(side.querySelector('[data-summary="Robots"]').textContent, '21 total');
-    el.querySelector('[data-add]').click();
-    assertEq(rows().length, 4);
-    assertEq(document.activeElement, el.querySelector('.robot-row:last-child select')); // the new group, ready to set
-    el.querySelector('.robot-row:last-child [data-remove]').click();
-    assertEq([rows().length, fleetTotal(brief)], [3, 21]);
-    // Continue keeps focus on Continue in the next tab; Back goes back
-    el.querySelector('#brief-next').focus();
-    el.querySelector('#brief-next').click();
-    assertEq([tab, document.activeElement && document.activeElement.id], [2, 'brief-next']);
-    assertEq(unlabelled(), []);
-    el.querySelector('#brief-back').click();
-    assertEq(tab, 1);
-    // an invalid value blocks Continue with its correction
-    total.value = '1';
-    const t2 = el.querySelector('input[data-prop="count"]');
-    t2.value = '1';
-    t2.dispatchEvent(new Event('input'));
-    el.querySelector('#brief-next').click();
-    assertEq([tab, el.querySelector('.alert').textContent], [1, ERRORS.counts]);
-    t2.value = '4';
-    t2.dispatchEvent(new Event('input'));
-    for (let i = 0; i < 2; i++) el.querySelector('#brief-next').click();
-    assertEq(tab, 3);
-    assert(el.textContent.includes('Review before sizing'), 'the review');
-    el.querySelector('#brief-next').click(); // Continue from the review: on to the facility step
-    assertEq(done, 1);
-  } finally { el.remove(); side.remove(); }
+    const el = p.el;
+    assertEq(el.querySelector('#brief-title').textContent, 'Construction site');
+    assertEq([el.querySelector('#brief-close').textContent, el.querySelector('#brief-close').getAttribute('aria-label')], ['Close', 'Close construction brief']);
+    assertEq(el.querySelector('.panel-intro').textContent, 'A few project details. A place to begin.');
+    assertEq(texts(el, '.input-section h3'), ['01 · The construction', '02 · The schedule']);
+    assertEq(texts(el, '.input-section .field-name'), ['Type of work', 'Construction robots', 'Working time', 'Project duration', 'Results needed within']);
+    assertEq(texts(el, '.input-section .required'), Array(5).fill('Required'));
+    assertEq([...el.querySelectorAll('[data-input="workType"] option')].map((o) => [o.value, o.textContent]),
+      [['earthworks', 'Site preparation & earthworks'], ['survey', 'Surveying & terrain mapping']]);
+    const attrs = (k) => { const i = el.querySelector('[data-input="' + k + '"]'); return [i.min, i.max, i.step, i.value, i.nextElementSibling.textContent]; };
+    assertEq(['robots', 'hours', 'duration', 'deadline'].map(attrs), [['1', '1000', '1', '20', 'robots'], ['0.1', '24.65', 'any', '12', 'h / sol'],
+      ['0.1', '10000', 'any', '180', 'sols'], ['0.1', '8760', 'any', '4', 'hours']]);
+    const defaults = el.querySelector('details[data-defaults]');
+    assert(!defaults.open, 'the planning defaults start closed');
+    assert(defaults.querySelector('summary').textContent.startsWith('Planning defaults · optional to customize'), defaults.querySelector('summary').textContent);
+    assert(defaults.querySelector('summary .ev-assumption'), 'the defaults read as assumptions');
+    assertEq(defaults.querySelector('summary + p').textContent, 'Change any assumption below. Your edits are used in the calculation.');
+    assertEq(texts(defaults, '.default-group h3'), ['Robot mix', 'Processing & retention', 'Power & backup']);
+    assertEq(defaults.querySelector('.default-group .sub').textContent, 'Earthworks uses these shares; the remainder is transport. Survey-only work uses an all-survey fleet. Counts round down; transport takes the remainder.');
+    assertEq(texts(defaults, '.field-name'), ['Project name', 'Survey share', 'Excavation share', 'Survey robots active together', 'Other robots active together',
+      'Processing frequency', 'Processing precision', 'Keep raw data', 'Keep processed outputs', 'Power approach', 'Available base power', 'Essential backup duration']);
+    assertEq(defaults.querySelector('.optional').textContent, 'Optional');
+    const opts = (k) => [...el.querySelectorAll('[data-input="' + k + '"] option')].map((o) => o.textContent);
+    assertEq([opts('cadence'), opts('precision'), opts('power')], [['Once per sol', 'Every 4 hours', 'At phase end'],
+      ['Coarse survey', 'Earthworks check', 'Precision assembly'], ['Solar + storage', 'Hybrid', 'Base connection']]);
+    assertEq(defaults.querySelector(':scope > p.sub').textContent,
+      'Planning assumptions, not validated design recommendations. Base power applies to hybrid or base-connected operation.');
+    const sorted = (pairs) => pairs.sort(([a], [b]) => (a < b ? -1 : 1));
+    assertEq(sorted([...el.querySelectorAll('[data-input]')].map((c) => [c.dataset.input, c.value])), sorted(Object.entries(TT_DEFAULTS).map(([k, v]) => [k, String(v)])));
+    const labelled = (c) => c.labels.length > 0 || c.getAttribute('aria-label');
+    assertEq([...el.querySelectorAll('input, select')].filter((c) => !labelled(c)).map((c) => c.outerHTML.slice(0, 80)), []);
+    const alert = el.querySelector('.form-error');
+    assertEq([alert.getAttribute('role'), alert.textContent], ['alert', '']);
+    assertEq(el.querySelector('.input-caption').textContent, 'Editable defaults · required fields are marked');
+    assertEq(texts(el, 'button.primary'), ['Find area']);
+    assertEq(el.querySelectorAll('.tabs, [data-tab], #brief-next').length, 0);
+    assertEq(p.side.children.length, 0);
+  } finally { p.close(); }
+});
+
+test('intake panel: every edit goes to onChange with numbers as numbers; Close keeps the values', () => {
+  const p = intake();
+  try {
+    p.set('robots', 30);
+    assertEq(p.seen.state.robots, 30);
+    p.set('name', 'North trench');
+    p.set('workType', 'survey');
+    p.set('power', 'Hybrid');
+    assertEq([p.seen.state.name, p.seen.state.workType, p.seen.state.power, p.seen.state.hours], ['North trench', 'survey', 'Hybrid', 12]);
+    p.set('hours', '');
+    assertEq(p.seen.state.hours, null);
+    p.el.querySelector('#brief-close').click();
+    assertEq([p.seen.close, p.seen.done], [1, 0]);
+    p.ui.open(p.seen.state); // reopened with the values kept
+    assertEq([p.el.querySelector('[data-input="robots"]').value, p.el.querySelector('[data-input="name"]').value], ['30', 'North trench']);
+  } finally { p.close(); }
+});
+
+test('intake panel: shares over 100% open the defaults and say so; Find area waits', () => {
+  const p = intake();
+  try {
+    p.set('surveyPercent', 60);
+    p.set('excPercent', 50);
+    p.find();
+    assertEq(p.el.querySelector('.form-error').textContent, 'Survey and excavation shares must add up to 100% or less.');
+    assert(p.el.querySelector('details[data-defaults]').open, 'the disclosure is open');
+    assertEq(p.seen.done, 0);
+    p.set('excPercent', 40);
+    p.find();
+    assertEq([p.seen.done, p.el.querySelector('.form-error').textContent], [1, '']);
+  } finally { p.close(); }
+});
+
+test('intake panel: hybrid or base connection needs the available base power', () => {
+  const p = intake();
+  try {
+    p.set('power', 'Base connection');
+    p.find();
+    assertEq(p.el.querySelector('.form-error').textContent, 'Enter the available base power for hybrid or base-connected operation.');
+    assertEq([...p.el.querySelectorAll('[aria-invalid="true"]')].map((c) => c.dataset.input), ['basePower']);
+    assert(p.el.querySelector('details[data-defaults]').open, 'the disclosure is open');
+    assertEq(p.seen.done, 0);
+  } finally { p.close(); }
+});
+
+test('intake panel: a required number out of range is named; the defaults are valid and Find area calls onDone once', () => {
+  const p = intake();
+  try {
+    p.set('robots', 0);
+    p.find();
+    assertEq([p.seen.done, p.el.querySelector('.form-error').textContent], [0, 'Construction robots: enter a whole number from 1 to 1,000 robots.']);
+    assert(!p.el.querySelector('details[data-defaults]').open, 'a main field keeps the defaults closed');
+    p.set('robots', 20);
+    p.find();
+    assertEq(p.seen.done, 1);
+  } finally { p.close(); }
+});
+
+test('intake panel: while the sizing model loads, "Sizing in progress" with Back to brief, which cancels', async () => {
+  let release = null;
+  const loading = () => new Promise((r) => { release = r; });
+  let p = intake({ pending: loading });
+  try {
+    p.find();
+    assertEq(p.el.querySelector('[role="status"]').textContent, 'Sizing in progress');
+    assertEq(p.el.querySelector('#brief-cancel').textContent, 'Back to brief');
+    p.el.querySelector('#brief-cancel').click();
+    assert(p.el.querySelector('#brief-find'), 'the intake again');
+    release();
+    await new Promise((r) => setTimeout(r, 0));
+    assertEq(p.seen.done, 0);
+  } finally { p.close(); }
+  p = intake({ pending: loading });
+  try {
+    p.find();
+    assertEq(p.seen.done, 0);
+    release();
+    await new Promise((r) => setTimeout(r, 0));
+    assertEq(p.seen.done, 1);
+  } finally { p.close(); }
+});
+
+// ---- the facility step: ready for location matching, or review your brief (Task 9) ----
+const ttSized = (state = defaultBrief()) => { const sb = toSizingBrief(state); return { sb, setup: briefSetup(sizeBrief(sb, sizingBundle), sb) }; };
+
+test('facility step ready: the calculated facility, then what it needs from a site, Edit brief and Assess locations', () => {
+  const el = document.createElement('section');
+  document.body.append(el);
+  let edit = 0, assess = 0;
+  try {
+    const { sb, setup } = ttSized();
+    createFacility(el, { setup: () => setup, brief: () => sb, onAssess: () => { assess += 1; }, onEdit: () => { edit += 1; } }).open();
+    assertEq(el.querySelector('#facility-title').textContent, 'Ready for location matching.');
+    assertEq(el.querySelector('.panel-intro').textContent, 'Your construction requirements have been calculated.');
+    const t = textOf(el);
+    assert(t.includes(SIZED_LABEL) && t.includes('Results are kept for the whole project.') && !t.includes('Prototype ends here'), t);
+    assertEq(el.querySelector('.site-needs h3').textContent, 'What the facility needs from a site');
+    const rows = [...el.querySelectorAll('.site-needs .factor-list li')];
+    assertEq(rows.map((li) => li.firstChild.textContent), REVIEW_FACTORS);
+    assert(rows.every((li) => li.querySelector('.factor-value.sized') && li.querySelector('.ev-assumption')), 'every requirement sized, with its chip');
+    assertEq(texts(el, '.form-actions button'), ['Edit brief', 'Assess locations →']);
+    assertEq(texts(el, 'button.primary'), ['Assess locations →']);
+    el.querySelector('#facility-edit').click();
+    el.querySelector('#facility-assess').click();
+    assertEq([edit, assess], [1, 1]);
+    // processed outputs kept for less than the project say so
+    const short = ttSized({ ...defaultBrief(), productRetention: 90 });
+    createFacility(el, { setup: () => short.setup, brief: () => short.sb, onAssess: () => {}, onEdit: () => {} }).open();
+    assert(textOf(el).includes('Processed outputs are kept for 90 sols.'), textOf(el));
+  } finally { el.remove(); }
+});
+
+test('facility step review: the Sizing says what to change; no way on to the locations', () => {
+  const el = document.createElement('section');
+  document.body.append(el);
+  let edit = 0;
+  try {
+    const { setup } = ttSized();
+    const f = createFacility(el, { setup: () => setup, brief: () => null, onAssess: () => {}, onEdit: () => { edit += 1; } });
+    const tight = sizeBrief(toSizingBrief({ ...defaultBrief(), deadline: 0.1 }), sizingBundle);
+    f.open(tight);
+    assertEq(el.querySelector('#facility-title').textContent, 'Review your brief.');
+    assertEq(el.querySelector('.panel-intro').textContent, 'This workload needs a revised schedule or equipment assumptions. Try allowing more time for processed results.');
+    assertEq(texts(el, '.sizing-problem'), tight.problems.map((x) => x.message));
+    assertEq(el.querySelector('#facility-assess'), null);
+    assertEq(texts(el, 'button.primary'), ['Edit brief']);
+    el.querySelector('#facility-edit').click();
+    assertEq(edit, 1);
+    f.open({ status: 'needs_answers', missing: [{ label: 'Keep raw survey data' }, { label: 'Essential backup' }], problems: [], options: [], assessed: null });
+    assertEq(texts(el, '.sizing-problem'), ['Answer these to size the facility: Keep raw survey data, Essential backup.']);
+    f.open(); // the ready view again, from the setup
+    assertEq(el.querySelector('#facility-title').textContent, 'Ready for location matching.');
+  } finally { el.remove(); }
+});
+
+test('facility step ready: a base connection has no solar plot', () => {
+  const el = document.createElement('section');
+  document.body.append(el);
+  try {
+    const { sb, setup } = ttSized({ ...defaultBrief(), power: 'Base connection', basePower: 50 });
+    assertEq(setup.sizing.status, 'sized');
+    createFacility(el, { setup: () => setup, brief: () => sb, onAssess: () => {}, onEdit: () => {} }).open();
+    const solar = [...el.querySelectorAll('.site-needs .factor-list li')].find((li) => li.firstChild.textContent === 'Solar conditions');
+    assert(/^No solar plot: the base supplies 50 kW, the facility peaks at \d+\.\d kW$/.test(solar.querySelector('.factor-value').textContent), solar.textContent);
+  } finally { el.remove(); }
+});
+
+test('landing: the Twin Trails copy and one primary action, which becomes Continue project brief', () => {
+  const el = document.createElement('section');
+  document.body.append(el);
+  let started = 0;
+  try {
+    createLanding(el, { onStart: () => { started += 1; } });
+    assertEq(texts(el, 'h1 span'), ['Your project.', 'Your next frontier.']);
+    assertEq(el.querySelector('.support').textContent, 'Start with the construction your robots will do. Find where its supporting facility could be built.');
+    const start = el.querySelector('#landing-start');
+    assertEq([start.className, start.textContent], ['primary', 'Define construction project']);
+    start.click();
+    assertEq([started, start.textContent], [1, 'Continue project brief']);
+  } finally { el.remove(); }
 });
 
 // ---- status labels (Task 9b) ----
@@ -760,4 +940,24 @@ test('simulated views: the same seeded field per site and factor, labelled as si
   const k = simulatedKey('surface temperature');
   assertEq([k.text, k.missing, k.simulated], [SIMULATED_TEXT, true, true]);
   assertEq(SIMULATED_TEXT, 'Simulated view: data not collected for this site');
+});
+
+// ---- the list's line when no candidate meets every requirement ----
+function listHtml(rows) {
+  const el = document.createElement('div'), region = { id: 'r', name: 'Region R', sites: rows.map((r) => ({ id: r.siteId })) };
+  const names = new Map(rows.map((r) => [r.siteId, r.siteId]));
+  createList(el, { onSite() {}, onRegion() {}, onEdit() {} }).render({ region, status: { state: 'ready' }, rows,
+    results: new Map(rows.map((r) => [r.siteId, new Map()])), sites: new Map(), metrics, openSiteId: null, names, context: 'ctx', brief: '',
+    regions: [region], regionStatus: new Map(), selectedSite: null });
+  return el;
+}
+const rowOf = (siteId, failures) => ({ siteId, priority: 1, failures, equalWith: [], criticalUnknowns: [] });
+
+test('ui list: every row failed says no candidate meets every requirement, above the rows; one clean row does not', () => {
+  const none = listHtml([rowOf('a', ['BT-05']), rowOf('b', ['BT-04'])]);
+  const line = none.querySelector('.no-candidate');
+  assertEq(line.textContent, 'No candidate meets every requirement for this facility');
+  assert(line.compareDocumentPosition(none.querySelector('ol.rows')) & Node.DOCUMENT_POSITION_FOLLOWING, 'above the rows');
+  assertEq(listHtml([rowOf('a', ['BT-05']), rowOf('b', [])]).querySelector('.no-candidate'), null);
+  assertEq(listHtml([]).querySelector('.no-candidate'), null);
 });

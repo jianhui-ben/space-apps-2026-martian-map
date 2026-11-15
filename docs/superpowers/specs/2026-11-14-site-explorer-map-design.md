@@ -55,10 +55,11 @@ The brief is recorded and shown; it never changes a status or the priority, beca
 model is planned and not implemented.
 
 **2 Facility specifications:**
-- The sizing stage is shown as planned.
-- The map's facility layout is the legacy reference facility, labelled exactly "Illustrative
-  reference — not calculated from your project."
-- It is never presented as an estimate from the brief.
+- The facility calculated from the brief is listed, labelled exactly "Calculated from your brief
+  with screening assumptions — not a validated design.", and the step states that results are kept
+  for the whole project. The map places that facility's outlines.
+- The reference label applies to the legacy reference facility only; it is never presented as an
+  estimate from the brief.
 
 **3 Location assessment:** the globe, regions, priority list and site cards below. Their headers
 carry the brief's name.
@@ -174,7 +175,8 @@ scale, with their cards next to each other.
 One fixed case, the reference facility from `docs/reference-facility.md`: 150 kW IT (225 kW
 total facility load), firm base power plus a solar top-up. The user doesn't choose a size or power
 option. It is shown as "Illustrative reference — not calculated from your project." wherever its
-numbers appear. Every number is a scenario assumption and sits in the intake's Assumptions disclosure: "Base
+numbers appear. That label applies to the reference facility only; the facility calculated from the
+brief carries "Calculated from your brief with screening assumptions — not a validated design." Every number is a scenario assumption and sits in the intake's Assumptions disclosure: "Base
 services included. Firm power plus supplemental solar assumed; capacity unverified. Facility sizing
 requires workload validation." The disclosure then lists the facility and its plots.
 

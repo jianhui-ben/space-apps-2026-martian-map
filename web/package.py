@@ -24,7 +24,7 @@ MAX_FILE_BYTES = 100 * 1024 * 1024
 MAX_TOTAL_BYTES = 300 * 1024 * 1024
 MANIFESTS = ("datasets.json", "src/route/datasets.json", "src/walk/datasets.json")
 WEB_FILES = ("index.html", "styles.css", "metrics.json", "datasets.json")
-WEB_DIRS = ("src", "vendor")
+WEB_DIRS = ("src", "vendor", "sizing")
 REDUCE_BELOW_M = 2
 BLOCK = 2
 

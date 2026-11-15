@@ -114,11 +114,17 @@ const fmt = (v, d) => (Number.isFinite(v) ? v.toFixed(d) : '—');
 export function terrainChecks(site, layout, setup, scenario, { final = true } = {}) {
   const out = new Map();
   const p = assumed(scenario, 'dem_vertical_precision_m', 'value', 0.25);
-  const padLimit = assumed(scenario, 'max_local_pad_slope_deg', 'value', 10);
+  // A brief setup's calculated limits replace the scenario's; one the brief left unresolved keeps the scenario value.
+  const specs = setup && setup.source === 'brief' && setup.sizing && setup.sizing.assessed && setup.sizing.assessed.specifications;
+  const fromBrief = (key, fallback) => {
+    const v = specs && specs[key];
+    return v && v.status === 'resolved' && Number.isFinite(v.value) ? v.value : fallback;
+  };
+  const padLimit = fromBrief('local_slope_limit_deg', assumed(scenario, 'max_local_pad_slope_deg', 'value', 10));
   const padIdeal = assumed(scenario, 'max_local_pad_slope_deg', 'ideal', 5);
-  const conLimit = assumed(scenario, 'max_construction_slope_deg', 'value', 5);
+  const conLimit = fromBrief('pad_slope_limit_deg', assumed(scenario, 'max_construction_slope_deg', 'value', 5));
   const conIdeal = assumed(scenario, 'max_construction_slope_deg', 'ideal', 2);
-  const maxRough = assumed(scenario, 'max_roughness_m', 'value', 0.3);
+  const maxRough = fromBrief('roughness_limit_m', assumed(scenario, 'max_roughness_m', 'value', 0.3));
   const grids = site.grids || {};
   const fps = Object.fromEntries(layout.footprints.map((f) => [f.id, f]));
   const compound = fps.compound;

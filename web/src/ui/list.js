@@ -180,14 +180,15 @@ export function createList(el, { onSite, onRegion, onEdit }) {
     head.append(h('h3', 'region-name', region.name), h('span', 'count', plural(region.sites.length, 'candidate site')));
     el.append(head);
     if (!status || status.state === 'loading') {
-      const n = region.sites.length;
-      el.append(h('p', 'loading', 'Checking ' + plural(n, 'site') + ': loading the elevation, slope and roughness grids and placing the facility…'));
+      el.append(...loadingEls(region, status || {}, results, metrics, names));
+      el.scrollTop = scroll;
       return;
     }
     if (status.state === 'failed') {
       el.append(h('p', 'failed', 'The sites could not be checked: ' + status.error + '. Nothing here is ranked.'));
       return;
     }
+    if ((rows || []).length && rows.every((r) => r.failures.length)) el.append(h('p', 'no-candidate', 'No candidate meets every requirement for this facility'));
     el.append(factorHeader('cols'));
     const list = h('ol', 'rows');
     let chosen = null;
@@ -225,6 +226,41 @@ export function createList(el, { onSite, onRegion, onEdit }) {
     el.scrollTop = scroll;
   }
   return { render, focus: () => { const t = el.querySelector('h2'); if (t) t.focus({ preventScroll: true }); } };
+}
+
+// While a region loads: what is happening, the bytes so far, and a row per site, in the region's order and never
+// numbered: a checked site shows its factor icons, one still loading says so (missing data never reads as fine).
+// The ranked, clickable rows replace these once every site is in.
+export function loadingEls(region, status, results, metrics, names) {
+  const n = region.sites.length, done = new Set(status.done || []);
+  const mb = (b) => Math.round(b / 1e6);
+  const out = [h('p', 'loading', 'Checking ' + plural(n, 'site') + ': loading the elevation, slope and roughness grids and placing the facility…')];
+  const prog = h('p', 'progress', 'Loading ' + plural(n, 'site') + (status.totalBytes ? ' · ' + mb(Math.min(status.bytes || 0, status.totalBytes)) + ' of ' + mb(status.totalBytes) + ' MB' : '')
+    + ' · ' + done.size + ' of ' + n + ' checked');
+  prog.setAttribute('role', 'status');
+  out.push(prog, factorHeader('cols'));
+  const list = h('ol', 'rows pending-rows');
+  for (const s of region.sites) {
+    const res = done.has(s.id) ? results.get(s.id) : null;
+    const li = h('li', '');
+    const row = h('div', 'site-pending');
+    row.dataset.site = s.id;
+    row.dataset.state = res ? 'checked' : 'loading';
+    const prio = h('span', 'prio', '·');
+    prio.setAttribute('aria-label', 'Not ranked yet');
+    row.append(prio, h('span', 'nm', shortName((names && names.get(s.id)) || s.name || s.id)),
+      h('span', 'verdict', res ? 'Checked; ranked when all ' + plural(n, 'site') + ' are in' : 'Loading its grids…'));
+    if (res) {
+      const facts = h('span', 'facts'), icons = h('span', 'icons');
+      for (const c of factorCells(res, metrics, s.id)) icons.append(iconEl(c));
+      facts.append(icons);
+      row.append(facts);
+    }
+    li.append(row);
+    list.append(li);
+  }
+  out.push(list);
+  return out;
 }
 
 // Identity tags for objects, so a re-render happens only when an input was replaced.

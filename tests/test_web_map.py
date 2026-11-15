@@ -119,23 +119,22 @@ def _open_globe(page, server_url, query=""):
     page.set_viewport_size({"width": 1280, "height": 800})
     page.goto(server_url + "/" + query)
     wait_ready(page, timeout_ms=60000)
-    _start(page)  # landing -> the brief -> the facility step -> "Assess locations →" (Task 9d); the brief's defaults
+    _start(page)  # landing -> the intake -> Find area -> the facility step -> "Assess locations →" (Task 9); the defaults
 
 
-def _continue(page, tab):
-    """The brief's Continue, to the given tab (0-3)."""
-    page.locator("#brief-next").click()
-    page.wait_for_function("(t) => __map.store.get('briefTab') === t", arg=tab, timeout=10000)
+def _find_area(page):
+    """The intake's "Find area" -> the facility step, ready for location matching (the sizing may wait for its coefficients)."""
+    page.locator("#brief-find").click()
+    page.locator("#facility").wait_for(state="visible", timeout=30000)
+    page.locator("#facility-assess").wait_for(state="visible", timeout=10000)
 
 
 def _to_facility(page):
-    """Landing -> the construction brief's four tabs, walked with Continue -> the facility step (Task 9d)."""
+    """Landing -> the Twin Trails construction intake, its editable defaults as they are -> Find area -> the facility step
+    (Task 9)."""
     page.locator("#landing-start").click()
     page.locator("#brief").wait_for(state="visible", timeout=10000)
-    for tab in (1, 2, 3):
-        _continue(page, tab)
-    page.locator("#brief-next").click()
-    page.locator("#facility").wait_for(state="visible", timeout=10000)
+    _find_area(page)
 
 
 def _start(page):
@@ -305,6 +304,15 @@ def test_globe_wheel_over_pin_zooms(page, server_url):
 SITE = "near_base_north"
 
 
+def _assert_arrival_alt(page, site_id):
+    """R23 as built: the fly-in ends above the layout centre, 700 m for the 60 m reference compound and proportionally
+    closer for a smaller sized one (never below 250 m), so the sized layout's handles show on arrival."""
+    alt = page.evaluate("__map.globe.altitude()")
+    w = page.evaluate("(id) => __map.layoutStore.get(id).footprints.find((f) => f.id === 'compound').w", site_id)
+    want = max(250, 700 * min(1, w / 60))
+    assert 0.86 * want < alt < 1.14 * want, (alt, want, w)
+
+
 def _open_site(page, server_url, site_id=SITE):
     _open_globe(page, server_url)
     page.evaluate("(id) => __map.openSite(id).then(() => true)", site_id)
@@ -330,8 +338,7 @@ def test_site_open_near_base_north(page, server_url):
     d = page.evaluate("__map.siteView.debug.drape()")
     assert d["mode"] == "hirise" and d["site"]["ok"] > 0 and d["site"]["bad"] == 0, d
     assert d["site"]["z"] == 15 and d["trip"]["z"] == 14, d
-    alt = page.evaluate("__map.globe.altitude()")
-    assert 600 < alt < 800, alt  # R23: the fly-in ends 700 m above the layout centre
+    _assert_arrival_alt(page, SITE)
     tilt = page.evaluate("""() => { const c = __map.globe.camera, f = new c.position.constructor();
         c.getWorldDirection(f); return 180 / Math.PI * f.angleTo(c.position.clone().normalize().negate()); }""")
     assert 50 < tilt < 60, tilt
@@ -436,7 +443,7 @@ def test_site_rotate_layout(page, server_url):
     _open_site(page, server_url)
     placement = "__map.layoutStore.get('%s').placement" % SITE
     page.evaluate("""() => { const p = %s, v = __map.siteView;
-        return __map.globe.flyTo(p.centerLon, p.centerLat, 700, 0, {tiltDeg: 45, targetAltM: v.debug.groundAt(p.centerLon, p.centerLat)}); }""" % placement)
+        return __map.globe.flyTo(p.centerLon, p.centerLat, 400, 0, {tiltDeg: 45, targetAltM: v.debug.groundAt(p.centerLon, p.centerLat)}); }""" % placement)
     handle = page.locator(".site-handle")
     assert not handle.is_visible()  # Task 9b: the handles sit on the selected footprint only
     c = page.evaluate("__map.siteView.debug.footprintScreen('compound')")
@@ -584,7 +591,7 @@ def test_flow_intake_to_priority_list(page, server_url):
     hosts = record_request_hosts(page)
     _boot(page, server_url)
     _start(page)
-    assert page.evaluate("__map.store.get('setup')") == {"loadKw": 150, "power": "topup"}  # the fixed facility
+    assert page.evaluate("__map.store.get('setup').source") == "brief"  # the facility calculated from the brief
     assert page.locator("#panel .site-row").count() == 0  # whole planet: no region in view yet
     cards = page.locator("#panel .region-card")
     assert cards.count() == 3, cards.all_inner_texts()
@@ -660,8 +667,7 @@ def test_flow_card_sections(page, server_url):
     _start(page)
     _enter(page, "gale")
     _open_row(page, SITE)
-    alt = page.evaluate("__map.globe.altitude()")
-    assert 600 < alt < 800, alt  # R23: 700 m above the layout centre
+    _assert_arrival_alt(page, SITE)
     assert 50 < _tilt(page) < 60
     for region in ("gale", "jezero", "arcadia"):  # region pins are hidden while a site is open
         assert not page.locator(".pin[data-region=%s]" % region).is_visible(), region
@@ -808,8 +814,8 @@ def test_drag_failure_reads_plainly(page, server_url):
 
 # ---------- ARES design guidance (Task 9b) and the construction brief (Task 9d) ----------
 
-LANDING_HEADLINE = "Built for your mission."  # the Guided brief's outlined line beside its globe (Task 9d)
-LANDING_SUPPORT = "Describe your construction project to explore locations for its supporting data center."
+LANDING_HEADLINE = ["Your project.", "Your next frontier."]  # the Twin Trails heading's two lines beside its globe (Task 9)
+LANDING_SUPPORT = "Start with the construction your robots will do. Find where its supporting facility could be built."
 LANDING_ACTION = "Define construction project"  # design-reference/mars-construction-twin-trails.html
 LANDING_CONTINUE = "Continue project brief"
 ASSUMPTIONS = ("Base services included. Firm power plus supplemental solar assumed; capacity unverified. "
@@ -876,7 +882,8 @@ def test_landing_matches_mockup(page, server_url):
     hosts = record_request_hosts(page)
     _boot(page, server_url)
     landing = page.locator("#landing")
-    assert landing.locator("h1").text_content() == LANDING_HEADLINE
+    assert landing.locator("h1").text_content() == " ".join(LANDING_HEADLINE)
+    assert _texts(page, "#landing h1 > span") == LANDING_HEADLINE
     assert landing.locator("p.support").text_content() == LANDING_SUPPORT
     primaries = page.locator("button.primary:visible")
     assert primaries.count() == 1, primaries.all_inner_texts()  # one main action
@@ -919,14 +926,13 @@ def test_design_tokens_and_fonts(page, server_url):
     panel = page.evaluate("""(() => { const s = getComputedStyle(document.getElementById('brief'));
         return [s.borderTopWidth, s.borderTopColor, s.borderTopLeftRadius]; })()""")
     assert panel == ["1px", "rgb(53, 64, 72)", "12px"], panel
-    find = page.evaluate("""(() => { const s = getComputedStyle(document.getElementById('brief-next'));
+    find = page.evaluate("""(() => { const s = getComputedStyle(document.getElementById('brief-find'));
         return [s.backgroundColor, s.color, parseFloat(s.borderTopLeftRadius)]; })()""")
     assert find[0] == "rgb(237, 196, 155)" and find[1] == "rgb(29, 33, 31)" and 7 <= find[2] <= 8, find
     _no_tiny_text_or_small_targets(page, "brief")
-    for tab in (1, 2, 3):
-        _continue(page, tab)
-    page.locator("#brief-next").click()
-    page.locator("#facility").wait_for(state="visible", timeout=10000)
+    page.locator("#brief details[data-defaults] > summary").click()  # the planning defaults, open
+    _no_tiny_text_or_small_targets(page, "brief defaults")
+    _find_area(page)
     page.locator("#facility details.assumptions summary").click()
     _no_tiny_text_or_small_targets(page, "facility")
     page.locator("#facility-assess").click()
@@ -979,8 +985,8 @@ def test_globe_keyboard_buttons(page, server_url):
     assert lat1 > lat0 + 3, (lat0, lat1)
     # keys typed in a field never move the globe
     page.locator("#results-edit").click()
-    page.locator('#brief .tabs [data-tab="0"]').click()
-    page.locator("#brief-name").focus()
+    page.locator("#brief details[data-defaults] > summary").click()  # the project name sits in the planning defaults
+    page.locator('#brief [data-input="name"]').focus()
     lon2 = _camera_lon(page)
     page.keyboard.press("ArrowRight")
     page.wait_for_timeout(500)
@@ -1180,10 +1186,7 @@ def test_references_replaces_legend_and_chips(page, server_url):
     page.locator("#landing-start").click()
     page.locator("#brief").wait_for(state="visible", timeout=10000)
     _stage_has_one_references(page, "brief")
-    for tab in (1, 2, 3):
-        _continue(page, tab)
-    page.locator("#brief-next").click()
-    page.locator("#facility").wait_for(state="visible", timeout=10000)
+    _find_area(page)
     _stage_has_one_references(page, "facility")
     page.locator("#facility-assess").click()
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
@@ -1593,15 +1596,18 @@ def test_factor_views_jezero(page, server_url):
     assert page.console_errors == []
 
 
-# ---------- the construction brief and the facility step (Task 9d) ----------
+# ---------- the construction brief and the facility step (Task 9: the Twin Trails intake) ----------
 
-BRIEF_HEADING = "Plan the work. Find its foundation."
-BRIEF_SUB = "Start with the construction your robots will do."
+BRIEF_TITLE = "Construction site"  # design-reference/mars-construction-twin-trails.html
+BRIEF_INTRO = "A few project details. A place to begin."
+DEFAULTS_SUMMARY = "Planning defaults · optional to customize"
+READY = "Ready for location matching."
 PLANNING_CONTEXT = "Gale crater · Construction planning"
 STEPS = ["1 Construction brief", "2 Facility specifications", "3 Location assessment"]
 FACILITY_LABEL = "Illustrative reference — not calculated from your project."
-SIZING_PLANNED = "Sizing model: planned. It will estimate compute, storage, power, heat rejection and footprint from your brief."
+SIZED_LABEL = "Calculated from your brief with screening assumptions — not a validated design."
 GALE_SCENARIO = Path(__file__).resolve().parent.parent / "scenario" / "gale.json"
+REQUIREMENT_ROWS = ["Buildable terrain", "Ground & ice evidence", "Solar conditions", "Thermal conditions", "Investigation routes"]
 
 
 def _steps(page):
@@ -1614,120 +1620,92 @@ def _texts(page, sel):
     return [t.strip() for t in page.locator(sel).all_text_contents()]
 
 
-def _summary(page):
-    return page.evaluate("[...document.querySelectorAll('#brief-summary dl > div')].map((d) => [d.querySelector('dt').textContent, d.querySelector('dd').textContent])")
+def _field_names(page, sel):
+    """The intake's field labels inside sel, in panel order."""
+    return _texts(page, sel + " .construction-field > .field-name")
 
 
-def test_brief_tabs_and_copy(page, server_url):
+def _computers(text):
+    """The facility list's computer count ("4 computers (3 active, 1 spare)"), or None."""
+    m = re.search(r"(?<!\d)(\d+) computers? \(\d+ active, \d+ spare\)", text)
+    return int(m.group(1)) if m else None
+
+
+def test_brief_intake_and_copy(page, server_url):
     hosts = record_request_hosts(page)
     _boot(page, server_url)
     assert page.locator("#landing p.support").text_content() == LANDING_SUPPORT
     page.locator("#landing-start").click()
     brief = page.locator("#brief")
     brief.wait_for(state="visible", timeout=10000)
-    assert page.evaluate("[__map.store.get('stage'), __map.store.get('briefTab')]") == ["brief", 0]
-    assert page.locator("#landing").is_hidden() and page.locator("#brief-summary").is_visible()
+    assert page.evaluate("__map.store.get('stage')") == "brief"
+    assert page.locator("#landing").is_hidden() and page.locator("#brief-summary").is_hidden()  # one panel, no summary beside it
     assert page.locator("#header .base-context").text_content() == PLANNING_CONTEXT
     assert _steps(page) == [[STEPS[0], False, True], [STEPS[1], False, False], [STEPS[2], False, False]]
-    # the editable example, as in the mockup and scenario/gale.json construction_project
+    # the editable defaults (state.js defaultBrief); the fleet they make is scenario/gale.json construction_project's
     b = page.evaluate("__map.store.get('brief')")
+    assert b == {"workType": "earthworks", "robots": 20, "hours": 12, "duration": 180, "deadline": 4,
+                 "name": "Gale landing pad & access road", "surveyPercent": 20, "excPercent": 50, "surveyActive": 100,
+                 "otherActive": 80, "cadence": "Once per sol", "precision": "Earthworks check", "rawRetention": 30,
+                 "productRetention": 180, "power": "Solar + storage", "basePower": 0, "backup": 12}, b
+    fleet = page.evaluate("async () => (await import('/src/ui/brief.js')).toSizingBrief(__map.store.get('brief')).fleet")
     cp = json.loads(GALE_SCENARIO.read_text())["construction_project"]
-    assert {f["role"].lower(): f["count"] for f in b["fleet"]} == {f["role"]: f["count"] for f in cp["fleet"]}
-    assert b["q"]["hours"] == {"mode": "known", "value": cp["operating_hours_per_sol"], "min": 8, "max": 12, "unit": "h / sol"}
-    assert b["q"]["deadline"]["value"] == cp["requested_map_turnaround_hours"] and b["q"]["deadline"]["mode"] == "known"
-    assert cp["work_extent_m2"] is None and b["q"]["area"]["mode"] == "unknown" and b["q"]["road"]["mode"] == "unknown"
+    assert {f["role"].lower(): f["count"] for f in fleet} == {f["role"]: f["count"] for f in cp["fleet"]}, fleet
+    assert b["hours"] == cp["operating_hours_per_sol"]
     # the panel's copy, verbatim
-    assert brief.locator("h2").text_content() == BRIEF_HEADING
-    assert brief.locator(".subhead").text_content() == BRIEF_SUB
-    assert brief.locator(".sample-label").text_content() == "Editable example"
-    assert brief.locator(".count").text_content() == "1 of 4"
-    assert _texts(page, "#brief .tabs [data-tab]") == ["Project", "Robots", "Operations", "Review"]
-    assert brief.locator(".actions small").text_content() == "Start with what you know."
-    assert _texts(page, "#brief button.primary") == ["Continue"] and brief.locator("#brief-back").count() == 0
-    # Project
-    assert _texts(page, "#brief .step-content .field-label") == ["Project name", "What are you building?", "Survey area", "Road length", "Construction location"]
-    assert page.locator("#brief-name").input_value() == "Gale landing pad & access road"
-    assert _texts(page, "#brief .choice span") == ["Landing pad", "Road", "Habitat", "Power installation", "Utility network", "Other"]
-    assert page.evaluate("[...document.querySelectorAll('#brief [data-type]:checked')].map((c) => c.dataset.type)") == ["Landing pad", "Road"]
-    assert page.evaluate("[...document.querySelectorAll('#brief select[data-mode]')].map((s) => [s.getAttribute('aria-label'), s.value, [...s.options].map((o) => o.text)])") == [
-        ["Survey area certainty", "unknown", ["Known", "Range", "Unknown"]], ["Road length certainty", "unknown", ["Known", "Range", "Unknown"]]]
-    assert _texts(page, "#brief .unknown-value") == ["To be confirmed", "To be confirmed"]
-    assert page.evaluate("[...document.querySelector('#brief select[data-key=location]').options].map((o) => o.text)") == [
-        "Gale study region — site not selected", "Coordinates not yet known"]
-    assert "Detailed map selection comes after the project brief." in brief.inner_text()
-    # the summary beside the tabs
-    side = page.locator("#brief-summary")
-    assert side.locator("h3").text_content() == "Project brief"
-    assert _summary(page) == [["Build", "Landing pad + Road"], ["Robots", "20 total"], ["Active together", "16"],
-                              ["Operating time", "12 h / sol"], ["Turnaround", "1 hour"]]
-    assert side.locator(".help").text_content() == "This brief will inform compute, power, cooling and space requirements."
+    assert brief.locator("#brief-title").text_content() == BRIEF_TITLE
+    close = brief.locator("#brief-close")
+    assert close.text_content() == "Close" and close.get_attribute("aria-label") == "Close construction brief"
+    assert brief.locator(".panel-intro").text_content() == BRIEF_INTRO
+    assert _texts(page, "#brief .input-section > h3") == ["01 · The construction", "02 · The schedule"]
+    assert _field_names(page, "#brief .input-section") == [
+        "Type of work", "Construction robots", "Working time", "Project duration", "Results needed within"]
+    assert _texts(page, "#brief .input-section small.required") == ["Required"] * 5
+    assert page.evaluate("[...document.querySelector('#brief [data-input=workType]').options].map((o) => [o.value, o.text])") == [
+        ["earthworks", "Site preparation & earthworks"], ["survey", "Surveying & terrain mapping"]]
+    assert [page.locator('#brief [data-input="%s"]' % k).input_value() for k in ("robots", "hours", "duration", "deadline")] == [
+        "20", "12", "180", "4"]
+    assert _texts(page, "#brief .input-section .unit") == ["robots", "h / sol", "sols", "hours"]
+    assert brief.locator(".input-caption").text_content() == "Editable defaults · required fields are marked"
+    assert _texts(page, "#brief button.primary") == ["Find area"]
+    # the planning defaults: closed until asked for, every assumption editable
+    d = brief.locator("details[data-defaults]")
+    assert not d.evaluate("(d) => d.open") and d.locator("summary").text_content().startswith(DEFAULTS_SUMMARY)
+    d.locator("summary").click()
+    assert "Change any assumption below. Your edits are used in the calculation." in d.inner_text()
+    assert _texts(page, "#brief .default-group > h3") == ["Robot mix", "Processing & retention", "Power & backup"]
+    assert _field_names(page, "#brief details[data-defaults]") == [
+        "Project name", "Survey share", "Excavation share", "Survey robots active together", "Other robots active together",
+        "Processing frequency", "Processing precision", "Keep raw data", "Keep processed outputs",
+        "Power approach", "Available base power", "Essential backup duration"]
+    assert page.locator('#brief [data-input="name"]').input_value() == "Gale landing pad & access road"
+    assert page.evaluate("[...document.querySelector('#brief [data-input=power]').options].map((o) => o.text)") == [
+        "Solar + storage", "Hybrid", "Base connection"]
     page.wait_for_function("__map.globe.stats.layers.viking.ok > 4", timeout=TILE_WAIT_MS)  # the globe stays live beside it
     settle_tiles(page)
-    _no_tiny_text_or_small_targets(page, "brief project")
-    _shot(page, "brief-project.png")
-    # a road is no longer built: its length is not asked
-    page.locator("#brief .choice", has_text="Road").click()
-    assert "Road length" not in _texts(page, "#brief .step-content .field-label")
-    assert _summary(page)[0] == ["Build", "Landing pad"]
-    page.locator("#brief .choice", has_text="Road").click()
-    # Robots
-    _continue(page, 1)
-    assert brief.locator(".count").text_content() == "2 of 4"
-    text = brief.inner_text()
-    assert "Group robots by their main task. Active units work at the same time." in text
-    assert "Onboard driving and safety remain with each robot." in text
-    rows = page.evaluate("[...document.querySelectorAll('#brief .robot-row')].map((r) => [r.querySelector('select').value, ...[...r.querySelectorAll('input')].map((i) => i.value)])")
-    assert rows == [["Survey", "4", "4"], ["Excavation", "10", "8"], ["Transport", "6", "4"]], rows
-    assert page.evaluate("[...document.querySelector('#brief .robot-row select').options].map((o) => o.text)") == ["Survey", "Excavation", "Transport", "Assembly", "Inspection"]
-    page.locator('#brief input[aria-label="Survey total robots"]').fill("5")
-    assert _summary(page)[1] == ["Robots", "21 total"] and brief.locator("[data-total]").text_content() == "21"
-    page.locator("#brief [data-add]").click()
-    assert page.locator("#brief .robot-row").count() == 4
-    assert page.evaluate("document.activeElement === document.querySelector('#brief .robot-row:last-child select')")
-    page.locator('#brief button[aria-label="Remove Inspection group"]').click()
-    assert page.locator("#brief .robot-row").count() == 3 and _summary(page)[1] == ["Robots", "21 total"]
-    # Operations, Back, and on to the review
-    _continue(page, 2)
-    assert brief.locator("h3").first.text_content() == "How will the work run?"
-    assert _texts(page, "#brief .step-content > .fields .field-label") == ["Construction phase", "Operating time", "Project duration", "Construction precision", "Results needed within"]
-    text = brief.inner_text()
-    for line in ("Turnaround starts when survey collection finishes. A sol is a Mars day.", "Required processing outputs",
-                 "Flexible processing jobs can run when power is available.", "If a result is late"):
-        assert line in text, line
-    assert _texts(page, "#brief .job label") == ["Terrain maps", "Progress comparisons", "Inspection reports", "Fleet work plans"]
-    more = page.locator("#brief details.more")
-    assert more.locator("summary").text_content() == "Retention, infrastructure & continuity" and not more.evaluate("(d) => d.open")
-    more.locator("summary").click()
-    assert _texts(page, "#brief details.more .field-label") == ["Keep raw survey data", "Available power", "Allowed service interruption", "Computing installation"]
-    assert "Equipment and processing profiles are selected during sizing. Unknowns stay visible." in more.inner_text()
-    _no_tiny_text_or_small_targets(page, "brief operations")
-    page.locator("#brief-back").click()
-    page.wait_for_function("__map.store.get('briefTab') === 1")
-    _continue(page, 2)
-    _continue(page, 3)
-    # Review
-    assert brief.locator(".step-content h3").first.text_content() == "Review before sizing"
-    assert brief.locator(".step-content .help").first.text_content() == "Gale landing pad & access road · 21 robots"
-    review = page.evaluate("[...document.querySelectorAll('#brief .review-dl > div')].map((d) => [d.querySelector('dt').textContent, d.querySelector('dd').textContent])")
-    assert review == [["Construction", "Landing pad, Road"], ["Work schedule", "12 hours per sol"], ["Results needed", "1 hour"],
-                      ["Still to confirm", "Survey area, Road length, Project duration, Data retention"]], review
-    nxt = page.locator("#brief details.next")
-    assert nxt.evaluate("(d) => d.open") and nxt.locator("summary").text_content() == "What happens next"
-    assert "The sizing model will translate this brief into a facility option and the requirements below." in nxt.inner_text()
-    assert page.evaluate("[...document.querySelectorAll('#brief .factor-list li')].map((l) => l.innerText.replace(/\\s+/g, ' ').trim())") == [
-        f + " Awaiting sizing" for f in ("Buildable terrain", "Ground & ice evidence", "Solar conditions", "Thermal conditions", "Investigation routes")]
-    _no_tiny_text_or_small_targets(page, "brief review")
-    _shot(page, "brief-review.png")
-    # a tab button: the tab, with focus kept on its button
-    page.locator('#brief .tabs [data-tab="1"]').click()
-    page.wait_for_function("__map.store.get('briefTab') === 1")
-    assert page.evaluate("document.activeElement && document.activeElement.dataset.tab") == "1"
-    assert page.evaluate("__map.store.get('setup')") == {"loadKw": 150, "power": "topup"}  # the brief never sizes the facility
+    _no_tiny_text_or_small_targets(page, "brief")
+    _shot(page, "brief-intake.png")
+    # Find area checks the values first: the message beside it, the field marked, the brief kept, nothing sized
+    page.locator('#brief [data-input="excPercent"]').fill("90")
+    page.locator("#brief-find").click()
+    assert brief.locator(".form-error").text_content() == "Survey and excavation shares must add up to 100% or less."
+    assert page.locator('#brief [data-input="surveyPercent"]').get_attribute("aria-invalid") == "true"
+    page.locator('#brief [data-input="excPercent"]').fill("50")
+    page.locator('#brief [data-input="robots"]').fill("0")
+    page.locator("#brief-find").click()
+    assert brief.locator(".form-error").text_content() == "Construction robots: enter a whole number from 1 to 1,000 robots."
+    assert page.locator('#brief [data-input="robots"]').get_attribute("aria-invalid") == "true"
+    assert page.locator('#brief [data-input="surveyPercent"]').get_attribute("aria-invalid") is None
+    assert page.evaluate("[__map.store.get('stage'), __map.store.get('setup')]") == ["brief", {"loadKw": 150, "power": "topup"}]
+    page.locator('#brief [data-input="robots"]').fill("20")
+    _find_area(page)
+    assert page.locator("#facility-title").text_content() == READY
+    assert page.evaluate("__map.store.get('setup').source") == "brief"
     assert hosts <= GLOBE_HOSTS, hosts
     assert page.console_errors == []
 
 
-def test_facility_step_is_illustrative(page, server_url):
+def test_facility_step_is_calculated(page, server_url):
     _boot(page, server_url)
     _to_facility(page)
     fac = page.locator("#facility")
@@ -1735,24 +1713,23 @@ def test_facility_step_is_illustrative(page, server_url):
     assert page.locator("#brief").is_hidden() and page.locator("#brief-summary").is_hidden()
     assert page.locator("#header .base-context").text_content() == PLANNING_CONTEXT
     assert _steps(page) == [[STEPS[0], True, False], [STEPS[1], False, True], [STEPS[2], False, False]]
-    assert fac.locator("h2").text_content() == "Facility specifications"
-    assert fac.locator(".sizing").text_content() == SIZING_PLANNED
-    assert fac.locator(".illustrative").text_content() == FACILITY_LABEL
-    assert fac.locator(".facility").inner_text().startswith(FACILITY)
-    assert fac.locator(".facility .ev-assumption").count() == 1
-    fac.locator("details.assumptions summary").click()
+    assert fac.locator("h2").text_content() == READY
+    assert fac.locator(".panel-intro").text_content() == "Your construction requirements have been calculated."
+    assert fac.locator(".sizing").count() == 0  # the "planned" line is gone
+    assert fac.locator(".illustrative").text_content() == SIZED_LABEL
     text = fac.inner_text()
-    assert ASSUMPTIONS in text, text
-    # no number on it claims to come from the brief: every one is the reference facility's
-    nums = re.findall(r"\d+(?:\.\d+)?", text)
-    assert nums and set(nums) <= set(re.findall(r"\d+", FACILITY)), nums
+    assert FACILITY_LABEL not in text and "Results are kept for the whole project" in text and _computers(text) == 4, text
+    assert fac.locator(".facility-list .ev-assumption").count() >= 10
+    # what the facility needs from a site: the five requirement rows, each sized from the brief
+    assert fac.locator(".site-needs h3").text_content() == "What the facility needs from a site"
+    assert _texts(page, "#facility .site-needs .factor-name") == REQUIREMENT_ROWS
+    assert fac.locator(".site-needs .factor-value.sized").count() == 5
+    assert "≤ 3 km from base" in fac.locator(".site-needs").inner_text()
+    fac.locator("details.assumptions summary").click()
+    assert _texts(page, "#facility .form-actions button") == ["Edit brief", "Assess locations →"]
     assert _texts(page, "#facility button.primary") == ["Assess locations →"]
     _no_tiny_text_or_small_targets(page, "facility")
     _shot(page, "facility.png")
-    # the References note carries the same label beside the facility
-    page.locator("#references-open").click()
-    assert FACILITY_LABEL in page.locator('#references [data-part="read"]').inner_text()
-    page.keyboard.press("Escape")
     page.locator("#facility-assess").click()
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     page.locator("#panel").wait_for(state="visible", timeout=10000)
@@ -1762,7 +1739,7 @@ def test_facility_step_is_illustrative(page, server_url):
     assert page.locator("#panel .brief-line").text_content() == "Gale landing pad & access road · 20 robots"
     assert page.locator("#panel .focus-line, #panel .answers").count() == 0  # the old intake's lines are gone
     assert _steps(page) == [[STEPS[0], True, False], [STEPS[1], True, False], [STEPS[2], False, True]]
-    assert page.evaluate("__map.store.get('setup')") == {"loadKw": 150, "power": "topup"}
+    assert page.evaluate("__map.store.get('setup').source") == "brief"
     assert page.console_errors == []
 
 
@@ -1770,8 +1747,9 @@ def test_stepper_keeps_values(page, server_url):
     _boot(page, server_url)
     page.locator("#landing-start").click()
     page.locator("#brief").wait_for(state="visible", timeout=10000)
-    page.locator("#brief-name").fill("North field utility trench")
-    # "Back to globe" (the guided-flow reference's link) returns to the landing; its action now continues the brief
+    page.locator("#brief details[data-defaults] > summary").click()
+    page.locator('#brief [data-input="name"]').fill("North field utility trench")
+    # "Back to globe" returns to the landing; its action now continues the brief
     assert page.locator("#home-link").text_content() == "Back to globe"
     page.locator("#home-link").click()
     page.wait_for_function("__map.store.get('stage') === 'landing'", timeout=10000)
@@ -1779,13 +1757,14 @@ def test_stepper_keeps_values(page, server_url):
     assert page.locator("#landing-start").text_content() == LANDING_CONTINUE
     page.locator("#landing-start").click()
     page.locator("#brief").wait_for(state="visible", timeout=10000)
-    assert page.locator("#brief-name").input_value() == "North field utility trench"
-    _continue(page, 1)
-    page.locator('#brief input[aria-label="Excavation total robots"]').fill("12")
-    for tab in (2, 3):
-        _continue(page, tab)
-    page.locator("#brief-next").click()
-    page.locator("#facility").wait_for(state="visible", timeout=10000)
+    assert page.locator('#brief [data-input="name"]').input_value() == "North field utility trench"
+    page.locator('#brief [data-input="robots"]').fill("22")
+    _find_area(page)
+    # Edit brief on the facility step: the brief as it was left
+    page.locator("#facility-edit").click()
+    page.wait_for_function("__map.store.get('stage') === 'brief'", timeout=10000)
+    assert page.locator('#brief [data-input="robots"]').input_value() == "22"
+    _find_area(page)
     page.locator("#facility-assess").click()
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     assert page.locator("#panel .brief-line").text_content() == "North field utility trench · 22 robots"
@@ -1794,17 +1773,12 @@ def test_stepper_keeps_values(page, server_url):
     page.locator('#stepper [data-step="1"] button').click()
     page.wait_for_function("__map.store.get('stage') === 'brief'", timeout=10000)
     assert page.locator("#panel").is_hidden() and page.locator("#brief").is_visible()
-    assert page.evaluate("__map.store.get('briefTab')") == 3
-    assert page.locator("#brief .step-content .help").first.text_content() == "North field utility trench · 22 robots"
-    page.locator('#brief .tabs [data-tab="0"]').click()
-    assert page.locator("#brief-name").input_value() == "North field utility trench"
-    page.locator('#brief .tabs [data-tab="1"]').click()
-    assert page.locator('#brief input[aria-label="Excavation total robots"]').input_value() == "12"
-    assert _steps(page)[2] == [STEPS[2], False, False]  # a later step is reached by Continue, not jumped to
+    assert page.locator('#brief [data-input="name"]').input_value() == "North field utility trench"
+    assert page.locator('#brief [data-input="robots"]').input_value() == "22"
+    assert page.evaluate("__map.store.get('brief').robots") == 22
+    assert _steps(page)[2] == [STEPS[2], False, False]  # a later step is reached by Find area, not jumped to
     # step 2 from step 3 too, and back to step 3 through it
-    for tab in (2, 3):
-        _continue(page, tab)
-    page.locator("#brief-next").click()
+    _find_area(page)
     page.locator("#facility-assess").click()
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     page.locator('#stepper [data-step="2"] button').click()
@@ -1812,6 +1786,53 @@ def test_stepper_keeps_values(page, server_url):
     page.locator("#facility-assess").click()
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     assert page.locator("#panel .brief-line").text_content() == "North field utility trench · 22 robots"
+    assert page.console_errors == []
+
+
+def test_flow_brief_sizes_and_ranks(page, server_url):
+    """The intake's defaults size the facility and the Gale list ranks the sites against it: the two near the base first,
+    curiosity_recent set aside for its cable route (BT-21). Fewer robots size a smaller facility, and every site is
+    checked again against it."""
+    _boot(page, server_url)
+    _to_facility(page)
+    fac = page.locator("#facility")
+    assert fac.locator("#facility-title").text_content() == READY
+    workers = "__map.store.get('setup').sizing.assessed.specifications.workers.value"
+    n0 = page.evaluate(workers)
+    assert isinstance(n0, int) and n0 > 0 and _computers(fac.inner_text()) == n0, (n0, fac.inner_text())
+    page.locator("#facility-assess").click()
+    page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
+    _enter(page, "gale")
+    prio = page.evaluate("__map.store.get('priority').get('gale').map((r) => [r.siteId, r.priority, r.failures])")
+    near = [p for p in prio if p[0] in ("near_base_north", "near_base_west")]
+    aside = [p for p in prio if p[0] == "curiosity_recent"]
+    assert len(prio) == 3 and len(near) == 2 and all(p[2] == [] for p in near), prio
+    assert len(aside) == 1 and aside[0][2] == ["BT-21"] and aside[0][1] > max(p[1] for p in near), prio
+    bt21 = page.evaluate("(() => { const r = __map.results('curiosity_recent').get('BT-21'); return [r.status, r.display]; })()")
+    m = re.fullmatch(r"(\d+) m of (\d+) m", bt21[1])
+    assert bt21[0] == "not_met" and m and int(m.group(2)) == 3000 and int(m.group(1)) > 10000, bt21  # ~11 km; the limit is 3 km
+    rows = _rows(page)
+    assert [r["site"] for r in rows][-1] == "curiosity_recent" and rows[-1]["verdict"].startswith("Not recommended: "), rows
+    assert all(r["verdict"].startswith("No failures") for r in rows[:-1]), rows
+    page.evaluate("""() => { window.__before = Object.fromEntries(['near_base_north', 'near_base_west', 'curiosity_recent']
+        .map((id) => [id, { bt04: __map.results(id).get('BT-04'), sc03: __map.results(id).get('SC-03').value }])); }""")
+    # Edit the brief: fewer robots, Find area, Assess locations
+    page.locator("#results-edit").click()
+    page.wait_for_function("__map.store.get('stage') === 'brief'", timeout=10000)
+    assert page.locator('#brief [data-input="robots"]').input_value() == "20"
+    page.locator('#brief [data-input="robots"]').fill("12")
+    _find_area(page)
+    n1 = page.evaluate(workers)
+    assert n1 < n0 and _computers(fac.inner_text()) == n1, (n0, n1, fac.inner_text())
+    page.locator("#facility-assess").click()
+    page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
+    _wait_list(page, "gale")
+    again = page.evaluate("""() => Object.entries(window.__before).map(([id, b]) => [id,
+        __map.results(id).get('BT-04') !== b.bt04, __map.results(id).get('SC-03').value, b.sc03])""")
+    assert all(a[1] for a in again), again  # every site checked again, against the new facility
+    assert any(a[2] != a[3] for a in again), again  # the smaller panels change what the site's sun supplies
+    assert page.evaluate("__map.store.get('priority').get('gale').length") == 3
+    assert page.locator("#panel .brief-line").text_content() == "Gale landing pad & access road · 12 robots"
     assert page.console_errors == []
 
 
@@ -1907,14 +1928,12 @@ def test_e2e_full_flow(page, server_url):
     References: every step is wired to the next, with no console or page errors anywhere."""
     t0 = time.time()
     _boot(page, server_url)
-    # 1. landing -> the four brief tabs (Project, Robots, Operations, Review) -> facility -> Assess locations
+    # 1. landing -> the construction intake (its defaults) -> Find area -> facility, ready -> Assess locations
     page.locator("#landing-start").click()
     page.locator("#brief").wait_for(state="visible", timeout=10000)
-    assert page.evaluate("__map.store.get('briefTab')") == 0
-    for tab in (1, 2, 3):
-        _continue(page, tab)
-    page.locator("#brief-next").click()
-    page.locator("#facility").wait_for(state="visible", timeout=10000)
+    assert page.evaluate("__map.store.get('stage')") == "brief"
+    _find_area(page)
+    assert page.locator("#facility-title").text_content() == READY
     page.locator("#facility-assess").click()
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     page.locator("#panel").wait_for(state="visible", timeout=10000)

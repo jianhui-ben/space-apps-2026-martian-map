@@ -130,3 +130,44 @@ test('worst-season noon sun, and a region copy found by its region, never anothe
   assertEq(regionDataset(catalog, 'jezero', 'rover_path'), null);
   assertEq(regionDataset(catalog, 'arcadia', 'dune_fields'), null);
 });
+
+// ---- the brief's facility: panels sized for the site, SC-03 met when so, SC-04 the worst season over the requirement ----
+const briefOf = (power, kw = 3.869) => ({ source: 'brief', power,
+  sizing: { params: { solar_land_coverage: 0.5, radiator_plot_factor: 1.5 }, assessed: { specifications: {
+    required_solar_average_kw: { status: 'resolved', value: kw, unit: 'kW' }, solar_panel_area_m2: { status: 'resolved', value: 50 },
+    solar_plot_m2: { status: 'resolved', value: 100 } } } } });
+// a climate with a dim second half of the year, so the worst season is a quarter of the best
+const seasonal = () => { const m = mcd(), half = m.ls.length / 2; m.surface_solar_flux_down_w_m2 = m.surface_solar_flux_down_w_m2.map((r, i) => (i < half ? r : r.map((x) => x / 4))); return m; };
+const ENV = () => ({ mcdSolar: { scenarios: { climatology: seasonal(), dust_storm: mcd(100) } } });
+
+test('SC-03 for a brief setup is met when the panels are sized from site data, from your brief', () => {
+  const setup = briefOf('topup'), lay = layoutFor(TOPUP);
+  const r = environmentChecks(siteWith(() => 0), lay, setup, ENV()).get('SC-03');
+  assertEq(r.status, STATUS.MET);
+  assertEq(r.target.baseline, '≥ 3.9 kW (from your brief)');
+  assertEq(r.target.ideal, '');
+  assertEq([r.ideal, r.assumption], [false, true]);
+  assertClose(r.value, 3.869, 1e-6); // the annual-mean panels give the required average
+  assertEq(r.display, '3.9 kW');
+  assert(/panels sized for this site: \d+ m² for the year's average/.test(r.note), r.note);
+  const batt = environmentChecks(siteWith(() => 0), layoutFor(BATT), briefOf('solar_batteries'), ENV()).get('SC-03');
+  assertEq(batt.status, STATUS.MET);
+  assert(/for the worst season/.test(batt.note), batt.note);
+  assert(batt.value > 3.869, 'worst-season panels make more than the average: ' + batt.value);
+});
+
+test('SC-03 for a brief setup needs confirmation when the size is generic; SC-04 follows the power option', () => {
+  const lay = layoutFor(TOPUP);
+  assertEq(environmentChecks(siteWith(() => 0), lay, briefOf('topup'), {}).get('SC-03').status, STATUS.NEEDS_CONFIRMATION);
+  assertEq(environmentChecks(siteWith(() => 0), layoutFor(BATT), briefOf('solar_batteries'), {}).get('SC-04').status, STATUS.NEEDS_CONFIRMATION);
+  assertEq(environmentChecks(siteWith(() => 0), lay, briefOf('topup'), ENV()).get('SC-04').status, STATUS.NEEDS_DESIGN_INPUT);
+  const base = environmentChecks(siteWith(() => 0), lay, briefOf('base_only'), ENV());
+  assertEq([base.get('SC-03').status, base.get('SC-04').status], [STATUS.NOT_APPLICABLE, STATUS.NOT_APPLICABLE]);
+});
+
+test('SC-04 for a brief solar-and-batteries setup is 1.0 when site-sized, met, with the dust storm in the note', () => {
+  const r = environmentChecks(siteWith(() => 0), layoutFor(BATT), briefOf('solar_batteries'), ENV()).get('SC-04');
+  assertEq([r.status, r.value, r.display, r.target.baseline, r.target.ideal], [STATUS.MET, 1, '1.00', '≥ 1.0', '≥ 1.2']);
+  assertEq(r.ideal, false);
+  assert(/3\.9 kW required/.test(r.note) && /in a global dust storm/.test(r.note), r.note);
+});

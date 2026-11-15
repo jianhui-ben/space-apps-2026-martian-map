@@ -3,19 +3,22 @@
 // on every screen, the factor bar in the region and site views, and References at the bottom left.
 // The UI and the window.__map hooks call the same functions, so a test drives exactly what a user does.
 import * as THREE from 'three';
-import { loadCatalog, getSite, regionOf } from './catalog.js';
+import { loadCatalog, getSite, loadTripArea, regionOf, regionSiteBytes } from './catalog.js';
 import { createGlobe, R, START } from './globe.js';
 import { footprintSpecs, bestSpot, clampPlacement, createLayoutStore } from './layout.js';
 import { terrainChecks } from './checks.js';
+import { siteSizing, briefChecks } from './requirements.js';
 import { loadEnvironment, environmentChecks } from './environment.js';
 import { groundView, solarView, thermalView, routesView } from './layers.js';
 import { initialStatuses, mergeResults } from './status.js';
 import { prioritize } from './priority.js';
 import { openSite, assertOpenable } from './site.js';
+import { sizeBrief, briefSetup } from './sizing/index.js';
+import { loadBundle } from './sizing/engine.js';
 import { createStore, FIXED_SETUP, DEFAULT_BRIEF } from './state.js';
 import { addRegionPins, addSitePins, addBasePins, regionCentre, REGION_FLY_ALT_M } from './ui/pins.js';
 import { createLanding, createStepper, createFacility } from './ui/landing.js';
-import { createBrief, briefLine } from './ui/brief.js';
+import { createBrief, briefLine, toSizingBrief } from './ui/brief.js';
 import { createList, cameraTarget, regionInView } from './ui/list.js';
 import { createCard, cardModel, footprintStatus } from './ui/card.js';
 import { createReferences } from './ui/references.js';
@@ -32,6 +35,7 @@ const $ = (id) => document.getElementById(id);
 // panel, so the layout lands in its middle.
 const SITE_FLY = { altM: 700, tiltDeg: 55, ms: 1600 };
 const REGION_CHECK_MS = 200;
+const REFERENCE_COMPOUND_M = 60, MIN_ARRIVAL_ALT_M = 250; // a smaller compound is framed from lower, so its handles show on arrival
 
 function showDebug(globe) {
   const box = document.createElement('div');
@@ -58,6 +62,7 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
   const terrainBySite = new Map(); // siteId -> the last terrainChecks Map (keeps BT-01 through a drag)
   const regionLoads = new Map(); // regionId -> Promise
   const envByRegion = new Map(); // regionId -> loadEnvironment() result (Task 12)
+  const sizeBySite = new Map(); // siteId -> the plot sizes for that site (a brief setup only), kept through drags
   let view = null, opening = 0;
 
   const regionById = (id) => catalog.regions.find((r) => r.id === id) || null;
@@ -70,6 +75,15 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     return clampPlacement(site, specs, { centerLon: (w + e) / 2, centerLat: (s + n) / 2, rotationDeg: 0 });
   }
 
+  // Place a site for the setup now: a brief setup sizes the solar and radiator plots from this site's own conditions first.
+  // The layout store remembers the specs; the size is kept per site for the checks.
+  function placeSite(site, setup) {
+    const size = setup.source === 'brief' ? siteSizing(site, setup, envByRegion.get(site.regionId)) : null;
+    if (size) sizeBySite.set(site.id, size); else sizeBySite.delete(site.id);
+    const specs = footprintSpecs(setup, size);
+    layoutStore.set(site.id, placeFor(site, specs), { final: true, specs });
+  }
+
   // Results for one site: initial statuses from the setup, then the computed checks, then field records.
   // Environment metrics (Task 12) join `computed` here; field records (Task 11) come through the records key.
   function computeResults(siteId, final) {
@@ -80,7 +94,9 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     terrainBySite.set(siteId, terrain);
     const env = environmentChecks(site, layout, setup, envByRegion.get(site.regionId));
     const records = (store.get('records') || []).filter((r) => r.siteId === siteId);
-    const merged = mergeResults(initialStatuses(metrics, setup), new Map([...env, ...terrain]), records);
+    const size = sizeBySite.get(siteId);
+    const brief = setup.source === 'brief' && size ? briefChecks(site, layout, setup, size) : new Map(); // last, so its Results replace same-id ones
+    const merged = mergeResults(initialStatuses(metrics, setup), new Map([...env, ...terrain, ...brief]), records);
     store.set('results', new Map(store.get('results')).set(siteId, merged));
   }
 
@@ -101,20 +117,33 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     if (r) reprioritize(r.id);
   });
 
-  // First entry to a region: load all its sites, place each layout on its best spot, check and rank them.
+  // First entry to a region: load all its sites, place each layout on its best spot and check it as it arrives (the
+  // list shows it, unranked), and rank them once all are in. The loading status carries done (site ids) and bytes.
   function ensureRegion(regionId) {
     if (regionLoads.has(regionId)) return regionLoads.get(regionId);
     const region = regionById(regionId);
     if (!region) return Promise.reject(new Error('unknown region ' + regionId));
-    setRegionStatus(regionId, { state: 'loading' });
+    const done = [], totalBytes = regionSiteBytes(catalog, regionId);
+    let bytes = 0, shownAt = 0;
+    const progress = (now) => {
+      if (!now && Date.now() - shownAt < 250) return;
+      shownAt = Date.now();
+      const st = store.get('regions').get(regionId);
+      if (!st || st.state === 'loading') setRegionStatus(regionId, { state: 'loading', done: [...done], bytes, totalBytes });
+    };
+    progress(true);
     const p = (async () => {
-      const [env, ...loaded] = await Promise.all([
-        loadEnvironment(catalog, regionId).catch((e) => ({ errors: { environment: errText(e) }, themis: {}, ids: {} })),
-        ...region.sites.map((s) => getSite(catalog, s.id))]);
-      envByRegion.set(regionId, env);
-      for (const site of loaded) sites.set(site.id, site);
-      const specs = footprintSpecs(store.get('setup')); // the setup now, not when loading began
-      for (const site of loaded) layoutStore.set(site.id, placeFor(site, specs), { final: true, specs });
+      const envLoad = loadEnvironment(catalog, regionId).catch((e) => ({ errors: { environment: errText(e) }, themis: {}, ids: {} }))
+        .then((env) => { envByRegion.set(regionId, env); });
+      const onBytes = (n) => { bytes += n; progress(false); };
+      await Promise.all(region.sites.map(async (s) => {
+        const site = await getSite(catalog, s.id, { tripArea: false, onBytes }); // the trip area waits for the site view
+        await envLoad; // its environment checks need the region's data
+        sites.set(site.id, site);
+        placeSite(site, store.get('setup')); // the setup now, not when loading began; checks it; ranks once every site is in
+        done.push(site.id);
+        progress(true);
+      }));
       reprioritize(regionId);
       setRegionStatus(regionId, { state: 'ready' });
     })();
@@ -123,17 +152,18 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     return p;
   }
 
-  // The facility is fixed (FIXED_SETUP); this test-only hook (__map.applySetup) re-sizes the footprints and puts every
-  // loaded site's layout back on its best spot; the layout listener then rechecks and reranks. An open site's camera
-  // follows its layout to the new spot.
-  function applySetup(setup) {
-    const s = { loadKw: setup.loadKw, power: setup.power };
-    store.set('setup', s);
-    const specs = footprintSpecs(s);
-    for (const site of sites.values()) layoutStore.set(site.id, placeFor(site, specs), { final: true, specs });
+  // The facility is the one calculated from the brief (briefSetup), set when the brief is done. Setting it re-sizes the
+  // footprints and puts every loaded site's layout back on its best spot; the layout listener then rechecks and reranks.
+  // An open site's camera follows its layout to the new spot.
+  function setSetup(setup) {
+    store.set('setup', setup);
+    for (const site of sites.values()) placeSite(site, setup);
     const id = store.get('openSiteId');
     if (view && id) flyToLayout(id, 1200);
   }
+
+  // Test-only (__map.applySetup): a reference facility {loadKw, power}.
+  function applySetup(setup) { setSetup({ loadKw: setup.loadKw, power: setup.power }); }
 
   function disposeView() {
     if (view) view.dispose(); // before anything else changes, so it hears nothing more
@@ -159,6 +189,7 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     const region = regionOf(catalog, siteId);
     if (!region) throw new Error('unknown site ' + siteId);
     await ensureRegion(region.id);
+    await loadTripArea(catalog, sites.get(siteId)); // only the site view draws it, so it loads on the first open
     if (ticket !== opening) return null;
     const site = sites.get(siteId);
     assertOpenable(site);
@@ -172,7 +203,9 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     store.set('selectedSite', siteId);
     store.set('openSiteId', siteId);
     if (store.get('stage') !== 'explore') store.set('stage', 'explore'); // the site card is the working panel now
-    await flyToLayout(siteId, flyMs);
+    const compound = ((layoutStore.get(siteId) || {}).footprints || []).find((f) => f.id === 'compound');
+    const altM = Math.max(MIN_ARRIVAL_ALT_M, SITE_FLY.altM * Math.min(1, (compound ? compound.w : REFERENCE_COMPOUND_M) / REFERENCE_COMPOUND_M));
+    await flyToLayout(siteId, flyMs, { ...SITE_FLY, altM }); // the arrival only; the looks and a setup change keep SITE_FLY
     return ticket === opening ? v : null;
   }
 
@@ -228,7 +261,7 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
   let pins = null;
   const setPins = (p) => { pins = p; };
   return {
-    sites, ensureRegion, openSiteById, closeSite, applySetup, onScreen, setPins, env: (regionId) => envByRegion.get(regionId) || null,
+    sites, ensureRegion, openSiteById, closeSite, setSetup, applySetup, onScreen, setPins, env: (regionId) => envByRegion.get(regionId) || null,
     get view() { return view; },
     results: (siteId) => (store.get('results').get(siteId) || null),
   };
@@ -267,36 +300,55 @@ const PLANNING = new Set(['brief', 'facility']);
 
 async function boot() {
   const store = createStore({
-    stage: 'landing', brief: DEFAULT_BRIEF, briefTab: 0, setup: FIXED_SETUP, layouts: new Map(), results: new Map(), priority: new Map(),
+    stage: 'landing', brief: DEFAULT_BRIEF, setup: FIXED_SETUP, layouts: new Map(), results: new Map(), priority: new Map(),
     records: [], openSiteId: null, selectedSite: null, region: null, regions: new Map(), problems: [], view: null, look: 'diorama',
   });
   window.__map.store = store;
   const header = createHeader($('header'));
 
   // The landing, the brief and the facility step work before the catalog arrives. Every brief change goes to the store,
-  // so the stepper, Back and Edit keep the values. The brief never sizes the facility: it is recorded and shown.
-  let list = null, assessed = () => {};
+  // so the stepper, Close and Edit keep the values. "Find area" sizes toSizingBrief(values) with the coefficient bundle
+  // (loaded now; while it loads the brief shows "Sizing in progress", and a failed load is the outcome's reason): sized,
+  // the setup the map places is the facility calculated from it; not sized, the facility step says why and the setup stays.
+  let list = null, app = null, bundle = null, bundleError = null, assessed = () => {}, outcome = null;
+  const bundleReady = loadBundle('./sizing/screening-v1.json').then((b) => { bundle = b; }, (e) => { bundleError = e; });
+  const size = (b) => (bundle ? sizeBrief(b, bundle) : {
+    status: 'cannot_size', missing: [], options: [], assessed: null, params: {},
+    problems: [{ reason: 'model', tab: 2, message: bundleError ? 'The sizing model failed to load: ' + errText(bundleError) : 'The sizing model is still loading. Try again in a moment.' }],
+  });
+  const setSetup = (s) => (app ? app.setSetup(s) : store.set('setup', s)); // sites load later with the store's setup
   const landing = createLanding($('landing'), { onStart: () => go('brief') });
   const brief = createBrief($('brief'), $('brief-summary'), {
     onChange: (b) => store.set('brief', b),
-    onTab: (t) => store.set('briefTab', t),
-    onDone: () => go('facility'),
+    onClose: () => go('landing'),
+    pending: () => (bundle || bundleError ? null : bundleReady),
+    onDone: () => {
+      if (store.get('stage') !== 'brief') return; // left while the coefficients loaded
+      const request = toSizingBrief(store.get('brief')), sizing = size(request);
+      outcome = sizing.status === 'sized' ? null : sizing;
+      if (!outcome) setSetup(briefSetup(sizing, request));
+      go('facility');
+    },
   });
-  const facility = createFacility($('facility'), { setup: () => store.get('setup'), onAssess: () => { go('explore'); assessed(); } });
+  const facility = createFacility($('facility'), {
+    setup: () => store.get('setup'), brief: () => toSizingBrief(store.get('brief')),
+    onAssess: () => { go('explore'); assessed(); }, onEdit: () => go('brief'),
+  });
   const stepper = createStepper($('stepper'), { onStep: (stage) => go(stage) });
   function go(stage) {
     store.set('stage', stage);
     if (stage === 'landing') landing.focus();
-    else if (stage === 'brief') brief.open(store.get('brief'), store.get('briefTab'));
-    else if (stage === 'facility') facility.open();
+    else if (stage === 'brief') brief.open(store.get('brief'));
+    else if (stage === 'facility') facility.open(outcome);
     else requestAnimationFrame(() => { if (list) list.focus(); });
   }
-  // One working panel at a time: landing, brief (with its summary beside it), facility, results, or the site card in
-  // the results' place.
+  // One working panel at a time: landing, brief, facility, results, or the site card in the results' place. The old
+  // brief summary beside the panel is no longer shown.
   function showStage() {
     const stage = store.get('stage'), open = !!store.get('openSiteId');
     $('landing').hidden = stage !== 'landing';
-    $('brief').hidden = $('brief-summary').hidden = stage !== 'brief';
+    $('brief').hidden = stage !== 'brief';
+    $('brief-summary').hidden = true;
     $('facility').hidden = stage !== 'facility';
     $('panel').hidden = !(stage === 'explore' && !open);
     $('card').hidden = !(stage === 'explore' && open);
@@ -314,7 +366,7 @@ async function boot() {
   const globe = createGlobe($('app'), catalog, { labelsElement: $('labels') });
   if (params.get('debug') === '1') showDebug(globe);
   const layoutStore = createLayoutStore();
-  const app = createApp({ store, catalog, metrics, globe, layoutStore });
+  app = createApp({ store, catalog, metrics, globe, layoutStore });
   const names = new Map(catalog.sites.map((s) => [s.id, s.name]));
 
   const toast = $('toast');
@@ -423,7 +475,8 @@ async function boot() {
   Object.assign(window.__map, {
     globe, catalog, metrics, layoutStore,
     openSite: (siteId, { setup: s = null, flyMs } = {}) => { // R15, now the UI's own open
-      if (s && (s.loadKw !== store.get('setup').loadKw || s.power !== store.get('setup').power)) app.applySetup(s);
+      const cur = store.get('setup');
+      if (s && (cur.source === 'brief' || s.loadKw !== cur.loadKw || s.power !== cur.power)) app.applySetup(s);
       const p = app.openSiteById(siteId, flyMs === undefined ? {} : { flyMs });
       window.__map.opening = p.catch(() => null);
       return p;

@@ -89,12 +89,32 @@ export function findTripGrid(catalog, site) {
   }));
 }
 
-export async function loadGrid(catalog, entry, format = 'f32') {
+// A response body as an ArrayBuffer; with onBytes, read as a stream and each chunk's size reported as it arrives.
+async function readBuffer(res, onBytes) {
+  if (!onBytes || !res.body || !res.body.getReader) {
+    const buf = await res.arrayBuffer();
+    if (onBytes) onBytes(buf.byteLength);
+    return buf;
+  }
+  const reader = res.body.getReader(), len = Number(res.headers.get('content-length')) || 0;
+  let out = new Uint8Array(len), n = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (n + value.byteLength > out.length) { const grown = new Uint8Array(Math.max(out.length * 2, n + value.byteLength)); grown.set(out.subarray(0, n)); out = grown; }
+    out.set(value, n);
+    n += value.byteLength;
+    onBytes(value.byteLength);
+  }
+  return n === out.length ? out.buffer : out.slice(0, n).buffer;
+}
+
+export async function loadGrid(catalog, entry, format = 'f32', { onBytes = null } = {}) {
   const file = fileOf(entry, format);
   if (!file || !file.grid) throw new Error('no ' + format + ' grid in ' + entry.id);
   const res = await catalog.fetch(new URL(file.path, catalog.baseUrl));
   if (!res.ok) throw new Error('HTTP ' + res.status + ' for ' + file.path);
-  const buf = await res.arrayBuffer();
+  const buf = await readBuffer(res, onBytes);
   const g = file.grid;
   const bands = format === 'u8' ? (g.bands || 1) : 1;
   const count = g.width * g.height * bands;
@@ -114,7 +134,49 @@ export async function loadGrid(catalog, entry, format = 'f32') {
   return grid;
 }
 
-export async function getSite(catalog, siteId) {
+// The site's trip-area grid (BT-17), loaded once per dataset and shared by every site it covers. Only the site view
+// draws it (the checks never read it), so the region load skips it (getSite { tripArea: false }) and opening a site
+// awaits this. Sets site.tripArea (null when there is none or it failed; the failure goes to site.loadErrors).
+export function loadTripArea(catalog, site) {
+  if (!site) return Promise.resolve(null);
+  if (site.tripLoad) return site.tripLoad;
+  const info = catalog.sites.find((s) => s.id === site.id) || site;
+  const entry = findTripGrid(catalog, info);
+  if (!catalog.tripGrids) catalog.tripGrids = new Map(); // dataset id -> Promise<grid>
+  if (entry && !catalog.tripGrids.has(entry.id)) catalog.tripGrids.set(entry.id, loadGrid(catalog, entry));
+  site.tripLoad = (async () => {
+    if (!entry) { site.loadErrors['BT-17@trip'] = 'no dataset in the catalog'; site.tripArea = null; return null; }
+    try { site.tripArea = await catalog.tripGrids.get(entry.id); } catch (e) {
+      catalog.tripGrids.delete(entry.id); // a later open may retry
+      site.loadErrors[entry.id] = String((e && e.message) || e); site.tripArea = null; site.tripLoad = null;
+    }
+    return site.tripArea;
+  })();
+  return site.tripLoad;
+}
+
+// The files getSite loads for a site (its grids, horizon and sun table; not the trip area), by format and dataset.
+function siteFiles(catalog, siteId) {
+  const withFile = (m, fmt) => catalog.raw.datasets.find((d) => hasMetric(d, m) && d.coverage && d.coverage.area === siteId && fileOf(d, fmt)) || null;
+  return { BT04: findGrid(catalog, 'BT-04', siteId), BT05: findGrid(catalog, 'BT-05', siteId), BT08: findGrid(catalog, 'BT-08', siteId),
+    SC01: withFile('SC-01', 'u8'), SC03: withFile('SC-03', 'json') };
+}
+
+// The bytes getSite({ tripArea: false }) downloads for every site of a region, from the catalog's file sizes (a
+// progress line's denominator; 0 where the catalog gives no sizes).
+export function regionSiteBytes(catalog, regionId) {
+  const region = catalog.regions.find((r) => r.id === regionId);
+  if (!region) return 0;
+  const fmt = { BT04: 'f32', BT05: 'f32', BT08: 'f32', SC01: 'u8', SC03: 'json' };
+  let total = 0;
+  for (const s of region.sites) {
+    for (const [k, d] of Object.entries(siteFiles(catalog, s.id))) { const f = d && fileOf(d, fmt[k]); total += (f && f.bytes) || 0; }
+  }
+  return total;
+}
+
+// onBytes(n), when given, hears every chunk of the site's own files as it arrives (a progress line).
+export async function getSite(catalog, siteId, { tripArea: withTrip = true, onBytes = null } = {}) {
   const info = catalog.sites.find((s) => s.id === siteId);
   if (!info) throw new Error('unknown site ' + siteId);
   const loadErrors = {};
@@ -122,27 +184,31 @@ export async function getSite(catalog, siteId) {
     if (!entry) { loadErrors[key] = 'no dataset in the catalog'; return null; }
     try { return await run(entry); } catch (e) { loadErrors[entry.id] = String((e && e.message) || e); return null; }
   };
-  const withFile = (m, fmt) => catalog.raw.datasets.find((d) => hasMetric(d, m) && d.coverage && d.coverage.area === siteId && fileOf(d, fmt)) || null;
-  const gridRun = (e) => loadGrid(catalog, e);
-  const [elevation, slope10, roughness, tripArea, horizon, sunTable] = await Promise.all([
-    attempt('BT-04@' + siteId, findGrid(catalog, 'BT-04', siteId), gridRun),
-    attempt('BT-05@' + siteId, findGrid(catalog, 'BT-05', siteId), gridRun),
-    attempt('BT-08@' + siteId, findGrid(catalog, 'BT-08', siteId), gridRun),
-    attempt('BT-17@trip', findTripGrid(catalog, info), gridRun),
-    attempt('SC-01@' + siteId, withFile('SC-01', 'u8'), (e) => loadGrid(catalog, e, 'u8')),
-    attempt('SC-03@' + siteId, withFile('SC-03', 'json'), async (e) => {
+  const files = siteFiles(catalog, siteId);
+  const gridRun = (e) => loadGrid(catalog, e, 'f32', { onBytes });
+  const site = {
+    id: info.id, name: info.name, bounds: info.bounds, regionId: info.regionId,
+    base: (catalog.regions.find((r) => r.id === info.regionId) || catalog.regions[0]).base,
+    grids: null, tripArea: null, horizon: null, sunTable: null,
+    catalog, baseUrl: catalog.baseUrl, loadErrors,
+  };
+  const trip = withTrip ? loadTripArea(catalog, site) : null; // alongside the site's own grids
+  const [elevation, slope10, roughness, horizon, sunTable] = await Promise.all([
+    attempt('BT-04@' + siteId, files.BT04, gridRun),
+    attempt('BT-05@' + siteId, files.BT05, gridRun),
+    attempt('BT-08@' + siteId, files.BT08, gridRun),
+    attempt('SC-01@' + siteId, files.SC01, (e) => loadGrid(catalog, e, 'u8', { onBytes })),
+    attempt('SC-03@' + siteId, files.SC03, async (e) => {
       const file = fileOf(e, 'json');
       const res = await catalog.fetch(new URL(file.path, catalog.baseUrl));
       if (!res.ok) throw new Error('HTTP ' + res.status + ' for ' + file.path);
-      return res.json();
+      if (!onBytes) return res.json();
+      return JSON.parse(new TextDecoder().decode(await readBuffer(res, onBytes)));
     }),
   ]);
-  return {
-    id: info.id, name: info.name, bounds: info.bounds, regionId: info.regionId,
-    base: (catalog.regions.find((r) => r.id === info.regionId) || catalog.regions[0]).base,
-    grids: { elevation, slope10, roughness }, tripArea, horizon, sunTable,
-    catalog, baseUrl: catalog.baseUrl, loadErrors,
-  };
+  Object.assign(site, { grids: { elevation, slope10, roughness }, horizon, sunTable });
+  await trip;
+  return site;
 }
 
 export function cellOf(grid, lon, lat) {

@@ -45,3 +45,36 @@ test('real: jezero_north reads its own data and needs confirmation where it has 
   assert(m.get('GI-05').value !== 5.415, 'its own GRS bin, not Gale\'s');
   assert(['needs_fieldwork', 'needs_confirmation'].includes(m.get('TC-01').status), JSON.stringify(m.get('TC-01')));
 });
+
+// ---- the facility sized from the example brief, at every Gale site ----
+import { sizeBrief, briefSetup } from '../src/sizing/index.js';
+import { loadBundle } from '../src/sizing/engine.js';
+import { siteSizing, briefChecks } from '../src/requirements.js';
+import { terrainChecks } from '../src/checks.js';
+
+window.__briefReal = {};
+test('real: every Gale site is checked against the facility sized from the brief', async () => {
+  const bundle = await loadBundle(new URL('../sizing/screening-v1.json', import.meta.url));
+  const cases = await (await fetch(new URL('./fixtures/sizing.json', import.meta.url))).json();
+  const brief = cases.find((c) => c.name === 'example_filled').brief;
+  const setup = briefSetup(sizeBrief(brief, bundle), brief);
+  const catalog = await loadCatalog('/data/');
+  const gale = catalog.regions.find((r) => r.id === 'gale');
+  const env = await loadEnvironment(catalog, 'gale');
+  for (const { id } of gale.sites) {
+    const site = await getSite(catalog, id);
+    const size = siteSizing(site, setup, env);
+    const specs = footprintSpecs(setup, size), layout = placeLayout(specs, bestSpot(site, specs));
+    const m = new Map([...terrainChecks(site, layout, setup, catalog.scenario), ...environmentChecks(site, layout, setup, env), ...briefChecks(site, layout, setup, size)]);
+    for (const k of ['BT-17', 'BT-21', 'GI-01', 'SC-03', 'TC-03']) assert(m.has(k), id + ' lacks ' + k);
+    const pick = (k) => ({ display: m.get(k).display, status: m.get(k).status, value: m.get(k).value });
+    window.__briefReal[id] = { BT21: pick('BT-21'), SC03: pick('SC-03'), SC04: pick('SC-04'), annualPlotM2: setup.sizing.assessed.specifications.required_solar_average_kw.value * 1000 / size.panelWm2 / setup.sizing.params.solar_land_coverage, worstWm2: size.worstWm2, panelWm2: size.panelWm2, TC03: pick('TC-03'), solarPlotM2: size.solarPlotM2, radiatorPlotM2: size.radiatorPlotM2, solarFrom: size.solarFrom, radiatorFrom: size.radiatorFrom };
+    assertEq(m.get('GI-01').status, 'needs_fieldwork');
+    if (id === 'curiosity_recent') assertEq(m.get('BT-21').status, 'not_met');
+    assertEq(size.solarBasis, setup.power === 'solar_batteries' ? 'worst_season' : 'annual_mean');
+    if (id === 'near_base_north' || id === 'near_base_west') {
+      assertEq([m.get('SC-03').status, m.get('SC-04').status, m.get('TC-03').status], ['met', setup.power === 'solar_batteries' ? 'met' : 'needs_design_input', 'met']);
+      if (setup.power === 'solar_batteries') assert(size.solarPlotM2 > window.__briefReal[id].annualPlotM2, 'larger than annual-mean sizing');
+    }
+  }
+});

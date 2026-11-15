@@ -14,6 +14,9 @@ from urllib.parse import unquote, urlsplit
 
 HOST = "127.0.0.1"
 DATA_PREFIX = "/data/"
+# Data files are large and change only when the pipeline reruns, so a reload reuses them; app code is never cached,
+# so an edit shows at once. Errors are never cached.
+DATA_CACHE = "public, max-age=86400"
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -30,8 +33,14 @@ class Handler(SimpleHTTPRequestHandler):
         self._data_dir = Path(data_dir).resolve() if data_dir is not None else None
         super().__init__(*args, directory=str(self._web_dir), **kwargs)
 
+    def send_response(self, code, message=None):
+        self._status = code
+        super().send_response(code, message)
+
     def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
+        is_data = urlsplit(self.path).path.startswith(DATA_PREFIX)
+        ok = getattr(self, "_status", None) in (200, 304)
+        self.send_header("Cache-Control", DATA_CACHE if is_data and ok else "no-store")
         super().end_headers()
 
     def log_message(self, format, *args):  # keep test output quiet

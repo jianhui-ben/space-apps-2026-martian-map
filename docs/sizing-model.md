@@ -19,6 +19,8 @@ from martian_map.sizing import from_guided_brief, build_requirements
 requirements = build_requirements(from_guided_brief(ui_state))
 ```
 
+The web app does not call Python: `web/src/sizing/` is a browser port of the same engine (`request.js` maps the construction brief to a request as `from_guided_brief` does, plus product retention, base power and backup duration; `workloads.js` and `facility.js` port the workload and facility estimates; `index.js` `sizeBrief` returns the sized options, the missing answers or a plain reason it cannot size). It reads `web/sizing/screening-v1.json`, a byte-for-byte copy of `resources/screening-v1.json` that the Pages build ships. `tests/test_sizing_web_parity.py` checks the copy is identical and rebuilds `web/tests/fixtures/sizing.json` from the Python engine with `web/tools/sizing_fixtures.py` (a fixed list of briefs, each with its request and specifications), failing when the checked-in file is stale; regenerate it with `python web/tools/sizing_fixtures.py`. The JS unit suite checks the port's requests and specifications against those fixtures.
+
 Malformed requests fail with field-level issues. CLI errors return exit code 2 and JSON on stderr. Successful partial results return 0; **this does not mean a site is feasible**. Output files are replaced atomically, and the input cannot also be the output.
 
 ## Input contract
