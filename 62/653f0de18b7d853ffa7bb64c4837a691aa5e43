@@ -1,0 +1,22 @@
+web/src/zone.js
+  s_10ff77521b063e::t_f773cf6611c109 153-154,171-172
+  s_10ff77521b063e::t_c607871ee61059 159
+web/tests/zone.test.js
+  s_10ff77521b063e::t_f773cf6611c109 106-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "62653f0de18b7d853ffa7bb64c4837a691aa5e43",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
