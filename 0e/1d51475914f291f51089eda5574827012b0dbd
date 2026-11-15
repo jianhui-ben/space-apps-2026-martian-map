@@ -1,0 +1,52 @@
+web/src/state.js
+  s_10ff77521b063e::t_c4f711ca047485 74-80
+web/index.html
+  s_10ff77521b063e::t_ce2e901aa3a698 45
+web/src/ui/landing.js
+  s_10ff77521b063e::t_3fb6b96843ff25 92-109,117-128,133
+  s_10ff77521b063e::t_b23f50ede0bc5d 54-55,57,59
+web/src/zone.js
+  s_10ff77521b063e::t_b1c83db689b4b8 1-156
+web/styles.css
+  s_10ff77521b063e::t_3fb6b96843ff25 524-526
+  s_10ff77521b063e::t_9c10cd2848e64a 487-523
+web/tests/intake.test.js
+  s_10ff77521b063e::t_9f03c24293726b 90-95
+  s_10ff77521b063e::t_a8ce70b55c8ac7 1-89
+web/src/main.js
+  s_10ff77521b063e::t_f52e5de8f608aa 295,330-331,363-407
+  s_10ff77521b063e::t_be6df301aabb43 10,12,123,131,137,146,274-278,282,324,434
+  s_10ff77521b063e::t_c4f711ca047485 17,292-294,296-300,302,308,317-319
+  s_10ff77521b063e::t_61d73e63f6dd73 11,24,64-80,82-87,240,413,452
+  s_10ff77521b063e::t_9f03c24293726b 13,435,469
+web/src/site.js
+  s_10ff77521b063e::t_3b6771ef992c9d 1165,1171-1202,1237
+web/src/ui/factors.js
+  s_10ff77521b063e::t_3b6771ef992c9d 15,17,87,289-315
+  s_10ff77521b063e::t_324fa834c70919 316
+web/tests/suites.js
+  s_10ff77521b063e::t_40a1df87d04110 3
+web/tests/zone.test.js
+  s_10ff77521b063e::t_646786a71860de 1-78
+web/src/ui/intake.js
+  s_10ff77521b063e::t_9f03c24293726b 178-184
+  s_10ff77521b063e::t_ab686a06384df1 1-177
+tests/test_web_map.py
+  s_10ff77521b063e::t_0443deaca86d4e 132-134,137-146,151-154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0e1d51475914f291f51089eda5574827012b0dbd",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
