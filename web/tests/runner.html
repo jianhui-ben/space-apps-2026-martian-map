@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Map tests</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "../vendor/three/three.module.js",
+    "three/addons/": "../vendor/three/addons/",
+    "3d-tiles-renderer/three": "../vendor/3d-tiles-renderer/index.three.js",
+    "3d-tiles-renderer/three/plugins": "../vendor/3d-tiles-renderer/index.three-plugins.js",
+    "@mapbox/vector-tile": "../vendor/3d-tiles-renderer/not-vendored.js",
+    "pbf": "../vendor/3d-tiles-renderer/not-vendored.js",
+    "pmtiles": "../vendor/3d-tiles-renderer/not-vendored.js"
+  }
+}
+</script>
+<pre id="out">running...</pre>
+<script type="module">
+import { runAll } from './harness.js';
+import { SUITES } from './suites.js';
+
+const params = new URLSearchParams(location.search);
+const suite = params.get('suite') || 'unit';
+const grep = params.get('grep') || '';
+const out = document.getElementById('out');
+try {
+  const urls = SUITES[suite];
+  if (!urls) throw new Error('unknown suite: ' + suite);
+  for (const u of urls) await import(u);
+  const r = await runAll(grep);
+  out.textContent = JSON.stringify(r, null, 2);
+} catch (e) {
+  window.__results = { passed: 0, failed: [{ name: 'runner', message: String(e && e.message || e) }], skipped: [], done: true };
+  out.textContent = String(e);
+}
+</script>

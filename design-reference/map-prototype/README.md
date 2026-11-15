@@ -44,7 +44,7 @@ height scale), use this look.
 - The photo is in true grey, with glowing 5 m contours.
 - Block sides are drawn as lines, over a grid floor.
 
-It is the visual reference for the first-person walk along the investigation route.
+It was explored for the first-person walk. The app follows `docs/design-guidance.md`, which rules out glowing text and console framing, so the walk does not copy this look.
 
 ### Shared by all three
 
@@ -92,7 +92,7 @@ python3 -m venv .venv && .venv/bin/pip install numpy pillow requests     # once
 
 ## Tech stack
 
-This is the stack agreed for the map app. Every library is vendored in `web/vendor/` (unchanged files
+This is the stack agreed for the map app (the app's look itself follows `docs/design-guidance.md`). Every library is vendored in `web/vendor/` (unchanged files
 plus their licences), so nothing is fetched from a CDN and there is no build step.
 
 | Piece | Version | Licence | In this folder | Used for |
@@ -100,8 +100,7 @@ plus their licences), so nothing is fetched from a CDN and there is no build ste
 | [three.js](https://threejs.org/) | r170 (npm `three@0.170.0`) | MIT | `web/vendor/three/` | Every 3D view: terrain meshes, lights, shadows, camera |
 | three.js addons | r170 | MIT | `web/vendor/three/`: `OrbitControls.js`, `CSS2DRenderer.js`; `addons/`: `GLTFLoader`, `BufferGeometryUtils`, `Pass` | Orbit and zoom, HTML callouts pinned to 3D points; the files 3d-tiles-renderer imports |
 | [NASA-AMMOS 3d-tiles-renderer](https://github.com/NASA-AMMOS/3DTilesRendererJS) | 0.5.4 | Apache-2.0 | `web/vendor/3d-tiles-renderer/` | The map's continuous globe, zooming from the whole planet down to a site |
-| Public Sans | 400, 600, 700 | SIL OFL 1.1 | `web/vendor/fonts/` | Body text |
-| Barlow Condensed | 500, 600 | SIL OFL 1.1 | `web/vendor/fonts/` | Headings and HUD text |
+| Public Sans, Barlow Condensed | 400–700, 500–600 | SIL OFL 1.1 | `web/vendor/fonts/` | This prototype's text only. The map app uses Audiowide and Space Grotesk, per `docs/design-guidance.md` |
 | Plain ES modules and an import map | — | — | `web/index.html` | No framework and no bundler |
 | Python 3 standard library | — | — | `serve.py` | Local server on 127.0.0.1 |
 | numpy, Pillow, requests | — | — | `prepare.py` | Data preparation only |

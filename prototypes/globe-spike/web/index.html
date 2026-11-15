@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SPIKE - Mars globe to Gale site</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #07080c; font: 13px/1.35 system-ui, sans-serif; color: #e8e3da; }
+  canvas { display: block; }
+  .panel { position: absolute; background: rgba(12, 14, 20, .82); border: 1px solid #2c3140; border-radius: 6px; padding: 8px 10px; }
+  #info { left: 10px; top: 10px; white-space: pre; font-family: ui-monospace, monospace; font-size: 12px; }
+  #readout { right: 10px; top: 10px; min-width: 260px; }
+  #readout b { color: #7fd6ff; }
+  #note { left: 10px; bottom: 10px; color: #a9a39a; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/",
+    "3d-tiles-renderer/three": "https://esm.sh/3d-tiles-renderer@0.5.4/three?external=three",
+    "3d-tiles-renderer/three/plugins": "https://esm.sh/3d-tiles-renderer@0.5.4/three/plugins?external=three"
+  }
+}
+</script>
+</head>
+<body>
+<div id="info" class="panel">loading...</div>
+<div id="readout" class="panel">Site: near_base_north (Gale)<br>Compound 60 x 60 m: <b id="slope">-</b><br><span id="pos"></span></div>
+<div id="note" class="panel">SPIKE. Imagery: NASA Trek (Viking MDIM2.1, CTX, HiRISE). Terrain: Gale 1 m DEM (data/catalog.json). Drag the cyan square.</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -40,3 +40,9 @@ data/*
 .vscode/
 .idea/
 .DS_Store
+
+# Browser test screenshots
+tests/artifacts/
+
+# GitHub Pages build output
+web/dist/

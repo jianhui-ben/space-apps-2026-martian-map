@@ -134,6 +134,34 @@ tiles of 256 px each.
 Exit codes: `0` on success, `1` on a network or data error, `2` on a usage or
 validation error.
 
+### 3D map (`web/`)
+
+The map app is plain ES modules with vendored libraries (three.js r170, NASA-AMMOS
+3d-tiles-renderer 0.5.4, Audiowide and Space Grotesk). There is no build step. It needs the
+data files in `data/`: fetch them with `python -m martian_map data fetch`, or run the snapshot.
+
+```bash
+python3 web/serve.py --data data --port 8770               # http://127.0.0.1:8770/ (binds loopback only)
+python3 web/package.py --data data --out web/dist          # static GitHub Pages build, at most 300 MB
+```
+
+From another machine, tunnel in with `ssh -L 8770:127.0.0.1:8770 <host>`.
+
+The flow is landing → construction brief → facility (illustrative reference) → location assessment:
+
+- the globe, then each region's priority list and the site cards;
+- the factor rows on each site card, with details on demand;
+- a draggable facility layout on 1 m HiRISE terrain.
+
+The design is in `docs/superpowers/specs/2026-11-14-site-explorer-map-design.md`, and the look follows
+`docs/design-guidance.md`. The browser tests need `pip install -r requirements-web.txt` and
+`python -m playwright install chromium`:
+
+```bash
+MARTIAN_MAP_DATA=data pytest tests/test_web_map.py tests/test_web_tools.py \
+  tests/test_web_package.py tests/test_web_dist.py
+```
+
 ## Tests
 
 ```bash

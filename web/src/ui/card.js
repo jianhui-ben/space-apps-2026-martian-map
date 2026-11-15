@@ -1,0 +1,368 @@
+// The site card, in the left panel, in plain words first and expert detail on demand (Task 9c): the header with the
+// priority and the plain verdict; five factor rows (icon, name, a plain sentence, "View" where the factor has a view,
+// and a closed Details holding Task 9's metric lines for that factor: value, "baseline / ideal", status label and icon,
+// chips, what settles it, critical unknowns marked); "Why this priority" in plain words with the technical text in its
+// Details; and the next check. Metric ids appear only inside Details. The card lays out whatever Results it is given,
+// so metrics computed later (environment, field records, route) appear without a change here.
+import { STATUS, fieldCounts } from '../status.js';
+import { failSide } from '../priority.js';
+import { FACTORS, factorSentence, plainVerdict, plainWhy, plainIds, shortName } from '../plain.js';
+import { resultChips, alignmentCaveat, chipEl } from './chips.js';
+import { nextCheck, nextCheckEl } from './list.js';
+import { facilityEl } from './landing.js';
+
+const LOAD_FAILED = 'data failed to load';
+const GAPS = 'elevation gaps under the layout';
+// The grid each terrain check reads (checks.js), for the caveat chip when a Result names no dataset itself.
+const GRID_OF = {
+  'BT-01': 'slope10', 'BT-02': 'slope10', 'BT-05': 'slope10', 'SC-10': 'slope10', 'TC-08': 'slope10',
+  'BT-04': 'elevation', 'BT-06': 'elevation', 'BT-08': 'roughness',
+};
+export const STEP_NAMES = {
+  1: 'Step 1 · failures go last',
+  2: 'Step 2 · fewer critical unknowns go higher',
+  3: 'Step 3 · less effort and risk go higher',
+  4: 'Step 4 · otherwise equal',
+};
+const GROUPS = [
+  { key: 'fieldwork', status: STATUS.NEEDS_FIELDWORK, title: (n) => '⚠ ' + n + ' more critical unknowns: fieldwork with no orbital estimate' },
+  { key: 'design', status: STATUS.NEEDS_DESIGN_INPUT, title: (n) => n + ' need design input' },
+  { key: 'data', status: null, title: (n) => n + ' need data: estimates not computed yet, or no data here' },
+];
+
+const clean = (t) => String(t || '').replace(/^\s*(D\/P|P|D):\s*/, '').replace(/`/g, '').trim();
+
+// Each plot's colour comes from its own checks: met when all of them meet, a conflict when any fails, else unresolved.
+export const FOOTPRINT_CHECKS = { compound: ['BT-02', 'BT-04', 'BT-05'], solar: ['SC-10'], radiator: ['TC-08'] };
+const PLOT_OF = Object.fromEntries(Object.entries(FOOTPRINT_CHECKS).flatMap(([plot, ids]) => ids.map((id) => [id, plot])));
+const PLOT_NAMES = { compound: 'the compound', solar: 'the solar plot', radiator: 'the radiator plot' };
+export function footprintStatus(results) {
+  const out = {};
+  for (const [plot, ids] of Object.entries(FOOTPRINT_CHECKS)) {
+    const st = ids.map((id) => results && results.get(id) && results.get(id).status);
+    out[plot] = st.includes(STATUS.NOT_MET) ? 'conflict' : st.every((x) => x === STATUS.MET) ? 'met' : 'unresolved';
+  }
+  return out;
+}
+
+// Short names for the conflict labels of the computed checks; any other metric uses its name.
+const CONFLICT_NAMES = {
+  'BT-01': 'Connected area ratio', 'BT-02': 'Layout fit', 'BT-04': 'Pad slope', 'BT-05': 'Local pad slope',
+  'BT-08': 'Roughness', 'SC-10': 'Array fit', 'TC-08': 'Radiator fit',
+};
+const UNRESOLVED = {
+  [STATUS.NEEDS_FIELDWORK]: 'needs fieldwork', [STATUS.NEEDS_DESIGN_INPUT]: 'needs design input', [STATUS.NEEDS_CONFIRMATION]: 'needs data',
+};
+
+// The specific conflict, e.g. "Pad slope 6.4° over the 5° target".
+function conflictText(r, name) {
+  const label = CONFLICT_NAMES[r.id] || name || r.id;
+  const { base, limit, above } = failSide(r); // the same reading as the verdict (priority.js)
+  if (!Number.isFinite(r.value) || !limit || above === null) return label + ' fails the ' + (base || 'current') + ' target';
+  return label + ' ' + r.display + (above ? ' over' : ' under') + ' the ' + limit + ' target';
+}
+
+// {text, kind ('met' | 'conflict' | 'unresolved' | 'na'), icon, ideal, plot} for one Result, in the design guide's words.
+export function statusLabel(r, name = '') {
+  switch (r.status) {
+    case STATUS.MET: return { text: 'Meets screening criterion', kind: 'met', icon: '✓', ideal: !!r.ideal, plot: null };
+    case STATUS.NOT_MET: return { text: conflictText(r, name), kind: 'conflict', icon: '✗', ideal: false, plot: PLOT_OF[r.id] || null };
+    case STATUS.NOT_APPLICABLE:
+      return { text: r.note ? 'Not applicable: ' + r.note : 'Not applicable', kind: 'na', icon: '—', ideal: false, plot: null };
+    default: return { text: 'Unresolved: ' + (UNRESOLVED[r.status] || 'needs data'), kind: 'unresolved', icon: '?', ideal: false, plot: null };
+  }
+}
+export function targetText(target) {
+  if (!target) return '';
+  const b = clean(target.baseline), i = clean(target.ideal);
+  if (!b) return i ? 'ideal ' + i : '';
+  return i ? b + ' / ideal ' + i : b;
+}
+
+const byId = (cmp) => (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) * cmp;
+
+// Lines into Task 9's sections: Met, Failed, Open (lines with a value, then folded groups of the rest), Not applicable.
+function sectionsOf(lines) {
+  const sections = { met: [], failed: [], open: { lines: [], groups: [] }, na: [] };
+  const grouped = new Map(GROUPS.map((g) => [g.key, []]));
+  for (const line of lines) {
+    if (line.status === STATUS.MET) sections.met.push(line);
+    else if (line.status === STATUS.NOT_MET) sections.failed.push(line);
+    else if (line.status === STATUS.NOT_APPLICABLE) sections.na.push(line);
+    else if ((line.value !== null && line.value !== undefined) || line.failedData || line.id.startsWith('power:')) sections.open.lines.push(line);
+    else grouped.get((GROUPS.find((x) => x.status === line.status) || GROUPS[2]).key).push(line);
+  }
+  sections.open.lines.sort((a, b) => (b.id.startsWith('power:') - a.id.startsWith('power:')) || (b.critical - a.critical)
+    || (b.failedData - a.failedData) || (a.id < b.id ? -1 : 1));
+  for (const g of GROUPS) {
+    const ls = grouped.get(g.key);
+    if (ls.length) sections.open.groups.push({ key: g.key, title: g.title(ls.length), lines: ls });
+  }
+  return sections;
+}
+
+// ctx: site, results (this site's), row (its priority row), metrics, setup, catalog; rows, allResults (siteId -> Results)
+// and names (siteId -> name) for the plain "why", which names the peer that placed it.
+export function cardModel({ site, results, row, metrics, setup, catalog, rows = null, allResults = null, names = new Map() }) {
+  const meta = new Map(metrics.map((m) => [m.id, m]));
+  const crit = row ? new Set(row.criticalUnknowns) : null;
+  const entries = (catalog && catalog.byId) || new Map();
+  const caveatFor = (r) => {
+    let ids = r.datasets || (r.datasetId ? [r.datasetId] : null);
+    if (!ids) {
+      const key = GRID_OF[r.id], g = key && site.grids && site.grids[key];
+      ids = g && r.value !== null && r.value !== undefined ? [g.datasetId] : [];
+    }
+    for (const id of ids) { const c = alignmentCaveat(entries.get(id)); if (c) return c; }
+    return null;
+  };
+
+  const lines = [];
+  for (const r of [...results.values()].sort(byId(1))) {
+    const m = meta.get(r.id);
+    const open = r.status !== STATUS.MET && r.status !== STATUS.NOT_MET && r.status !== STATUS.NOT_APPLICABLE;
+    const label = statusLabel(r, m && m.name);
+    lines.push({
+      id: r.id, factor: m ? m.factor : String(r.id).slice(0, 2), name: m ? m.name : r.id, display: r.display || '—', value: r.value,
+      target: targetText(r.target), words: label.text, kind: label.kind, icon: label.icon, plot: label.plot,
+      status: r.status, ideal: label.ideal, note: r.note || '',
+      critical: open && (crit ? crit.has(r.id) : (r.status === STATUS.NEEDS_FIELDWORK || r.straddles)),
+      chips: resultChips(r, { caveat: caveatFor(r) }),
+      settledBy: open ? ((m && m.fieldwork) || '') : '',
+      failedData: r.note === LOAD_FAILED || r.note === GAPS,
+      appliesTo: r.appliesTo,
+    });
+  }
+  const warnings = [];
+  if (setup && setup.power === 'solar_fission') {
+    lines.push({
+      id: 'power:reactor', factor: 'SC', label: 'Reactor link', name: 'Reactor link', display: '—', value: null, target: '',
+      words: 'base decision, needs confirmation', kind: 'unresolved', icon: '?', plot: null, status: STATUS.NEEDS_CONFIRMATION, ideal: false,
+      note: 'no reactor site is assumed; where it goes and how it connects is for the base to decide', critical: false,
+      chips: [{ kind: 'assumption', text: 'assumption', title: 'power option chosen in the setup' }], settledBy: '', failedData: false,
+    });
+  }
+  const sc04 = results.get('SC-04');
+  if (setup && setup.power === 'solar_batteries' && sc04 && sc04.value !== null && sc04.value !== undefined) {
+    warnings.push({ kind: 'dust', text: 'Dust storms: solar and batteries carry the whole load. In the worst season the array covers '
+      + sc04.display + (sc04.note ? '; ' + plainIds(sc04.note, metrics) : '') + '.' });
+  }
+
+  const known = new Set(FACTORS.map((f) => f.id));
+  const factors = FACTORS.map((f) => ({
+    id: f.id, name: f.name, ...factorSentence(f.id, results, metrics),
+    counts: fieldCounts(results, metrics, f.id), sections: sectionsOf(lines.filter((l) => l.factor === f.id)),
+  }));
+  const other = lines.filter((l) => !known.has(l.factor)); // Results of no known factor still show, in their own Details
+  return {
+    siteId: site.id, name: site.name, regionId: site.regionId,
+    priority: row ? row.priority : null, verdict: plainVerdict(row, results, metrics), technicalVerdict: row ? row.verdict : 'not ranked yet',
+    equalWith: row ? row.equalWith : [], tradeoff: row ? row.tradeoff : null, failures: row ? row.failures : [],
+    criticalCount: row ? row.criticalUnknowns.length : null, nextCheck: row ? nextCheck(row, metrics) : null, ranked: !!row,
+    why: {
+      step: row ? row.step : null, stepName: row ? STEP_NAMES[row.step] || 'Step ' + row.step : '', text: row ? row.whyHere : '',
+      tradeoff: row ? row.tradeoff : null, plain: plainWhy(row, { rows: rows || (row ? [row] : []), results: allResults || new Map([[site.id, results]]), names }),
+    },
+    warnings, factors, other: other.length ? sectionsOf(other) : null, sections: sectionsOf(lines),
+  };
+}
+
+// ---------- DOM ----------
+
+const h = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined && text !== null) e.textContent = text;
+  return e;
+};
+
+function lineEl(l) {
+  const el = h('div', 'line s-' + l.status + ' k-' + l.kind + (l.critical ? ' critical' : '') + (l.failedData ? ' data-failed' : '') + (l.ideal ? ' is-ideal' : ''));
+  el.dataset.metric = l.id;
+  el.dataset.status = l.status;
+  const l1 = h('div', 'l1');
+  if (l.critical) { const mk = h('span', 'mk', '⚠'); mk.title = 'critical unknown: could still turn into a failure here'; l1.append(mk); }
+  if (!l.label) l1.append(h('span', 'id', l.id));
+  l1.append(h('span', 'nm', l.label || l.name), h('span', 'val', l.display));
+  const l2 = h('div', 'l2');
+  const st = h('span', 'status');
+  st.append(h('span', 'st-icon', l.icon), h('span', 'words', l.words));
+  if (l.ideal) st.append(h('span', 'badge-ideal', 'ideal'));
+  if (l.plot) st.append(h('span', 'plot', 'on ' + PLOT_NAMES[l.plot]));
+  l2.append(st);
+  if (l.target) l2.append(h('span', 'target', l.target));
+  for (const c of l.chips) l2.append(chipEl(c));
+  el.append(l1, l2);
+  if (l.failedData) el.append(h('div', 'note bad', l.note));
+  else if (l.note && !l.words.includes(l.note)) el.append(h('div', 'note', l.note));
+  if (l.settledBy) el.append(h('div', 'settled', 'settled by: ' + l.settledBy));
+  return el;
+}
+
+const KIND = { '✓': 'met', '✗': 'conflict', '?': 'unresolved', '—': 'na' };
+const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+
+// onBack() closes the site; onView(id) asks for a factor's view; hasView(id) says whether that factor has one yet.
+export function createCard(el, { onBack, onView = () => {}, hasView = () => false }) {
+  const openGroups = new Set(); // <details> left open by the user survive re-renders
+  let siteId = null;
+
+  function clear() {
+    el.replaceChildren();
+    delete el.dataset.site;
+    siteId = null;
+  }
+
+  const details = (key, summary, cls = 'group') => {
+    const d = h('details', cls);
+    d.dataset.group = key;
+    d.open = openGroups.has(key);
+    d.append(h('summary', '', summary));
+    d.addEventListener('toggle', () => { if (d.open) openGroups.add(key); else openGroups.delete(key); });
+    return d;
+  };
+
+  // A factor's metric lines, in Task 9's sections, inside its Details.
+  function sectionsEl(fid, S, into) {
+    const sub = (key, title, n) => {
+      const s = h('section', 'sub sub-' + key);
+      s.dataset.section = key;
+      const t = h('h4', '', title + ' ');
+      t.append(h('span', 'n', String(n)));
+      s.append(t);
+      return s;
+    };
+    if (S.met.length) { const s = sub('met', 'Met', S.met.length); for (const l of S.met) s.append(lineEl(l)); into.append(s); }
+    if (S.failed.length) { const s = sub('failed', 'Failed', S.failed.length); for (const l of S.failed) s.append(lineEl(l)); into.append(s); }
+    const nOpen = S.open.lines.filter((l) => !l.id.startsWith('power:')).length + S.open.groups.reduce((a, g) => a + g.lines.length, 0);
+    if (nOpen || S.open.lines.length) {
+      const s = sub('open', 'Open', nOpen);
+      for (const l of S.open.lines) s.append(lineEl(l));
+      for (const g of S.open.groups) {
+        const d = details(fid + ':open:' + g.key, g.title);
+        for (const l of g.lines) d.append(lineEl(l));
+        s.append(d);
+      }
+      into.append(s);
+    }
+    if (S.na.length) {
+      const s = sub('na', 'Not applicable', S.na.length);
+      const solar = S.na.every((l) => l.id.startsWith('SC-'));
+      const d = details(fid + ':na', solar ? 'All ' + S.na.length + ' solar metrics: no solar plot in this power option' : plural(S.na.length, 'metric') + ' that do not apply here');
+      for (const l of S.na) d.append(lineEl(l));
+      s.append(d);
+      into.append(s);
+    }
+  }
+
+  function factorEl(f, setup) {
+    const box = h('div', 'factor k-' + KIND[f.icon]);
+    box.dataset.factor = f.id;
+    box.dataset.icon = f.icon;
+    const icon = h('span', 'f-icon st-icon k-' + KIND[f.icon], f.icon);
+    const words = h('div', 'f-words');
+    words.append(h('span', 'f-name', f.name), h('span', 'f-text', f.text));
+    box.append(icon, words);
+    if (hasView(f.id)) {
+      const v = h('button', 'view secondary', 'View');
+      v.type = 'button';
+      v.setAttribute('aria-label', 'Show ' + f.name + ' on the map');
+      v.addEventListener('click', () => onView(f.id));
+      box.append(v);
+    }
+    const d = details('factor:' + f.id, 'Details', 'f-details');
+    const body = h('div', 'f-body');
+    body.append(h('p', 'counts', plural(f.counts.fieldwork, 'fieldwork item') + ' and ' + plural(f.counts.design, 'design item') + ' open.'));
+    if (f.id === 'BT') { // the layout lives on the terrain: what it is and how to move it
+      if (setup) body.append(facilityEl(setup, { lead: 'Facility' })); // with its label: an illustrative reference
+      body.append(h('p', 'howto', 'Drag a plot to move the layout, or select it (click, or Tab from the map) and use the arrow keys (5 m) '
+        + 'and [ ] (15°); drag the round handle, or hold R and drag, to turn it. The checks and the priority update as you go.'));
+    }
+    sectionsEl(f.id, f.sections, body);
+    d.append(body);
+    box.append(d);
+    return box;
+  }
+
+  // ctx: {problems: [{kind, message}], regionName, setup, names (siteId -> name), metrics, brief (the brief's line, Task 9d)}
+  function render(model, { problems = [], regionName = '', setup = null, names = new Map(), metrics = [], brief = '' } = {}) {
+    if (model.siteId !== siteId) { openGroups.clear(); siteId = model.siteId; }
+    const body0 = el.querySelector('.card-body');
+    const scroll = body0 ? body0.scrollTop : 0;
+    el.replaceChildren();
+    el.dataset.site = model.siteId;
+    el.className = 'panel';
+    el.setAttribute('aria-label', 'Site card: ' + model.name);
+
+    const head = h('header', 'card-head');
+    const back = h('button', 'back text-action', '← Back to ' + (regionName || 'the region'));
+    back.type = 'button';
+    back.addEventListener('click', onBack);
+    head.append(back);
+    if (brief) head.append(h('p', 'brief-line', brief));
+    head.append(h('h2', '', shortName(model.name)));
+    const desc = model.name.slice(shortName(model.name).length).trim().replace(/^\((.*)\)$/, '$1');
+    head.append(h('p', 'desc', (regionName ? regionName + ' · ' : '') + 'candidate site' + (desc ? ' · ' + desc : '')));
+    const pl = h('p', 'prio-line');
+    pl.append(h('span', 'prio-badge' + (model.failures.length ? ' failed' : ''), model.priority === null ? 'not ranked yet' : 'Priority ' + model.priority));
+    if (model.equalWith.length) pl.append(h('span', 'eq', 'equal with ' + model.equalWith.map((id) => shortName(names.get(id) || id)).join(', ')));
+    head.append(pl, h('p', 'verdict' + (model.failures.length ? ' failed' : ''), model.verdict));
+    el.append(head);
+
+    const body = h('div', 'card-body');
+    const notices = h('div', 'notices');
+    for (const p of problems) { // what the view cannot show as data: failed files, missing imagery, no surround
+      const failed = p.kind === 'data_failed';
+      const n = h('p', 'notice ' + (failed ? 'bad' : 'warn'));
+      n.dataset.kind = p.kind;
+      const msg = plainIds(failed && !/failed to load/.test(p.message) ? 'Data failed to load: ' + p.message : p.message, metrics);
+      n.textContent = '⚠ ' + msg + (/[.]$/.test(msg) ? '' : '.');
+      notices.append(n);
+    }
+    for (const w of model.warnings) {
+      const n = h('p', 'notice warn', '⚠ ' + w.text);
+      n.dataset.kind = w.kind;
+      notices.append(n);
+    }
+    if (notices.childElementCount) body.append(notices);
+
+    const rows = h('section', 'factors');
+    rows.setAttribute('aria-label', 'The five factors');
+    for (const f of model.factors) rows.append(factorEl(f, setup));
+    if (model.other) {
+      const box = h('div', 'factor k-unresolved');
+      box.dataset.factor = 'other';
+      const d = details('factor:other', 'Other checks', 'f-details');
+      const b = h('div', 'f-body');
+      sectionsEl('other', model.other, b);
+      d.append(b);
+      box.append(d);
+      rows.append(box);
+    }
+    body.append(rows);
+
+    const why = h('section', 'sec sec-why');
+    why.dataset.section = 'why';
+    why.append(h('h3', '', 'Why this priority'), h('p', 'why-text', model.why.plain));
+    const wd = details('why', 'Details');
+    const wb = h('div', 'f-body');
+    if (model.ranked) {
+      wb.append(h('p', 'step', model.why.stepName), h('p', 'verdict-tech', model.technicalVerdict), h('p', 'why-tech', model.why.text));
+    }
+    wb.append(h('p', 'rule', 'Sites are ordered by four steps from the project plan, with no scores or weights: failures go last, then fewer '
+      + 'critical unknowns go higher, then less grading, shorter cable, less shading and more dune setback, otherwise equal.'));
+    wd.append(wb);
+    why.append(wd);
+    body.append(why);
+
+    const next = h('section', 'sec sec-next');
+    next.dataset.section = 'next';
+    next.append(h('h3', '', 'Next check'));
+    if (model.ranked) next.append(nextCheckEl(model.nextCheck));
+    else next.append(h('p', 'none', 'The next check appears once every site in the region has been checked.'));
+    body.append(next);
+    el.append(body);
+    body.scrollTop = scroll;
+  }
+  return { render, clear };
+}
