@@ -1,0 +1,29 @@
+tests/test_web_map.py
+  s_10ff77521b063e::t_071da4b1f2c5cc 1441-1442,1444-1449
+  s_10ff77521b063e::t_f289cc421ea347 1422-1440,1443,1450
+  s_10ff77521b063e::t_ff4e7e6e046205 1451-1470
+web/tests/zone.test.js
+  s_10ff77521b063e::t_f289cc421ea347 99-105
+web/src/zone.js
+  s_10ff77521b063e::t_471dd62ddea068 10-11,101-104,145-146
+web/src/ui/factors.js
+  s_10ff77521b063e::t_471dd62ddea068 300
+web/src/main.js
+  s_10ff77521b063e::t_471dd62ddea068 65,69-71,74,115,130-133,135,286,379-383,394-395,397,446,480
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "52315e098583aafad07f37484fb1da0f31fc59b7",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
