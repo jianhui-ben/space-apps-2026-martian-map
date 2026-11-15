@@ -1,0 +1,42 @@
+web/tests/runner.html
+  s_10ff77521b063e::t_90ad2a4d2045aa 3
+web/index.html
+  s_10ff77521b063e::t_90ad2a4d2045aa 5
+web/tests/suites.js
+  s_10ff77521b063e::t_2f4985a0120498 3
+web/src/main.js
+  s_10ff77521b063e::t_4fece3069edd86 10,63,77
+web/src/ui/card.js
+  s_10ff77521b063e::t_4fece3069edd86 128,198
+web/styles.css
+  s_10ff77521b063e::t_5026a074d6fd89 486
+  s_10ff77521b063e::t_ad3dd0fa222bc7 485
+web/src/sized.js
+  s_10ff77521b063e::t_ded5d9e9e66a3b 1-57
+web/tests/sized.test.js
+  s_10ff77521b063e::t_1e7c4e7a8e45d1 1-60,62-66,68-115
+  s_10ff77521b063e::t_be2fd5eae448ad 61,67
+  s_10ff77521b063e::t_e396abc0f6e16a 116-126
+web/src/checks.js
+  s_10ff77521b063e::t_af4bda16221056 117-120,122,124,240-252
+web/src/layout.js
+  s_10ff77521b063e::t_af4bda16221056 10,26,119,122-123,137-138,140-141,146,150
+web/src/ui/landing.js
+  s_10ff77521b063e::t_184e9229f61a7c 16-17,20,29-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2ed5ea590b887abeca849c8df15748aab724d845",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
