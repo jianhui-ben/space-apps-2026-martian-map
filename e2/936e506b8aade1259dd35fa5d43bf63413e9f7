@@ -1,0 +1,21 @@
+README.md
+  s_10ff77521b063e::t_123f561ee2bf41 76,173
+docs/design-reference/mars-copy-balance.html
+  s_10ff77521b063e::t_12d2f79b90226b 1-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e2936e506b8aade1259dd35fa5d43bf63413e9f7",
+  "prompts": {},
+  "sessions": {
+    "s_10ff77521b063e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f1c797-fa51-41f8-aeb0-d6654674c273",
+        "model": "unknown"
+      },
+      "human_author": "nocturneXXX <lingrui.duan@gmail.com>"
+    }
+  }
+}
