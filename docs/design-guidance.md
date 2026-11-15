@@ -59,7 +59,7 @@ Use **Audiowide** for display lettering and **Space Grotesk** for the rest of th
 | Section heading or card title | Space Grotesk 500 | 14–16 px / 1.4 | Same |
 | Body copy and form labels | Space Grotesk 400–500 | 14 px / 1.5 | Same |
 | Helper text and metadata | Space Grotesk 400 | 12 px / 1.5 | Same |
-| Input values | Space Grotesk 400 | 16 px minimum; 24 px for population | Same |
+| Input values | Space Grotesk 400 | 16 px minimum; 24 px for fleet totals | Same |
 | Buttons | Space Grotesk 500 | 14 px | Same |
 
 The earlier prototypes contain some 9–11 px supporting text. Do not adopt those sizes as the production standard. Use at least 12 px for meaningful guidance and metadata, and keep mobile editable fields at least 16 px.
@@ -122,21 +122,34 @@ Remove text that merely repeats a nearby label, reassures without adding informa
 
 | Surface | Practical guidance |
 | --- | --- |
-| Landing support | “Define your facility's needs to explore candidate sites near your base.” |
-| Intake introduction | “Base services are included. Choose the research work this facility will support.” |
+| Landing support | “Describe your construction project to explore locations for its supporting data center.” |
+| Intake introduction | “Tell us what you are building, which robots will work, and when you need results.” |
 | Workload examples | One short example per option; do not turn technical choices into marketing copy. |
-| Scheduling | “Flexible research jobs can run when power is available.” |
+| Scheduling | “Flexible processing jobs can run when power is available.” |
 | Results introduction | “Compare the tradeoffs, then select an area to see what needs checking.” |
 
 Use this direct, informative voice consistently across screens. Shorten it where task density requires, while retaining information needed to understand a choice or its consequence. Do not substitute the longer Editorial balance treatment on the landing page.
 
 ## 7. Intake and evidence conventions
 
-Keep the opening intake small: population, three research workload categories, and research scheduling flexibility. The categories are AI and simulation, robotics and imaging, and science archives. Base services remain included.
+The workflow is construction inputs → estimated facility → five location requirements → candidate comparison. Start with construction type and extent, robot roles/counts, operating schedule, and update deadlines. Offer precision, duration, growth, and existing infrastructure as follow-up inputs. See [input specification](construction-project-inputs.md).
 
-Population is context, not a formula for power demand. AI workloads draw attention to compute and cooling, imaging and robotics to processing and ingestion, and archives to storage and resilience. Detailed hardware, retained data volumes, concurrency, deadlines, power allocation, and equipment geometry still require validation. These relationships come from the [reference facility scenario](reference-facility.md).
+Owners do not enter rack counts or complex dimensions. Offer “unknown” where appropriate, display important profile assumptions, and ask follow-up questions that materially change the estimate. Do not turn robot count into a fixed kW or land-area multiplier. Separate construction fleet quantities from computing-module delivery and investigation vehicles.
+
+The facility preview shows options or ranges for compute, storage, power, heat rejection, and complete footprint. Distinguish owner input, model assumption, equipment specification, and computed output. Until implemented, show the sizing stage as planned and label any sample result “Illustrative reference — not calculated from your project.” Never present the legacy reference facility as an interactive estimate.
+
+The requirement view explains why each site constraint exists. The comparison view records the facility version and any site-specific layout changes. Keep the existing visual direction; older HTML copy mockups are historical visual references where their intake conflicts with this workflow.
 
 Candidate feedback must distinguish observations, derived estimates, modeled results, assumptions, and missing evidence. Never hide a critical conflict inside an average score. Use “candidate,” “screening,” and “requires measurement” where appropriate. Preserve a smaller base-integrated installation as a possible outcome.
+
+### Construction intake alternatives
+
+[The construction intake mock](../design-reference/mars-construction-intake.html) incorporates the construction-owner inputs in two interactive alternatives. Neither alternative has been selected yet.
+
+- **Guided brief:** project, robots, operations, and review steps, with a persistent project summary and Mars illustration.
+- **Project worksheet:** project and fleet editing in one view, with expandable schedule/output details and a brief summary.
+
+Both use editable example values, known/range/unknown quantity controls, robot roles and active counts, requested outputs, deadlines, and a pending five-factor handoff. They are interaction prototypes, not the complete request-schema implementation. Detailed map selection, multi-phase schedules, technical profiles, sizing, and feasibility remain outside this mock. The earlier copy-balance mock remains a historical visual reference.
 
 ## 8. Extending the style to later screens
 

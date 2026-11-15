@@ -4,7 +4,7 @@
 
 Plan useful surface investigations of candidate facility sites: where to go, what to measure, in what order, and how to return within a stated mission envelope. Support comparison and evidence gathering, not operational certification of astronaut safety.
 
-Use the [reference facility](../reference-facility.md) and its hypothetical base. Its approximately 1–3 km candidate search distance is a planning assumption, not a walking range or approved excursion limit. Define walking, rover-assisted, and robotic plans separately. A route suitable for an astronaut is not automatically a heavy-cargo route.
+Use the selected facility option, construction-site/base locations, and unresolved location requirements to identify useful measurement stops. See [facility-to-location requirements](../facility-to-location-requirements.md). Mission assumptions must separately supply investigation vehicles, instruments, crew resources, durations, and return limits; the construction robot count does not establish these capabilities. Heavy-cargo access is assessed through buildable-terrain corridors, not inferred from an investigation-route pass. The [legacy reference](../reference-facility.md) 1–3 km search distance is not an approved travel limit.
 
 **Baseline** is the minimum condition for a scenario-feasible investigation plan. **Ideal** adds information value or reserve. **D** denotes a limit from mission/suit/vehicle/instrument design. **P** denotes a proposed project preference. Numerical margins below are comparison choices, not NASA EVA limits. No fixed oxygen duration, radiation allowance, or safe travel distance is invented. Missing mission limits leave route feasibility unresolved.
 

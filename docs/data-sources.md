@@ -1,5 +1,11 @@
 # What data we have
 
+## Role in the construction-driven workflow
+
+The product goal is owner construction inputs → estimated data-center specifications → five location requirements → comparison against Mars evidence. These datasets serve the location-assessment stage; they do not convert robot counts into server capacity or facility dimensions. The sizing and requirement-generation stages are planned; see [sizing specification](data-center-sizing.md) and [location mapping](facility-to-location-requirements.md).
+
+Use workload and equipment profiles to estimate the facility first, then terrain, sunlight, and thermal evidence to refine each candidate's layout. Preserve original source values and evidence labels. The candidate boxes below remain demonstration search areas, not verified fits for a calculated facility. The documented catalog can describe downloads that are absent from a fresh checkout; verify files before analysis.
+
 This project compares candidate sites for a data center near an imagined future base in **Gale crater** on
 Mars (see the [project plan](project-plan.md)), with Jezero crater and Arcadia Planitia for comparison. This page explains, in plain words, every dataset the map
 uses: what it shows, what it can't tell you, and where the gaps are.

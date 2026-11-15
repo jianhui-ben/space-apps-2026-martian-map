@@ -4,7 +4,7 @@
 
 Characterize thermal conditions at candidate plots and identify where observations and tests are needed to assess the proposed facility's heat rejection, cold protection and thermal interaction with the ground. This initially supports investigation planning; a temperature map alone cannot establish cooling feasibility.
 
-Use the [reference facility](../reference-facility.md): 60/150/250 kW IT states and 100/225/350 kW total facility allocations. Allocate heat among subsystems before thermal sizing. The 350 kW envelope is an initial whole-facility accounting assumption, not a verified single-loop load. The proposed 1,400–3,500 m² emitting-area sensitivity and 3,000–6,000 m² plot reserve remain unvalidated.
+Use subsystem heat loads for normal, peak, essential, and shutdown modes, together with temperature limits, cooling-loop design, radiator properties, geometry, and connection limits from the selected facility option. See [facility-to-location requirements](../facility-to-location-requirements.md). Allocate heat by subsystem; electrical power is not automatically one radiator-loop load. Candidate-specific solar exposure, ground/sky view, dust, and operating temperatures refine radiator sizing and trigger new layout checks. The [reference facility](../reference-facility.md) heat and area figures are legacy sensitivities, not computed requirements.
 
 **Baseline** means the minimum condition for the stated thermal scenario; **ideal** adds useful margin. **D** denotes a limit from equipment or engineering design. **P** denotes an adjustable project preference. All numerical ideal margins below are proposed preferences, not NASA limits. A missing temperature limit, heat load, or validated environmental model leaves the relevant result unresolved.
 

@@ -1,6 +1,6 @@
 {
-  "_note": "Assumptions for the Gale data-center site study. Every value here is a scenario assumption, not data. Edit freely; then run python -m martian_map snapshot.",
-  "name": "Gale crater data-center site study",
+  "_note": "Hypothetical Gale construction-support study. Construction inputs and legacy facility assumptions are illustrative, not NASA plans or computed demand. The current loader does not consume construction_project; sizing is planned.",
+  "name": "Gale construction-support computing site study",
   "gale_region": [136.0, -6.5, 139.0, -3.5],
   "study_area": [137.122, -4.925, 137.730, -4.249],
   "base": {"lon": 137.4416, "lat": -4.5895, "note": "assumption: Curiosity's landing spot (Bradbury Landing), inside a landing area NASA already judged safe. Placeholder until the team decides."},
@@ -10,8 +10,39 @@
     {"id": "near_base_north", "name": "Near base, north (crater floor)", "bounds": [137.4247, -4.5844, 137.4585, -4.5507], "note": "assumption: 2 x 2 km candidate chosen 2026-11-14 by screening the 10 m slope map for flat, dune-free crater floor within about 1-3 km of the base (near edge 0.3 km, far corner 2.5 km); 89% of 10 m cells at or under 5 degrees."},
     {"id": "near_base_west", "name": "Near base, west (crater floor, on Curiosity's early path)", "bounds": [137.4027, -4.6181, 137.4365, -4.5844], "note": "assumption: 2 x 2 km candidate chosen 2026-11-14 the same way (near edge 0.3 km, far corner 2.9 km); dune-free, and about 1.8 km of Curiosity's 2013 drive crosses it, so part of it was checked on the ground."}
   ],
+  "construction_project": {
+    "status": "illustrative_inputs_not_consumed_by_current_loader",
+    "name": "Landing pad and access-road preparation",
+    "work_types": [
+      "survey",
+      "excavation",
+      "transport"
+    ],
+    "fleet": [
+      {
+        "role": "survey",
+        "count": 4
+      },
+      {
+        "role": "excavation",
+        "count": 10
+      },
+      {
+        "role": "transport",
+        "count": 6
+      }
+    ],
+    "operating_hours_per_sol": 12,
+    "requested_map_turnaround_hours": 1,
+    "construction_site_bounds": null,
+    "work_extent_m2": null,
+    "precision_m": null,
+    "duration_sols": null,
+    "existing_infrastructure": null,
+    "note": "All populated values are demonstration assumptions. Sensor profiles, active concurrency, survey frequency, location, extent, precision, duration, and infrastructure require definition. This block produces no facility estimate."
+  },
   "assumptions": {
-    "facility_footprint_m": {"value": [200, 200], "unit": "m", "placeholder": true, "note": "not agreed; 200 x 200 m = 4 ha, the top of the 2-4 ha precinct search envelope in docs/reference-facility.md"},
+    "facility_footprint_m": {"value": [200, 200], "unit": "m", "placeholder": true, "note": "Legacy illustrative comparison only; not derived from construction_project and not a sizing default. not agreed; 200 x 200 m = 4 ha, the top of the 2-4 ha precinct search envelope in docs/reference-facility.md"},
     "max_construction_slope_deg": {"value": 5, "ideal": 2, "unit": "deg", "placeholder": true, "metric": "BT-04", "note": "overall pad tilt; proposed baseline (P) in docs/requirements/buildable-terrain.md"},
     "max_local_pad_slope_deg": {"value": 10, "ideal": 5, "unit": "deg", "placeholder": true, "metric": "BT-05", "note": "steepest 10 m x 10 m window on the pad; proposed baseline (P) in docs/requirements/buildable-terrain.md"},
     "max_roughness_m": {"value": 0.3, "unit": "m", "placeholder": true, "metric": "BT-08", "note": "placeholder only: BT-08 has no universal limit; it must come from the support design (R_allow)"},
@@ -19,6 +50,6 @@
     "suit_walking_speed_kmh": {"value": 1.5, "unit": "km/h", "placeholder": true, "note": "same as traverse.py default"},
     "rover_speed_kmh": {"value": 5, "unit": "km/h", "placeholder": true, "note": "not agreed"},
     "dem_vertical_precision_m": {"value": 0.25, "unit": "m", "placeholder": true, "note": "used for noise floors only if no primary source gives the Gale 1 m DEM's precision"},
-    "reference_facility": {"value": {"core_compound_m": [60, 60], "precinct_ha": [2, 4], "radiator_plot_m2": [3000, 6000], "solar_plot_m2": [3340, 10000], "it_power_kw": {"low": 60, "expected": 150, "peak": 250}, "heat_envelope_kw": 350}, "placeholder": true, "note": "copied from docs/reference-facility.md (proposals, not engineering values)"}
+    "reference_facility": {"value": {"core_compound_m": [60, 60], "precinct_ha": [2, 4], "radiator_plot_m2": [3000, 6000], "solar_plot_m2": [3340, 10000], "it_power_kw": {"low": 60, "expected": 150, "peak": 250}, "heat_envelope_kw": 350}, "placeholder": true, "note": "Legacy illustrative comparison only; not derived from construction_project and not a sizing default. copied from docs/reference-facility.md (proposals, not engineering values)"}
   }
 }

@@ -17,7 +17,7 @@ NASA lander and rover criteria are useful examples of evaluating slopes, rocks, 
 
 ## Assessment inputs and conventions
 
-Use the [Mars Base Computing Facility Reference Scenario](../reference-facility.md) for the current proposed multi-zone layout and workload context. Its dimensions and land reserves are preliminary assumptions, not engineering acceptance values. Calculate required area from an actual facility layout; do not substitute the reference scenario's 2–4 hectare search envelope for `A_required`.
+Use the selected construction-derived facility option and its complete layout, as specified in [facility-to-location requirements](../facility-to-location-requirements.md). Obtain module, solar, cooling, storage, staging, clearance, utility, and expansion geometry from that option. Slope, support adjustment, grading, and loaded delivery-vehicle limits come from equipment/design assumptions, not robot count. Calculate `A_required` from the actual layout; the [legacy reference facility](../reference-facility.md) is an illustrative comparison only. A total area alone cannot establish connected layout fit.
 
 Before applying the requirements, define:
 

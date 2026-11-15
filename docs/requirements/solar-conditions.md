@@ -2,9 +2,9 @@
 
 ## Purpose and benchmark status
 
-Evaluate how terrain, illumination, atmosphere and dust affect the supplemental solar system for the [reference facility](../reference-facility.md). Determine useful energy, time-dependent shortages, maintenance needs, and measurements required to compare candidate array plots.
+Evaluate how terrain, illumination, atmosphere and dust affect the solar contribution to the selected construction-derived facility option. Determine useful energy, time-dependent shortages, maintenance needs, and measurements required to compare candidate array plots.
 
-The reference facility proposes 100/225/350 kW low/expected/peak total loads, a firm base-power connection, and a 100 kW average solar sensitivity target. These are assumptions, not validated demand or available capacity. Essential load, firm allocation and storage are unresolved. Solar alone is not assumed to supply the facility continuously.
+Use the estimated time-dependent facility electrical load, essential-service demand, job flexibility, allocated base power, generation mix, storage characteristics, and panel/array model from [facility-to-location requirements](../facility-to-location-requirements.md). Evaluate seasonal and dust cases, then revise array/storage geometry and repeat terrain checks. Do not assume solar-only supply or automatically add the legacy 100 kW solar target. Missing backup or storage inputs leave continuity unresolved. The [reference facility](../reference-facility.md) remains an illustrative comparison.
 
 **Baseline** is the minimum for the chosen screening scenario. **Ideal** adds useful margin. **D** denotes a design-dependent requirement; **P** denotes a proposed project target. All numerical preferences and margins below are provisional, not NASA energy standards. An unmodeled power deficit or unknown input must remain unresolved.
 

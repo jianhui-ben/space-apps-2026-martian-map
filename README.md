@@ -37,43 +37,32 @@ Moon and planetary maps. You can pick a past, future or no specific time
 frame. You can add point-of-view imagery from surface missions. You can also
 plan for rovers or for crews working in pairs.
 
-## Our project: Mars data center site investigation
+## Our project: computing infrastructure for Mars construction
 
-We are focusing the challenge on one question: where on Mars could a future
-data center be built, and what would astronauts need to check on the ground
-to find out? The full plan is in [docs/project-plan.md](docs/project-plan.md).
+Help construction owners identify feasible locations for the data center their Mars project may need. Owners describe what they are building, their robot fleet, work schedule, and required map/inspection turnaround. They do not need to specify server counts or facility dimensions.
 
-In short, we will build a map based on NASA data. It will help astronauts
-compare candidate sites for a modular computing and data-storage facility
-that supports an established, hypothetical Mars base. Its services include
-base operations, scientific processing, robotics support, archives and
-optional AI workloads. The first version of the map covers five connected
-factors:
+**Construction project inputs → estimated data-center specifications → requirements for five Mars location assessments.**
 
-1. **Buildable terrain:** usable area, slope, roughness and obstacles for the whole facility layout.
-2. **Ground and ice evidence:** geological units, loose deposits, buried ice and what would need probing.
-3. **Solar conditions:** illumination, terrain shadows, seasons and dust effects on power.
-4. **Thermal conditions:** observed surface temperatures and where cooling equipment could go.
-5. **Investigation routes:** routes from the base, measurement stops and return options.
+The planned estimator will translate activities into shared computing and storage demand, equipment, power, cooling, and physical layouts. The map will compare each option against buildable terrain, ground and ice evidence, solar conditions, thermal conditions, and investigation routes. Results distinguish requirements met, failed, and unresolved, with traceable assumptions and evidence.
 
-The goal is an evidence-backed comparison of the sites and a practical
-investigation plan: where to go, what to measure and which uncertainties each
-measurement could resolve. Every layer will separate observations from
-estimates, models and assumptions. Sites are compared by which requirements
-they meet, which they fail and which questions are still open, not by a single
-averaged score. The facility's size, power, cooling and other requirements
-are still assumptions, and no ranking thresholds have been agreed yet. Site
-suitability also does not show that a Mars data center would be commercially
-viable.
+Gale crater is the demonstration region. The construction project, base, and facility are hypothetical. A smaller installation inside the base remains a valid outcome. Site conditions may change power/cooling layouts and require reassessment.
+
+**Today:** the repository supplies Mars datasets, derived terrain/solar layers, and evidence mappings. **Planned:** construction intake, sizing algorithm, automatic location requirements, and integrated assessment. The existing numerical facility is an illustrative comparison case, not a computed requirement.
 
 ### Requirement documents
 
 | Document | What it covers |
 |---|---|
 | [Project plan](docs/project-plan.md) | Objective, scenario, the five factors and shared evidence rules |
-| [Reference facility](docs/reference-facility.md) | Assumed base, workloads, 60/150/250 kW IT load, power, cooling and layout |
+| [Construction inputs](docs/construction-project-inputs.md) | Owner inputs, unknowns, and example scenario |
+| [Sizing script design](docs/construction-sizing-script-design.md) | UI field formats, JSON contracts, sizing stages, and feasibility handoff |
+| [Data-center sizing](docs/data-center-sizing.md) | Planned estimation method, assumptions, and validation |
+| [Facility-to-location requirements](docs/facility-to-location-requirements.md) | Traceability from facility outputs to five assessment categories |
+| [Reference facility](docs/reference-facility.md) | Legacy numerical comparison case; not estimator output |
 | [Design guidance](docs/design-guidance.md) | Visual and writing conventions for the ARES site-planning app: colors, typography, layout, components, copy |
-| [Design reference](design-reference/) | HTML design mockups. `mars-copy-balance.html` compares two landing-page copy options, Practical guidance (selected) and Editorial balance; download it and open it in a browser. [`map-prototype/`](design-reference/map-prototype/) is the 3D map prototype in three looks (diorama, survey sheet, helmet HUD) with screenshots, run steps and the map's tech stack (three.js r170, 3d-tiles-renderer 0.5.4, fonts) vendored |
+| [Construction intake mock](design-reference/mars-construction-intake.html) | Two interactive proposals: Guided brief and Project worksheet, using construction inputs; sizing is not connected |
+| [Earlier design reference](design-reference/mars-copy-balance.html) | Historical landing-page copy comparison; visual reference only for the former population/research intake |
+| [3D map prototype](design-reference/map-prototype/) | 3D map prototype in three looks (diorama, survey sheet, helmet HUD) with screenshots, run steps and the map's tech stack (three.js r170, 3d-tiles-renderer 0.5.4, fonts) vendored |
 | [Buildable terrain](docs/requirements/buildable-terrain.md) | 21 metrics (BT-01 to BT-21): area, slope, roughness, obstacles, hazards, access |
 | [Ground and ice](docs/requirements/ground-and-ice.md) | 12 metrics (GI-01 to GI-12): bearing capacity, settlement, ice, excavation |
 | [Solar conditions](docs/requirements/solar-conditions.md) | 13 metrics (SC-01 to SC-13): shading, energy output, dust, storage, array layout |
@@ -177,7 +166,7 @@ pytest --run-network      # also runs the live Mars Trek test (marked @pytest.ma
 ├── design-reference/    # HTML design mockups; map-prototype/ = 3D map prototype + vendored tech stack
 ├── docs/
 │   ├── project-plan.md          # objective, scenario, five factors, shared evidence rules
-│   ├── reference-facility.md    # assumed facility used by every factor
+│   ├── reference-facility.md    # legacy facility comparison case
 │   ├── design-guidance.md       # UI visual and writing conventions
 │   ├── data-sources.md          # what data we have, in plain words
 │   ├── data-extraction.md       # how the data gets into data/

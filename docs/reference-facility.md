@@ -2,9 +2,11 @@
 
 ## Purpose and status
 
-Provide a concrete, adjustable facility scenario for comparing Mars sites and planning astronaut investigations. The facility supports base operations, scientific processing, robotics, data storage, and optional AI training. It is not limited to AI workloads or customers on Earth.
+Retain the earlier base-support facility as an illustrative comparison case for testing layouts and sensitivities. The current product goal is to derive facility specifications from a construction owner's project inputs; see [construction inputs](construction-project-inputs.md), [sizing method](data-center-sizing.md), and [location requirements](facility-to-location-requirements.md).
 
-The user-approved direction is a base-support facility with enough supporting infrastructure to make site exploration meaningful. All numerical sizes, budgets, layouts, and service targets below are proposed scenario assumptions, not approved engineering specifications, NASA mission plans, measured demand, or a prediction of the most likely Mars settlement. This replaces the earlier illustrative AI-training-only pilot as the initial reference scenario.
+**Legacy example, not estimator output:** The 50-person base, 20 robots, 60/150/250 kW IT allocations, module counts, and land reserves below have not been derived from construction workloads. Do not use them as defaults, minimum capacity, or evidence that a particular fleet needs this facility. All numbers remain proposed assumptions rather than approved engineering specifications or NASA mission plans.
+
+The estimator must instead produce equipment configurations, normal/peak/essential electrical loads, subsystem heat loads, storage, module geometry and mass, support loads, power/cooling layouts, access, and expansion needs. Missing equipment or engineering parameters remain unknown. Site-specific refinements must be recorded separately from initial demand estimates.
 
 Do not enlarge the facility solely to justify a map. Compare this dedicated installation with a smaller computing service integrated into the base. If that alternative meets the demonstrated workload with less infrastructure, preserve it as a valid outcome.
 

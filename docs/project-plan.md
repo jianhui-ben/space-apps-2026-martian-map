@@ -2,15 +2,30 @@
 
 ## Project objective
 
-Develop a NASA-data-informed map that helps future astronauts investigate and compare candidate sites for a Mars-based data center. The map will combine terrain, geological, and environmental evidence, identify uncertainties, and guide surface investigations under explicit assumptions about the facility’s power, cooling, communications, and logistics requirements.
+Help a Mars construction project owner identify feasible locations for the computing infrastructure that supports their project. The owner describes construction activities and robot operations; the planned estimator converts those inputs into data-center specifications, then into requirements for five location assessments. The map compares those requirements with NASA and partner evidence and identifies necessary surface investigations.
+
+**Construction project inputs → data-center specifications → five location requirements → candidate assessment.**
+
+The construction work site and the candidate data-center site are distinct locations. Project owners need not know server counts, power allocations, or facility dimensions. Crew and robotic investigation planners use the resulting evidence gaps to plan measurements.
+
+## Scope and workflow
+
+1. Collect construction type, extent, robot roles and counts, schedules, precision, update deadlines, duration, and existing infrastructure. See [construction project inputs](construction-project-inputs.md).
+2. Use versioned robot/workload profiles and equipment assumptions to estimate processing, memory, storage, communications, electrical demand, heat rejection, mass, and complete layouts. See [data-center sizing](data-center-sizing.md).
+3. Translate each facility option into terrain, ground/ice, solar, thermal, and investigation-route requirements. Preserve the origin of every limit. See [facility-to-location requirements](facility-to-location-requirements.md).
+4. Evaluate each option against candidate-specific evidence. Report meets, fails, or unresolved per requirement; retain evidence sufficiency separately from the calculated result.
+5. Refine power, cooling, connections, and layout using site conditions, then reassess. Record each version; a changed footprint invalidates the previous layout check.
+6. Prioritize investigations that could change the location or facility decision.
+
+**Implementation status:** The repository has data acquisition, terrain/solar calculations, scenario loading, and evidence-to-metric mappings. Owner-input sizing, equipment selection, automatic requirement generation, and integrated feasibility assessment are planned. These documents specify their behavior; they do not claim an implemented estimator.
 
 ## Initial assessment scenario
 
-For the first demonstration, assess a modular computing and data-storage facility supporting an established hypothetical Mars base. Services include base operations, scientific processing, robotics support, archives, and optional AI workloads. Safety-critical equipment retains independent local control.
+Use Gale crater and its existing candidate areas for a construction-support demonstration. The initial illustrative project prepares a landing pad and access road using survey, excavation, and transport robots. Fleet counts and operations are assumptions in `scenario/gale.json`, not an actual NASA construction plan. Robot roles and work determine demand; population or robot count alone cannot establish a facility size.
 
-The [reference facility scenario](reference-facility.md) proposes a 50-person, data-intensive base; low/expected/peak IT allocations of 60/150/250 kW; six equipment/support modules; and separate solar, cooling, and service areas. A roughly 2–4 hectare precinct is a preliminary search envelope, not a derived land requirement. These numbers are adjustable scenario assumptions, not validated demand or user-approved engineering limits. Workload validation and comparison with a smaller base-integrated installation determine whether the dedicated facility is justified.
+The [reference facility](reference-facility.md) retains the earlier 60/150/250 kW IT cases and 2–4 hectare search envelope solely as a legacy comparison example. They are not estimator results, default demand, or minimum land requirements. Compare a smaller base-integrated installation with a dedicated facility and preserve either as a valid outcome.
 
-The initial scenario supersedes the earlier AI-training-only pilot. Facility dimensions, power and cooling allocations, reliability, cargo, and supporting infrastructure require engineering validation before site suitability can be established.
+Include the computing and power needed before permanent construction begins. Local robot safety control remains independent of shared computing. Large AI training and unrelated base/science services are optional explicit additions, not automatic construction loads.
 
 ## Intended outcome
 
@@ -62,7 +77,7 @@ Detailed specification: [Solar Conditions Requirements](requirements/solar-condi
 
 **Data needed:** Sun position over time, terrain-derived horizons and shadows, atmospheric dust scenarios, surface dust observations, panel orientation and performance assumptions, facility demand, and storage or backup assumptions.
 
-**Map requirements:** Show illumination and shadows over time, candidate array areas, and estimated generation under explicit dust and equipment assumptions. Distinguish average energy availability from supply reliability. Continuous-operation scenarios must assess weak generation periods; interruptible-training scenarios must assess usable energy, interruption duration, and recovery requirements.
+**Map requirements:** Show illumination and shadows over time, candidate array areas, and estimated generation under explicit dust and equipment assumptions. Distinguish average energy availability from supply reliability. Continuous-operation scenarios must assess weak generation periods; deferrable-processing scenarios must assess usable energy, interruption duration, and recovery requirements.
 
 **Investigation needs:** Deploy illumination, dust, and panel-output monitoring. A short excursion can establish monitoring sites but cannot validate a full seasonal energy model. Hours of sunshine alone must not be used as a power-sufficiency measure.
 
@@ -105,7 +120,7 @@ Detailed specification: [Investigation Routes Requirements](requirements/investi
 
 ### Assumptions to define before site ranking
 
-The reference facility provides provisional workload, power, layout, lifetime, and operating assumptions. These require validation; exact footprints, minimum service levels, power allocation, cooling performance, foundations, cargo and construction capabilities, base location, and expansion feasibility remain unresolved. The investigation scenario must also define crew or robot capabilities, instruments, time and consumable budgets, and return constraints. The detailed terrain specification proposes screening targets and design-dependent benchmarks; these are not validated construction limits or user-approved numerical thresholds. No ranking weights have been agreed yet.
+The construction intake, versioned sizing profiles, and selected facility option must supply workload, power, layout, lifetime, and operating assumptions. The legacy reference facility is a comparison case only. These inputs require validation; exact footprints, minimum service levels, power allocation, cooling performance, foundations, cargo and construction capabilities, base location, and expansion feasibility remain unresolved. The investigation scenario must also define crew or robot capabilities, instruments, time and consumable budgets, and return constraints. The detailed terrain specification proposes screening targets and design-dependent benchmarks; these are not validated construction limits or user-approved numerical thresholds. No ranking weights have been agreed yet.
 
 ## Supporting references
 

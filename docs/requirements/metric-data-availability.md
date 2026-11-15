@@ -1,5 +1,19 @@
 # Metric Data Availability Reference
 
+## Inputs in the construction-driven workflow
+
+The planned workflow derives facility specifications from [owner construction inputs](../construction-project-inputs.md), then supplies design inputs to these existing 72 metrics. The availability labels below describe environmental evidence or calculation needs; they do not claim that the sizing algorithm exists.
+
+| Input origin | Examples | Treatment |
+|---|---|---|
+| Owner | Robot roles/counts, work extent, schedule, precision, deadlines | Record entered value, unit, and uncertainty |
+| Sizing model | Shared workload, storage, operating load, heat budget | Record model version and dependencies; currently planned |
+| Equipment/design assumption | Dimensions, mass, supports, slope limits, radiator properties | Cite source or mark provisional; unknown limits remain unresolved |
+| Mars evidence | Terrain, illumination, temperature, geology | Retain coverage, resolution, date, and uncertainty |
+| Field measurements | Bearing behavior, fine obstacles, local subsurface conditions | Collect where remote evidence cannot resolve the decision |
+
+The [facility-to-location mapping](../facility-to-location-requirements.md) connects these origins. Retain metric IDs and availability labels. Estimating a facility does not make missing environmental evidence available.
+
 This reference classifies all 72 metrics across the five requirements documents by what can be assessed from existing remote data, what requires design or mission inputs, and what needs local measurements. Availability reviewed on November 14, 2026. No candidate site has been selected or its data coverage verified.
 
 Not every metric is a measurement of Mars. Some are calculated from imagery, some need local tests, and others evaluate the proposed facility or mission plan. None inherently requires an astronaut rather than a capable robot. **Fieldwork** means local measurements collected by astronauts, robots, or deployed instruments; instrument capability and mission constraints determine who performs it.

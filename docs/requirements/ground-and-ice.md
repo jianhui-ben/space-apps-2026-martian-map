@@ -2,9 +2,9 @@
 
 ## Purpose and benchmark status
 
-Evaluate whether the subsurface can support the reference computing facility, its equipment foundations, and service corridors, and identify the field tests needed to resolve geological and ice-related uncertainty. Surface geometry is covered separately by [Buildable Terrain Requirements](buildable-terrain.md).
+Evaluate whether the subsurface can support the selected computing facility, its equipment foundations, and service corridors, and identify the field tests needed to resolve geological and ice-related uncertainty. Surface geometry is covered separately by [Buildable Terrain Requirements](buildable-terrain.md).
 
-Use the [reference facility](../reference-facility.md): six conceptual equipment/support modules, separate solar and radiator plots, and connecting corridors. Module mass, contact loads, foundation design, and excavation equipment are not yet defined. The site cannot receive a ground-suitability pass until those design inputs and adequate local evidence exist.
+Use the selected construction-derived facility option: loaded module masses, support locations and areas, foundation/anchor concept, allowable movement, excavation and utility depths, and subsurface heat influence. Trace these through [facility-to-location requirements](../facility-to-location-requirements.md). Equipment and foundation models supply these inputs; fleet size does not establish them. Where a model supplies no defensible value, leave the associated metric unresolved. The [legacy reference facility](../reference-facility.md) is only a comparison. Adequate local ground evidence is still required.
 
 **Baseline** is the minimum criterion for the stated screening scenario; **ideal** adds margin or reduces work. **D** denotes a design-dependent engineering limit. **P** denotes a proposed project preference. Every numerical ideal multiplier below is a P preference, not a NASA standard or substitute for a geotechnical safety factor. Missing design limits remain unresolved. A pass is conditional screening evidence, not construction approval.
 
