@@ -1,0 +1,1048 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "construction-sizing/1"
+      ]
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "project_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "project": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "structure_types": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "landing_pad",
+              "road",
+              "habitat",
+              "power_installation",
+              "utility_network",
+              "other"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "duration": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "specified"
+                  ]
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 10000
+                },
+                "unit": {
+                  "enum": [
+                    "sol"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "range"
+                  ]
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 10000
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 10000
+                },
+                "unit": {
+                  "enum": [
+                    "sol"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "min",
+                "max",
+                "unit"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "survey_area": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "specified"
+                  ]
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 10000000000.0
+                },
+                "unit": {
+                  "enum": [
+                    "m2"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "range"
+                  ]
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 10000000000.0
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 10000000000.0
+                },
+                "unit": {
+                  "enum": [
+                    "m2"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "min",
+                "max",
+                "unit"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "road_length": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "specified"
+                  ]
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 100000000.0
+                },
+                "unit": {
+                  "enum": [
+                    "m"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "range"
+                  ]
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 100000000.0
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 100000000.0
+                },
+                "unit": {
+                  "enum": [
+                    "m"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "min",
+                "max",
+                "unit"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "structure_types",
+        "duration",
+        "survey_area"
+      ],
+      "additionalProperties": false
+    },
+    "fleet": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "role": {
+            "enum": [
+              "survey",
+              "excavation",
+              "transport",
+              "assembly",
+              "inspection",
+              "unknown"
+            ]
+          },
+          "count": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "unknown"
+                    ]
+                  }
+                },
+                "required": [
+                  "state"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "specified"
+                    ]
+                  },
+                  "value": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
+                  "unit": {
+                    "enum": [
+                      "count"
+                    ]
+                  }
+                },
+                "required": [
+                  "state",
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "active_count": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "unknown"
+                    ]
+                  }
+                },
+                "required": [
+                  "state"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "specified"
+                    ]
+                  },
+                  "value": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
+                  "unit": {
+                    "enum": [
+                      "count"
+                    ]
+                  }
+                },
+                "required": [
+                  "state",
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "count",
+          "active_count"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 100
+    },
+    "operations": {
+      "type": "object",
+      "properties": {
+        "hours_per_sol": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "specified"
+                  ]
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 24.6597
+                },
+                "unit": {
+                  "enum": [
+                    "hour_per_sol"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "range"
+                  ]
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 24.6597
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0.001,
+                  "maximum": 24.6597
+                },
+                "unit": {
+                  "enum": [
+                    "hour_per_sol"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "min",
+                "max",
+                "unit"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "precision": {
+          "enum": [
+            "coarse_survey",
+            "earthworks_check",
+            "precision_assembly",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "hours_per_sol",
+        "precision"
+      ],
+      "additionalProperties": false
+    },
+    "jobs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "type": {
+            "enum": [
+              "terrain_map",
+              "progress_comparison",
+              "inspection_analysis",
+              "fleet_plan"
+            ]
+          },
+          "cadence": {
+            "enum": [
+              "once_per_sol",
+              "every_n_operating_hours",
+              "phase_end",
+              "unknown"
+            ]
+          },
+          "interval": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "unknown"
+                    ]
+                  }
+                },
+                "required": [
+                  "state"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "specified"
+                    ]
+                  },
+                  "value": {
+                    "type": "number",
+                    "minimum": 0.01,
+                    "maximum": 24.6597
+                  },
+                  "unit": {
+                    "enum": [
+                      "hour"
+                    ]
+                  }
+                },
+                "required": [
+                  "state",
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "range"
+                    ]
+                  },
+                  "min": {
+                    "type": "number",
+                    "minimum": 0.01,
+                    "maximum": 24.6597
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0.01,
+                    "maximum": 24.6597
+                  },
+                  "unit": {
+                    "enum": [
+                      "hour"
+                    ]
+                  }
+                },
+                "required": [
+                  "state",
+                  "min",
+                  "max",
+                  "unit"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "deadline": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "unknown"
+                    ]
+                  }
+                },
+                "required": [
+                  "state"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "specified"
+                    ]
+                  },
+                  "value": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 8760
+                  },
+                  "unit": {
+                    "enum": [
+                      "hour"
+                    ]
+                  }
+                },
+                "required": [
+                  "state",
+                  "value",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "range"
+                    ]
+                  },
+                  "min": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 8760
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 8760
+                  },
+                  "unit": {
+                    "enum": [
+                      "hour"
+                    ]
+                  }
+                },
+                "required": [
+                  "state",
+                  "min",
+                  "max",
+                  "unit"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "cadence",
+          "deadline"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 100
+    },
+    "retention": {
+      "type": "object",
+      "properties": {
+        "raw": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "specified"
+                  ]
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "unit": {
+                  "enum": [
+                    "sol"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "range"
+                  ]
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "unit": {
+                  "enum": [
+                    "sol"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "min",
+                "max",
+                "unit"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "products": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "specified"
+                  ]
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "unit": {
+                  "enum": [
+                    "sol"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "range"
+                  ]
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "unit": {
+                  "enum": [
+                    "sol"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "min",
+                "max",
+                "unit"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "raw",
+        "products"
+      ],
+      "additionalProperties": false
+    },
+    "infrastructure": {
+      "type": "object",
+      "properties": {
+        "deployment": {
+          "enum": [
+            "dedicated",
+            "base_integrated",
+            "compare_both"
+          ]
+        },
+        "power_strategy": {
+          "enum": [
+            "solar_storage",
+            "hybrid",
+            "base_connection",
+            "unknown"
+          ]
+        },
+        "available_base_power": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "specified"
+                  ]
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000000.0
+                },
+                "unit": {
+                  "enum": [
+                    "kW"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "range"
+                  ]
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000000.0
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000000.0
+                },
+                "unit": {
+                  "enum": [
+                    "kW"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "min",
+                "max",
+                "unit"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "backup_duration": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "state"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "specified"
+                  ]
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 8760
+                },
+                "unit": {
+                  "enum": [
+                    "hour"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "value",
+                "unit"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "enum": [
+                    "range"
+                  ]
+                },
+                "min": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 8760
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 8760
+                },
+                "unit": {
+                  "enum": [
+                    "hour"
+                  ]
+                }
+              },
+              "required": [
+                "state",
+                "min",
+                "max",
+                "unit"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "deployment",
+        "power_strategy",
+        "available_base_power",
+        "backup_duration"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "request_id",
+    "project_revision",
+    "project",
+    "fleet",
+    "operations",
+    "jobs",
+    "retention",
+    "infrastructure"
+  ],
+  "additionalProperties": false
+}

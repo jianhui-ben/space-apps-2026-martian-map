@@ -1,0 +1,1244 @@
+[
+  {
+    "id": "BT-01",
+    "name": "Connected area ratio",
+    "measure": "Connected usable area compared with required facility area",
+    "available": "Estimate today: terrain and imagery, plus layout assumptions",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_10m_study",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "scenario",
+      "slope_10m_study",
+      "slope_10m_window_arcadia_north__arcadia",
+      "slope_10m_window_arcadia_south__arcadia",
+      "slope_10m_window_curiosity_recent",
+      "slope_10m_window_jezero_north__jezero",
+      "slope_10m_window_jezero_south__jezero",
+      "slope_10m_window_near_base_north",
+      "slope_10m_window_near_base_west"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-01"
+  },
+  {
+    "id": "BT-02",
+    "name": "Complete layout fit",
+    "measure": "Whether every required footprint and clearance fits",
+    "available": "Estimate today: overlay the design on mapped terrain",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "scenario"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-02"
+  },
+  {
+    "id": "BT-03",
+    "name": "Required spatial connections",
+    "measure": "Whether usable corridors connect all required equipment zones",
+    "available": "Partial: candidate connections can be mapped",
+    "label": "Partial",
+    "dataset_ids": [
+      "elevation_10m_study",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-03"
+  },
+  {
+    "id": "BT-04",
+    "name": "Overall building-pad slope",
+    "measure": "Overall tilt across the proposed building pad",
+    "available": "Estimate today: suitable elevation model",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "elevation_point_service",
+      "scenario"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-04"
+  },
+  {
+    "id": "BT-05",
+    "name": "Maximum local pad slope",
+    "measure": "Steepest modeled slope within the specified local windows",
+    "available": "Estimate today: fine terrain model, subject to accuracy",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "scenario",
+      "slope_10m_window_arcadia_north__arcadia",
+      "slope_10m_window_arcadia_south__arcadia",
+      "slope_10m_window_curiosity_recent",
+      "slope_10m_window_jezero_north__jezero",
+      "slope_10m_window_jezero_south__jezero",
+      "slope_10m_window_near_base_north",
+      "slope_10m_window_near_base_west"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-05"
+  },
+  {
+    "id": "BT-06",
+    "name": "Maximum grading or support correction",
+    "measure": "Largest height adjustment needed to reach the proposed design surface",
+    "available": "Estimate today: terrain plus pad/support design",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "elevation_point_service"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-06"
+  },
+  {
+    "id": "BT-07",
+    "name": "Earthmoving demand",
+    "measure": "Volumes of material to cut and fill",
+    "available": "Partial: geometric volumes can be estimated",
+    "label": "Partial",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-07"
+  },
+  {
+    "id": "BT-08",
+    "name": "Detrended roughness",
+    "measure": "Local bumps and depressions after removing overall slope",
+    "available": "Partial: roughness at resolvable scales",
+    "label": "Partial",
+    "dataset_ids": [
+      "roughness_1m_arcadia_north__arcadia",
+      "roughness_1m_arcadia_south__arcadia",
+      "roughness_1m_curiosity_recent",
+      "roughness_1m_jezero_north__jezero",
+      "roughness_1m_jezero_south__jezero",
+      "roughness_1m_near_base_north",
+      "roughness_1m_near_base_west",
+      "scenario"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-08"
+  },
+  {
+    "id": "BT-09",
+    "name": "Support-interface variation",
+    "measure": "Height variation beneath each actual support footprint",
+    "available": "Field data needed: usually too fine for orbital models",
+    "label": "Field data needed",
+    "dataset_ids": [],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-09"
+  },
+  {
+    "id": "BT-10",
+    "name": "Abrupt step height",
+    "measure": "Largest step along a required vehicle path",
+    "available": "Partial: large steps are visible; small critical ones may not be",
+    "label": "Partial",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "scenario",
+      "slope_1m_arcadia_north__arcadia",
+      "slope_1m_arcadia_south__arcadia",
+      "slope_1m_curiosity_recent",
+      "slope_1m_jezero_north__jezero",
+      "slope_1m_jezero_south__jezero",
+      "slope_1m_near_base_north",
+      "slope_1m_near_base_west"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-10"
+  },
+  {
+    "id": "BT-11",
+    "name": "Unresolved blocking obstacles",
+    "measure": "Obstacles intersecting required footprints without a feasible avoidance/removal plan",
+    "available": "Partial: larger obstacles can be identified",
+    "label": "Partial",
+    "dataset_ids": [
+      "imagery_hirise_color",
+      "imagery_hirise_gray",
+      "roughness_1m_arcadia_north__arcadia",
+      "roughness_1m_arcadia_south__arcadia",
+      "roughness_1m_curiosity_recent",
+      "roughness_1m_jezero_north__jezero",
+      "roughness_1m_jezero_south__jezero",
+      "roughness_1m_near_base_north",
+      "roughness_1m_near_base_west",
+      "thermal_inertia_themis_1km"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-11"
+  },
+  {
+    "id": "BT-12",
+    "name": "Obstacle removal demand",
+    "measure": "Removal effort compared with equipment and work budgets",
+    "available": "Partial: rough size estimates exist; effort is design-dependent",
+    "label": "Partial",
+    "dataset_ids": [
+      "imagery_hirise_color",
+      "imagery_hirise_gray"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-12"
+  },
+  {
+    "id": "BT-13",
+    "name": "Residual clearance margin",
+    "measure": "Smallest remaining clearance around operating envelopes",
+    "available": "Estimate today: for sufficiently resolved obstacles and a defined layout",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "imagery_hirise_color",
+      "imagery_hirise_gray"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-13"
+  },
+  {
+    "id": "BT-14",
+    "name": "Hazard-envelope overlap",
+    "measure": "Facility area intersecting assessed hazard zones",
+    "available": "Partial: hazard sources can be mapped; exclusion zones need analysis",
+    "label": "Partial",
+    "dataset_ids": [
+      "dune_change_imagery",
+      "dune_fields",
+      "geology_1to60k",
+      "geology_contacts",
+      "geology_contacts__arcadia",
+      "geology_contacts__jezero",
+      "geology_map_index__arcadia",
+      "geology_map_index__jezero",
+      "geology_structures",
+      "geology_structures__arcadia",
+      "geology_structures__jezero",
+      "geology_units",
+      "geology_units__arcadia",
+      "geology_units__jezero",
+      "imagery_ctx",
+      "imagery_ctx_mmgis",
+      "imagery_hirise_color",
+      "imagery_hirise_gray"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-14"
+  },
+  {
+    "id": "BT-15",
+    "name": "Setback adequacy",
+    "measure": "Actual separation compared with the required hazard setback",
+    "available": "Partial: distance is measurable; required setback is not a ready-made dataset",
+    "label": "Partial",
+    "dataset_ids": [
+      "dune_change_imagery",
+      "dune_fields",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-15"
+  },
+  {
+    "id": "BT-16",
+    "name": "Mobile-terrain clearance",
+    "measure": "Remaining clearance after predicted dune or other material movement",
+    "available": "Partial: repeat imagery may show movement",
+    "label": "Partial",
+    "dataset_ids": [
+      "dune_change_imagery",
+      "dune_fields"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-16"
+  },
+  {
+    "id": "BT-17",
+    "name": "Corridor width",
+    "measure": "Narrowest usable width along a construction/service route",
+    "available": "Estimate today: where imagery resolves corridor boundaries",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_10m_study",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "elevation_2m_trip_area",
+      "imagery_hirise_color",
+      "imagery_hirise_gray"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-17"
+  },
+  {
+    "id": "BT-18",
+    "name": "Grade and cross-slope utilization",
+    "measure": "Route slopes compared with loaded-vehicle limits",
+    "available": "Estimate today: terrain plus vehicle assumptions",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_10m_study",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "elevation_2m_trip_area",
+      "rover_path",
+      "rover_stops",
+      "slope_10m_study",
+      "slope_1m_arcadia_north__arcadia",
+      "slope_1m_arcadia_south__arcadia",
+      "slope_1m_curiosity_recent",
+      "slope_1m_jezero_north__jezero",
+      "slope_1m_jezero_south__jezero",
+      "slope_1m_near_base_north",
+      "slope_1m_near_base_west",
+      "slope_2m_trip_area"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-18"
+  },
+  {
+    "id": "BT-19",
+    "name": "Turning fit",
+    "measure": "Whether the vehicle and payload can make required turns",
+    "available": "Estimate today: vehicle geometry plus mapped obstacles",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "imagery_hirise_color",
+      "imagery_hirise_gray"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-19"
+  },
+  {
+    "id": "BT-20",
+    "name": "Route redundancy",
+    "measure": "Number of usable routes without a shared critical bottleneck",
+    "available": "Partial: alternatives can be identified remotely",
+    "label": "Partial",
+    "dataset_ids": [
+      "elevation_10m_study",
+      "imagery_ctx",
+      "imagery_ctx_mmgis",
+      "slope_10m_study"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-20"
+  },
+  {
+    "id": "BT-21",
+    "name": "Utility route utilization",
+    "measure": "Cable/pipe route length and geometry compared with design limits",
+    "available": "Estimate today: terrain plus utility design",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_10m_study",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west"
+    ],
+    "category": "terrain",
+    "required_design_input": "engineering.BT-21"
+  },
+  {
+    "id": "GI-01",
+    "name": "Bearing-capacity adequacy",
+    "measure": "Allowable ground pressure compared with foundation loading",
+    "available": "Field data needed: geological appearance does not establish bearing capacity",
+    "label": "Field data needed",
+    "dataset_ids": [],
+    "category": "ground",
+    "required_design_input": "engineering.GI-01"
+  },
+  {
+    "id": "GI-02",
+    "name": "Other support-limit utilization",
+    "measure": "Resistance to sliding, uplift, anchor loading, and other forces",
+    "available": "Field data needed, plus foundation design",
+    "label": "Field data needed",
+    "dataset_ids": [],
+    "category": "ground",
+    "required_design_input": "engineering.GI-02"
+  },
+  {
+    "id": "GI-03",
+    "name": "Total settlement utilization",
+    "measure": "Predicted support settlement compared with its allowance",
+    "available": "Field data needed, followed by modeling",
+    "label": "Field data needed",
+    "dataset_ids": [],
+    "category": "ground",
+    "required_design_input": "engineering.GI-03"
+  },
+  {
+    "id": "GI-04",
+    "name": "Differential movement utilization",
+    "measure": "Uneven movement between supports compared with tolerances",
+    "available": "Field data needed, followed by modeling",
+    "label": "Field data needed",
+    "dataset_ids": [],
+    "category": "ground",
+    "required_design_input": "engineering.GI-04"
+  },
+  {
+    "id": "GI-05",
+    "name": "Unresolved ice interactions",
+    "measure": "Critical structures potentially interacting with ice without an assessed response",
+    "available": "Partial: possible regional ice interactions can be flagged",
+    "label": "Partial",
+    "dataset_ids": [
+      "ice_swim",
+      "water_dan_curiosity",
+      "water_odyssey_grs"
+    ],
+    "category": "ground",
+    "required_design_input": "engineering.GI-05"
+  },
+  {
+    "id": "GI-06",
+    "name": "Investigated depth coverage",
+    "measure": "Characterized depth compared with the required investigation depth",
+    "available": "Field data needed for foundation-scale characterization",
+    "label": "Field data needed",
+    "dataset_ids": [],
+    "category": "ground",
+    "required_design_input": "engineering.GI-06"
+  },
+  {
+    "id": "GI-07",
+    "name": "Thermally induced deformation utilization",
+    "measure": "Ground movement caused by heating or ice changes compared with allowances",
+    "available": "Field data needed, plus a coupled thermal/ground model",
+    "label": "Field data needed",
+    "dataset_ids": [
+      "thermal_inertia_themis_1km"
+    ],
+    "category": "ground",
+    "required_design_input": "engineering.GI-07"
+  },
+  {
+    "id": "GI-08",
+    "name": "Unassessed influence overlap",
+    "measure": "Critical footprint overlapping an unassessed ground-change zone",
+    "available": "Partial: preliminary overlap can be mapped under assumptions",
+    "label": "Partial",
+    "dataset_ids": [
+      "ice_swim"
+    ],
+    "category": "ground",
+    "required_design_input": "engineering.GI-08"
+  },
+  {
+    "id": "GI-09",
+    "name": "Construction-budget utilization",
+    "measure": "Excavation energy, time, and handling demands compared with budgets",
+    "available": "Partial: geometry helps; material behavior is missing",
+    "label": "Partial",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west"
+    ],
+    "category": "ground",
+    "required_design_input": "engineering.GI-09"
+  },
+  {
+    "id": "GI-10",
+    "name": "Unresolved excavation stability cases",
+    "measure": "Proposed excavations lacking a supported stability assessment",
+    "available": "Planning calculation: identify unassessed cases now",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "ground",
+    "required_design_input": "engineering.GI-10"
+  },
+  {
+    "id": "GI-11",
+    "name": "Critical-zone evidence completion",
+    "measure": "Percentage of required zones with adequate ground characterization",
+    "available": "Planning calculation: audit existing evidence against a sampling plan",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "geology_1to60k",
+      "geology_contacts",
+      "geology_contacts__arcadia",
+      "geology_contacts__jezero",
+      "geology_map_index",
+      "geology_map_index__arcadia",
+      "geology_map_index__jezero",
+      "geology_structures",
+      "geology_structures__arcadia",
+      "geology_structures__jezero",
+      "geology_units",
+      "geology_units__arcadia",
+      "geology_units__jezero",
+      "rover_path",
+      "rover_stops"
+    ],
+    "category": "ground",
+    "required_design_input": "engineering.GI-11"
+  },
+  {
+    "id": "GI-12",
+    "name": "Decision-critical unresolved hypotheses",
+    "measure": "Remaining plausible ground interpretations that could reverse the decision",
+    "available": "Planning calculation: list and test hypotheses against existing evidence",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "geology_1to60k",
+      "geology_contacts",
+      "geology_contacts__arcadia",
+      "geology_contacts__jezero",
+      "geology_map_index__arcadia",
+      "geology_map_index__jezero",
+      "geology_structures",
+      "geology_structures__arcadia",
+      "geology_structures__jezero",
+      "geology_units",
+      "geology_units__arcadia",
+      "geology_units__jezero",
+      "minerals_detections",
+      "thermal_inertia_tes",
+      "thermal_inertia_themis_1km",
+      "water_dan_curiosity",
+      "water_odyssey_grs"
+    ],
+    "category": "ground",
+    "required_design_input": "engineering.GI-12"
+  },
+  {
+    "id": "SC-01",
+    "name": "Terrain-shading energy loss",
+    "measure": "Electricity lost to terrain shadows relative to an unobstructed reference",
+    "available": "Estimate today: terrain, Sun geometry, and proposed array model",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_463m_region",
+      "horizon_arcadia_north__arcadia",
+      "horizon_arcadia_south__arcadia",
+      "horizon_curiosity_recent",
+      "horizon_jezero_north__jezero",
+      "horizon_jezero_south__jezero",
+      "horizon_near_base_north",
+      "horizon_near_base_west",
+      "sun_table_arcadia_north__arcadia",
+      "sun_table_arcadia_south__arcadia",
+      "sun_table_curiosity_recent",
+      "sun_table_jezero_north__jezero",
+      "sun_table_jezero_south__jezero",
+      "sun_table_near_base_north",
+      "sun_table_near_base_west"
+    ],
+    "category": "solar",
+    "required_design_input": "engineering.SC-01"
+  },
+  {
+    "id": "SC-02",
+    "name": "Row-shading energy loss",
+    "measure": "Electricity lost because array rows shade one another",
+    "available": "Planning calculation: primarily array layout and electrical design",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "solar",
+    "required_design_input": "engineering.SC-02"
+  },
+  {
+    "id": "SC-03",
+    "name": "Average solar contribution",
+    "measure": "Average net electrical output over the reference period",
+    "available": "Estimate today: environmental scenarios plus array design",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "dust_climate_mcd",
+      "optical_depth_history",
+      "sun_table_arcadia_north__arcadia",
+      "sun_table_arcadia_south__arcadia",
+      "sun_table_curiosity_recent",
+      "sun_table_jezero_north__jezero",
+      "sun_table_jezero_south__jezero",
+      "sun_table_near_base_north",
+      "sun_table_near_base_west"
+    ],
+    "category": "solar",
+    "required_design_input": "engineering.SC-03"
+  },
+  {
+    "id": "SC-04",
+    "name": "Worst-season energy adequacy",
+    "measure": "Seasonal solar output compared with the assigned energy requirement",
+    "available": "Estimate today: seasonal modeling plus demand assumptions",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "dust_climate_mcd",
+      "optical_depth_history",
+      "sun_table_arcadia_north__arcadia",
+      "sun_table_arcadia_south__arcadia",
+      "sun_table_curiosity_recent",
+      "sun_table_jezero_north__jezero",
+      "sun_table_jezero_south__jezero",
+      "sun_table_near_base_north",
+      "sun_table_near_base_west"
+    ],
+    "category": "solar",
+    "required_design_input": "engineering.SC-04"
+  },
+  {
+    "id": "SC-05",
+    "name": "Soiling-loss allowance utilization",
+    "measure": "Deposited-dust losses compared with the allowed loss",
+    "available": "Partial: historical mission evidence exists, but not a universal local rate",
+    "label": "Partial",
+    "dataset_ids": [
+      "optical_depth_history",
+      "surface_dust_tes"
+    ],
+    "category": "solar",
+    "required_design_input": "engineering.SC-05"
+  },
+  {
+    "id": "SC-06",
+    "name": "Cleaning-resource utilization",
+    "measure": "Energy, time, and consumables needed for cleaning",
+    "available": "Planning calculation with unverified local inputs",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "solar",
+    "required_design_input": "engineering.SC-06"
+  },
+  {
+    "id": "SC-07",
+    "name": "Unserved essential energy",
+    "measure": "Essential electricity demand that the combined supply cannot meet",
+    "available": "Planning calculation: requires demand, firm supply, solar, and storage models",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "solar",
+    "required_design_input": "engineering.SC-07"
+  },
+  {
+    "id": "SC-08",
+    "name": "Storage-limit violations",
+    "measure": "Times storage exceeds its energy, power, temperature, or reserve limits",
+    "available": "Planning calculation: requires storage and operating specifications",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "solar",
+    "required_design_input": "engineering.SC-08"
+  },
+  {
+    "id": "SC-09",
+    "name": "Flexible-work completion",
+    "measure": "Computing work completed by deadline under available power",
+    "available": "Planning calculation: requires workload performance and scheduling",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "solar",
+    "required_design_input": "engineering.SC-09"
+  },
+  {
+    "id": "SC-10",
+    "name": "Array layout accommodation",
+    "measure": "Whether the panel/support/access layout fits",
+    "available": "Estimate today: layout plus mapped terrain",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "slope_10m_window_arcadia_north__arcadia",
+      "slope_10m_window_arcadia_south__arcadia",
+      "slope_10m_window_curiosity_recent",
+      "slope_10m_window_jezero_north__jezero",
+      "slope_10m_window_jezero_south__jezero",
+      "slope_10m_window_near_base_north",
+      "slope_10m_window_near_base_west"
+    ],
+    "category": "solar",
+    "required_design_input": "engineering.SC-10"
+  },
+  {
+    "id": "SC-11",
+    "name": "Electrical-route loss",
+    "measure": "Electricity lost in the proposed connections and conversion",
+    "available": "Planning calculation: cable routes, conductors, voltage, and load",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "solar",
+    "required_design_input": "engineering.SC-11"
+  },
+  {
+    "id": "SC-12",
+    "name": "Required scenario coverage",
+    "measure": "Whether all required seasons, dust cases, and operating states were evaluated",
+    "available": "Planning calculation: audit of the modeling plan",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "dust_climate_mcd",
+      "optical_depth_history",
+      "sun_table_arcadia_north__arcadia",
+      "sun_table_arcadia_south__arcadia",
+      "sun_table_curiosity_recent",
+      "sun_table_jezero_north__jezero",
+      "sun_table_jezero_south__jezero",
+      "sun_table_near_base_north",
+      "sun_table_near_base_west"
+    ],
+    "category": "solar",
+    "required_design_input": "engineering.SC-12"
+  },
+  {
+    "id": "SC-13",
+    "name": "Validation-error utilization",
+    "measure": "Difference between predicted and independently observed performance",
+    "available": "Partial: general models can be checked against existing mission data; our site/array cannot yet be validated directly",
+    "label": "Partial",
+    "dataset_ids": [
+      "optical_depth_history"
+    ],
+    "category": "solar",
+    "required_design_input": "engineering.SC-13"
+  },
+  {
+    "id": "TC-01",
+    "name": "Environmental case coverage",
+    "measure": "Whether required thermal conditions have bounded input data",
+    "available": "Partial: remote observations and models cover some conditions",
+    "label": "Partial",
+    "dataset_ids": [
+      "temperature_climate_mcd",
+      "themis_temp_day_aphelion",
+      "themis_temp_day_aphelion__arcadia",
+      "themis_temp_day_aphelion__jezero",
+      "themis_temp_day_perihelion",
+      "themis_temp_day_perihelion__arcadia",
+      "themis_temp_day_perihelion__jezero",
+      "themis_temp_night_aphelion",
+      "themis_temp_night_aphelion__arcadia",
+      "themis_temp_night_aphelion__jezero",
+      "themis_temp_night_perihelion",
+      "themis_temp_night_perihelion__arcadia",
+      "themis_temp_night_perihelion__jezero",
+      "themis_temperature_list",
+      "thermal_day",
+      "thermal_inertia_themis_1km",
+      "thermal_night",
+      "weather_rems"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-01"
+  },
+  {
+    "id": "TC-02",
+    "name": "Enclosure external-envelope margin",
+    "measure": "Environmental conditions compared with enclosure operating limits",
+    "available": "Planning calculation using partial environmental evidence",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "temperature_climate_mcd"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-02"
+  },
+  {
+    "id": "TC-03",
+    "name": "Heat-rejection adequacy",
+    "measure": "Available cooling capacity compared with heat that must be removed",
+    "available": "Planning calculation: requires radiator/cooling design and environmental model",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "temperature_climate_mcd"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-03"
+  },
+  {
+    "id": "TC-04",
+    "name": "Operating-temperature margin",
+    "measure": "Predicted equipment temperatures compared with allowable limits",
+    "available": "Planning calculation: requires equipment and coupled thermal models",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-04"
+  },
+  {
+    "id": "TC-05",
+    "name": "Cold-protection resource utilization",
+    "measure": "Heater power and energy compared with available allocations",
+    "available": "Planning calculation: requires insulation, survival loads, and supply assumptions",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "temperature_climate_mcd"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-05"
+  },
+  {
+    "id": "TC-06",
+    "name": "Thermal-cycle utilization",
+    "measure": "Temperature swings, ramp rates, and cycles compared with qualified limits",
+    "available": "Partial: environmental cycling can be modeled; equipment response needs design/testing",
+    "label": "Partial",
+    "dataset_ids": [
+      "temperature_climate_mcd",
+      "weather_rems"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-06"
+  },
+  {
+    "id": "TC-07",
+    "name": "Adverse-environment rejection penalty",
+    "measure": "Cooling lost because of unfavorable exposure, nearby surfaces, or dust",
+    "available": "Estimate today for geometry; partial for local environmental effects",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "dust_climate_mcd",
+      "dust_extinction_navcam",
+      "horizon_arcadia_north__arcadia",
+      "horizon_arcadia_south__arcadia",
+      "horizon_curiosity_recent",
+      "horizon_jezero_north__jezero",
+      "horizon_jezero_south__jezero",
+      "horizon_near_base_north",
+      "horizon_near_base_west",
+      "optical_depth_history",
+      "sun_table_arcadia_north__arcadia",
+      "sun_table_arcadia_south__arcadia",
+      "sun_table_curiosity_recent",
+      "sun_table_jezero_north__jezero",
+      "sun_table_jezero_south__jezero",
+      "sun_table_near_base_north",
+      "sun_table_near_base_west",
+      "surface_dust_tes"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-07"
+  },
+  {
+    "id": "TC-08",
+    "name": "Thermal-layout accommodation",
+    "measure": "Whether radiator placement meets space, access, and thermal constraints",
+    "available": "Estimate today under a specified design",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "slope_10m_window_arcadia_north__arcadia",
+      "slope_10m_window_arcadia_south__arcadia",
+      "slope_10m_window_curiosity_recent",
+      "slope_10m_window_jezero_north__jezero",
+      "slope_10m_window_jezero_south__jezero",
+      "slope_10m_window_near_base_north",
+      "slope_10m_window_near_base_west"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-08"
+  },
+  {
+    "id": "TC-09",
+    "name": "Connection-resource utilization",
+    "measure": "Pumping, pressure, and unwanted heat exchange compared with budgets",
+    "available": "Planning calculation: requires pipe routes, coolant, and insulation design",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-09"
+  },
+  {
+    "id": "TC-10",
+    "name": "Ground-interaction utilization",
+    "measure": "Ground deformation caused by facility heat compared with allowances",
+    "available": "Field data needed, followed by modeling",
+    "label": "Field data needed",
+    "dataset_ids": [
+      "thermal_inertia_themis_1km"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-10"
+  },
+  {
+    "id": "TC-11",
+    "name": "Required monitoring completion",
+    "measure": "Percentage of required locations, depths, and time regimes adequately covered",
+    "available": "Planning calculation: audit existing observations and accepted models",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "temperature_climate_mcd",
+      "themis_temp_day_aphelion",
+      "themis_temp_day_aphelion__arcadia",
+      "themis_temp_day_aphelion__jezero",
+      "themis_temp_day_perihelion",
+      "themis_temp_day_perihelion__arcadia",
+      "themis_temp_day_perihelion__jezero",
+      "themis_temp_night_aphelion",
+      "themis_temp_night_aphelion__arcadia",
+      "themis_temp_night_aphelion__jezero",
+      "themis_temp_night_perihelion",
+      "themis_temp_night_perihelion__arcadia",
+      "themis_temp_night_perihelion__jezero",
+      "themis_temperature_list",
+      "weather_rems"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-11"
+  },
+  {
+    "id": "TC-12",
+    "name": "Model validation utilization",
+    "measure": "Temperature and heat-rejection prediction errors compared with tolerances",
+    "available": "Partial: some environmental models can be checked today; proposed facility cannot be locally validated yet",
+    "label": "Partial",
+    "dataset_ids": [
+      "optical_depth_history",
+      "temperature_climate_mcd",
+      "themis_temp_day_aphelion",
+      "themis_temp_day_aphelion__arcadia",
+      "themis_temp_day_aphelion__jezero",
+      "themis_temp_day_perihelion",
+      "themis_temp_day_perihelion__arcadia",
+      "themis_temp_day_perihelion__jezero",
+      "themis_temp_night_aphelion",
+      "themis_temp_night_aphelion__arcadia",
+      "themis_temp_night_aphelion__jezero",
+      "themis_temp_night_perihelion",
+      "themis_temp_night_perihelion__arcadia",
+      "themis_temp_night_perihelion__jezero",
+      "weather_rems"
+    ],
+    "category": "thermal",
+    "required_design_input": "engineering.TC-12"
+  },
+  {
+    "id": "IR-01",
+    "name": "Stop-to-decision traceability",
+    "measure": "Whether each stop answers a defined question with a suitable measurement",
+    "available": "Planning calculation: define this now",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "routes",
+    "required_design_input": "engineering.IR-01"
+  },
+  {
+    "id": "IR-02",
+    "name": "Mandatory objective coverage",
+    "measure": "Whether the excursion can accomplish its required measurements",
+    "available": "Planning calculation: task plan plus capability and resource assumptions",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "routes",
+    "required_design_input": "engineering.IR-02"
+  },
+  {
+    "id": "IR-03",
+    "name": "Mobility-limit utilization",
+    "measure": "Terrain demands compared with crew/vehicle limits",
+    "available": "Partial: geometry can be estimated; traction and small obstacles may be unknown",
+    "label": "Partial",
+    "dataset_ids": [
+      "elevation_10m_study",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "elevation_2m_trip_area",
+      "elevation_point_service",
+      "imagery_hirise_color",
+      "imagery_hirise_gray",
+      "roughness_1m_arcadia_north__arcadia",
+      "roughness_1m_arcadia_south__arcadia",
+      "roughness_1m_curiosity_recent",
+      "roughness_1m_jezero_north__jezero",
+      "roughness_1m_jezero_south__jezero",
+      "roughness_1m_near_base_north",
+      "roughness_1m_near_base_west",
+      "rover_path",
+      "rover_stops",
+      "slope_10m_study",
+      "slope_1m_arcadia_north__arcadia",
+      "slope_1m_arcadia_south__arcadia",
+      "slope_1m_curiosity_recent",
+      "slope_1m_jezero_north__jezero",
+      "slope_1m_jezero_south__jezero",
+      "slope_1m_near_base_north",
+      "slope_1m_near_base_west",
+      "slope_2m_trip_area"
+    ],
+    "category": "routes",
+    "required_design_input": "engineering.IR-03"
+  },
+  {
+    "id": "IR-04",
+    "name": "Assessed route coverage",
+    "measure": "Percentage of route with sufficient evidence for critical mobility checks",
+    "available": "Planning calculation: audit available route evidence",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "elevation_2m_trip_area",
+      "imagery_hirise_color",
+      "imagery_hirise_gray",
+      "rover_path",
+      "rover_stops",
+      "slope_2m_trip_area"
+    ],
+    "category": "routes",
+    "required_design_input": "engineering.IR-04"
+  },
+  {
+    "id": "IR-05",
+    "name": "Planned-time utilization",
+    "measure": "Travel, tasks, and return time compared with available duration",
+    "available": "Planning calculation: requires speed and task-duration assumptions",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "elevation_2m_trip_area",
+      "scenario"
+    ],
+    "category": "routes",
+    "required_design_input": "engineering.IR-05"
+  },
+  {
+    "id": "IR-06",
+    "name": "Return-time feasibility",
+    "measure": "Time needed to return from each state compared with remaining allowed time",
+    "available": "Planning calculation: simulate now",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "elevation_2m_trip_area"
+    ],
+    "category": "routes",
+    "required_design_input": "engineering.IR-06"
+  },
+  {
+    "id": "IR-07",
+    "name": "Resource utilization",
+    "measure": "Planned oxygen, battery, and other consumable use compared with budgets",
+    "available": "Planning calculation: requires specified suit/vehicle and activity models",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "routes",
+    "required_design_input": "engineering.IR-07"
+  },
+  {
+    "id": "IR-08",
+    "name": "Return-resource feasibility",
+    "measure": "Resources needed to stop work and return compared with remaining supplies",
+    "available": "Planning calculation: simulate now",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "routes",
+    "required_design_input": "engineering.IR-08"
+  },
+  {
+    "id": "IR-09",
+    "name": "Instrument and payload readiness",
+    "measure": "Whether equipment can perform tasks within payload/resource limits",
+    "available": "Planning calculation: instrument specifications and test evidence",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "routes",
+    "required_design_input": "engineering.IR-09"
+  },
+  {
+    "id": "IR-10",
+    "name": "Longest unsupported communication interval",
+    "measure": "Longest time without required local communications",
+    "available": "Estimate today under an assumed network: terrain, antennas, relays, and link model",
+    "label": "Estimate today",
+    "dataset_ids": [
+      "communications",
+      "elevation_10m_study",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "elevation_463m_region",
+      "horizon_arcadia_north__arcadia",
+      "horizon_arcadia_south__arcadia",
+      "horizon_curiosity_recent",
+      "horizon_jezero_north__jezero",
+      "horizon_jezero_south__jezero",
+      "horizon_near_base_north",
+      "horizon_near_base_west"
+    ],
+    "category": "routes",
+    "required_design_input": "engineering.IR-10"
+  },
+  {
+    "id": "IR-11",
+    "name": "Navigation-error utilization",
+    "measure": "Position uncertainty compared with the precision needed",
+    "available": "Planning calculation with partial evidence: requires navigation architecture",
+    "label": "Planning calculation",
+    "dataset_ids": [
+      "imagery_hirise_color",
+      "imagery_hirise_gray",
+      "named_sites"
+    ],
+    "category": "routes",
+    "required_design_input": "engineering.IR-11"
+  },
+  {
+    "id": "IR-12",
+    "name": "Environmental-limit utilization",
+    "measure": "Weather, exposure, and visibility compared with mission limits",
+    "available": "Partial: historical conditions and scenarios exist; future excursion conditions do not",
+    "label": "Partial",
+    "dataset_ids": [
+      "dust_climate_mcd",
+      "dust_extinction_navcam",
+      "optical_depth_history",
+      "radiation_rad",
+      "space_weather_donki",
+      "sun_table_arcadia_north__arcadia",
+      "sun_table_arcadia_south__arcadia",
+      "sun_table_curiosity_recent",
+      "sun_table_jezero_north__jezero",
+      "sun_table_jezero_south__jezero",
+      "sun_table_near_base_north",
+      "sun_table_near_base_west",
+      "temperature_climate_mcd",
+      "weather_rems"
+    ],
+    "category": "routes",
+    "required_design_input": "engineering.IR-12"
+  },
+  {
+    "id": "IR-13",
+    "name": "Required contingency coverage",
+    "measure": "Whether defined disruptions have workable responses",
+    "available": "Planning calculation: evaluate specified scenarios now",
+    "label": "Planning calculation",
+    "dataset_ids": [],
+    "category": "routes",
+    "required_design_input": "engineering.IR-13"
+  },
+  {
+    "id": "IR-14",
+    "name": "Independent return options",
+    "measure": "Number of usable return options without shared critical failures",
+    "available": "Partial: alternative paths can be mapped and modeled",
+    "label": "Partial",
+    "dataset_ids": [
+      "elevation_10m_study",
+      "elevation_1m_arcadia_north__arcadia",
+      "elevation_1m_arcadia_south__arcadia",
+      "elevation_1m_curiosity_recent",
+      "elevation_1m_jezero_north__jezero",
+      "elevation_1m_jezero_south__jezero",
+      "elevation_1m_near_base_north",
+      "elevation_1m_near_base_west",
+      "imagery_ctx",
+      "imagery_ctx_mmgis",
+      "slope_10m_study"
+    ],
+    "category": "routes",
+    "required_design_input": "engineering.IR-14"
+  }
+]

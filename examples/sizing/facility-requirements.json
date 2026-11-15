@@ -1,0 +1,4681 @@
+{
+  "schema_version": "facility-requirements/1",
+  "request_id": "test",
+  "project_revision": 1,
+  "input_hash": "490d589aa701db735015dc69f0c890d350dd28647dffcfa9a294a247282edc5e",
+  "mode": "conditional_screening",
+  "status": "partial",
+  "model_bundle": {
+    "id": "construction-screening-v1",
+    "version": "1.0.0",
+    "hash": "7a9fd3cfd22cceefbd3b19ed47fb5ac0c2bf96fecb510970186689d3202f5255",
+    "evidence_status": "engineering_assumption"
+  },
+  "scenarios": [
+    {
+      "id": "owner_case",
+      "range_selection": "min",
+      "note": "Simultaneous endpoints, not confidence intervals or guaranteed demand bounds."
+    }
+  ],
+  "facility_options": [
+    {
+      "specifications": {
+        "retained_data_gb_per_sol": {
+          "status": "resolved",
+          "value": 96,
+          "unit": "GB/sol",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:operations.hours_per_sol",
+            "model:rate_survey"
+          ],
+          "conditional": true
+        },
+        "active_workers": {
+          "status": "resolved",
+          "value": 10,
+          "unit": "count",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "model:cost_terrain_map",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb"
+          ],
+          "conditional": true
+        },
+        "workers": {
+          "status": "resolved",
+          "value": 11,
+          "unit": "count",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "model:cost_terrain_map",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_spares"
+          ],
+          "conditional": true
+        },
+        "required_storage_tb": {
+          "status": "resolved",
+          "value": 11.76,
+          "unit": "TB",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "storage_units": {
+          "status": "resolved",
+          "value": 1,
+          "unit": "count",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_tb",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "it_peak_kw": {
+          "status": "resolved",
+          "value": 6.4,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "it_average_kw": {
+          "status": "resolved",
+          "value": 2.6323205472897095,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_idle_kw",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "facility_peak_kw": {
+          "status": "resolved",
+          "value": 8.32,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "facility_average_kw": {
+          "status": "resolved",
+          "value": 3.4220167114766227,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_idle_kw",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "essential_kw": {
+          "status": "resolved",
+          "value": 1.1700000000000002,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:essential_kw",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "energy_kwh_per_sol": {
+          "status": "resolved",
+          "value": 84.38590550000008,
+          "unit": "kWh/sol",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_idle_kw",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "heat_rejection_kw": {
+          "status": "resolved",
+          "value": 8.32,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "survival_kw": {
+          "status": "unresolved",
+          "unit": "kW",
+          "missing_inputs": [
+            "engineering:shutdown_survival_design"
+          ],
+          "provenance_ids": []
+        },
+        "required_solar_average_kw": {
+          "status": "resolved",
+          "value": 3.4220167114766227,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_idle_kw",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "base_connection_required_kw": {
+          "status": "resolved",
+          "value": 0,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:infrastructure.available_base_power"
+          ],
+          "conditional": false
+        },
+        "solar_panel_area_m2": {
+          "status": "resolved",
+          "value": 85.55041778691557,
+          "unit": "m2",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:solar_net_mean_w_m2",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_idle_kw",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "solar_plot_m2": {
+          "status": "resolved",
+          "value": 171.10083557383115,
+          "unit": "m2",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:solar_land_coverage",
+            "model:solar_net_mean_w_m2",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_idle_kw",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "radiator_emitting_area_m2": {
+          "status": "resolved",
+          "value": 47.542857142857144,
+          "unit": "m2",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:radiator_net_w_m2",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "radiator_plot_m2": {
+          "status": "resolved",
+          "value": 71.31428571428572,
+          "unit": "m2",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:radiator_net_w_m2",
+            "model:radiator_plot_factor",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "battery_nameplate_kwh": {
+          "status": "resolved",
+          "value": 19.5,
+          "unit": "kWh",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:essential_kw",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "battery_units": {
+          "status": "resolved",
+          "value": 1,
+          "unit": "count",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:essential_kw",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "modules": {
+          "status": "resolved",
+          "value": 2,
+          "unit": "count",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:equipment_per_module",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "core_area_m2": {
+          "status": "resolved",
+          "value": 360,
+          "unit": "m2",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:equipment_per_module",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:module_clearance_m",
+            "model:module_length_m",
+            "model:module_width_m",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "full_reference_plot_m2": {
+          "status": "resolved",
+          "value": 602.4151212881168,
+          "unit": "m2",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:equipment_per_module",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:module_clearance_m",
+            "model:module_length_m",
+            "model:module_width_m",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:radiator_net_w_m2",
+            "model:radiator_plot_factor",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:solar_land_coverage",
+            "model:solar_net_mean_w_m2",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_idle_kw",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "equipment_mass_kg": {
+          "status": "resolved",
+          "value": 1355,
+          "unit": "kg",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_unit_mass_kg",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_mass_kg",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_mass_kg",
+            "model:worker_memory_gb",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "core_mass_kg": {
+          "status": "resolved",
+          "value": 13355,
+          "unit": "kg",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_unit_mass_kg",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:equipment_per_module",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:module_empty_mass_kg",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_mass_kg",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_mass_kg",
+            "model:worker_memory_gb",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "reference_module_mass_kg": {
+          "status": "resolved",
+          "value": 6677.5,
+          "unit": "kg",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_unit_mass_kg",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:equipment_per_module",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:module_empty_mass_kg",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_mass_kg",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_mass_kg",
+            "model:worker_memory_gb",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "required_allowable_bearing_kpa": {
+          "status": "resolved",
+          "value": 6.193381250000001,
+          "unit": "kPa",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_unit_mass_kg",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:equipment_per_module",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:gravity",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:module_empty_mass_kg",
+            "model:precision_earthworks_check",
+            "model:pressure_allowance_factor",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_mass_kg",
+            "model:storage_unit_tb",
+            "model:support_area_m2",
+            "model:support_count",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_mass_kg",
+            "model:worker_memory_gb",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "pad_slope_limit_deg": {
+          "status": "resolved",
+          "value": 5,
+          "unit": "deg",
+          "provenance_ids": [
+            "model:pad_slope_deg"
+          ],
+          "conditional": true
+        },
+        "local_slope_limit_deg": {
+          "status": "resolved",
+          "value": 10,
+          "unit": "deg",
+          "provenance_ids": [
+            "model:local_slope_deg"
+          ],
+          "conditional": true
+        },
+        "roughness_limit_m": {
+          "status": "resolved",
+          "value": 0.3,
+          "unit": "m",
+          "provenance_ids": [
+            "model:roughness_m"
+          ],
+          "conditional": true
+        },
+        "corridor_width_m": {
+          "status": "resolved",
+          "value": 4,
+          "unit": "m",
+          "provenance_ids": [
+            "model:corridor_width_m"
+          ],
+          "conditional": true
+        },
+        "service_distance_limit_m": {
+          "status": "resolved",
+          "value": 3000,
+          "unit": "m",
+          "provenance_ids": [
+            "model:max_service_distance_m"
+          ],
+          "conditional": true
+        },
+        "vehicle_grade_limit_deg": {
+          "status": "resolved",
+          "value": 10,
+          "unit": "deg",
+          "provenance_ids": [
+            "model:vehicle_grade_deg"
+          ],
+          "conditional": true
+        },
+        "network_transfer_gbps": {
+          "status": "resolved",
+          "value": 1,
+          "unit": "Gbps",
+          "provenance_ids": [
+            "model:transfer_gbps"
+          ],
+          "conditional": true
+        },
+        "foundation_settlement_limit_m": {
+          "status": "unresolved",
+          "unit": "m",
+          "missing_inputs": [
+            "engineering:foundation_movement_allowance"
+          ],
+          "provenance_ids": []
+        },
+        "subsurface_ice_policy": {
+          "status": "unresolved",
+          "unit": "policy",
+          "missing_inputs": [
+            "engineering:ice_response_and_ground_thermal_model"
+          ],
+          "provenance_ids": []
+        }
+      },
+      "layout": {
+        "status": "reference_layout",
+        "requires_site_refinement": true,
+        "missing_inputs": [],
+        "components": [
+          {
+            "id": "module_1",
+            "kind": "module",
+            "x_m": 3,
+            "y_m": 3,
+            "length_m": 12,
+            "width_m": 4,
+            "clearance_m": 3
+          },
+          {
+            "id": "module_2",
+            "kind": "module",
+            "x_m": 21,
+            "y_m": 3,
+            "length_m": 12,
+            "width_m": 4,
+            "clearance_m": 3
+          },
+          {
+            "id": "solar",
+            "kind": "solar",
+            "x_m": 0,
+            "y_m": 10,
+            "length_m": 13.080551806931966,
+            "width_m": 13.080551806931966
+          },
+          {
+            "id": "radiator",
+            "kind": "radiator",
+            "x_m": 0,
+            "y_m": 23.080551806931965,
+            "length_m": 8.444778606587962,
+            "width_m": 8.444778606587962
+          }
+        ],
+        "net_allocated_area_m2": 602.4151212881168,
+        "bounding_width_m": 36,
+        "bounding_height_m": 31.525330413519924,
+        "limitations": [
+          "Coordinates are local metres, not Mars placements.",
+          "Array and radiator areas depend on unvalidated reference fluxes.",
+          "External utility corridors, delivery staging, setbacks and future expansion remain unresolved."
+        ]
+      },
+      "deployment": "dedicated",
+      "foundation_basis": {
+        "ground_strength_measured": false,
+        "assumptions": [
+          "Uniform payload distribution across modules",
+          "Equal static support reactions",
+          "Screening pressure allowance; not a geotechnical safety certification"
+        ]
+      },
+      "limitations": [
+        "Not a Mars-qualified equipment design.",
+        "Core mass excludes site-dependent shielding, array/radiator structures and foundations.",
+        "Backup covers essential service demand only; no seasonal dispatch validation."
+      ],
+      "id": "owner_case_dedicated",
+      "scenario_id": "owner_case",
+      "workload": {
+        "retained_data_gb_per_sol": {
+          "status": "resolved",
+          "value": 96,
+          "unit": "GB/sol",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:operations.hours_per_sol",
+            "model:rate_survey"
+          ],
+          "conditional": true
+        },
+        "active_workers": {
+          "status": "resolved",
+          "value": 10,
+          "unit": "count",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "model:cost_terrain_map",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb"
+          ],
+          "conditional": true
+        },
+        "work_hours": {
+          "status": "resolved",
+          "value": 1044.000000000029,
+          "unit": "worker_hour",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "model:cost_terrain_map",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb"
+          ],
+          "conditional": true
+        },
+        "modeled_horizon_hours": {
+          "status": "resolved",
+          "value": 4438.746,
+          "unit": "hour",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "model:cost_terrain_map",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb"
+          ],
+          "conditional": true
+        },
+        "product_gb_total": {
+          "status": "resolved",
+          "value": 1728.0,
+          "unit": "GB",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "model:product_fraction",
+            "model:rate_survey"
+          ],
+          "conditional": true
+        },
+        "streams": [
+          {
+            "id": "survey",
+            "role": "survey",
+            "quantity": {
+              "status": "resolved",
+              "value": 96,
+              "unit": "GB/sol",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:operations.hours_per_sol",
+                "model:rate_survey"
+              ],
+              "conditional": true
+            }
+          }
+        ],
+        "duration": {
+          "status": "resolved",
+          "value": 180,
+          "unit": "sol",
+          "provenance_ids": [
+            "input:project.duration"
+          ],
+          "conditional": false
+        },
+        "sol_hours": {
+          "status": "resolved",
+          "value": 24.6597,
+          "unit": "hour",
+          "provenance_ids": [
+            "model:sol_hours"
+          ],
+          "conditional": false
+        },
+        "jobs_modeled": 1800,
+        "scheduler": "release-order conservative tiled schedule; not optimal",
+        "schedule_status": "meets_assumed_deadlines"
+      },
+      "categories": [
+        {
+          "id": "terrain",
+          "name": "Buildable terrain",
+          "demand": {
+            "core_area_m2": {
+              "status": "resolved",
+              "value": 360,
+              "unit": "m2",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:infrastructure.backup_duration",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:battery_efficiency",
+                "model:battery_unit_kwh",
+                "model:battery_usable_fraction",
+                "model:copies",
+                "model:cost_terrain_map",
+                "model:equipment_per_module",
+                "model:essential_kw",
+                "model:fixed_terrain_map",
+                "model:max_jobs",
+                "model:max_workers",
+                "model:memory_terrain_map",
+                "model:module_clearance_m",
+                "model:module_length_m",
+                "model:module_width_m",
+                "model:precision_earthworks_check",
+                "model:product_fraction",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_tb",
+                "model:support_fraction",
+                "model:tile_size_gb",
+                "model:transfer_gbps",
+                "model:worker_memory_gb",
+                "model:worker_spares",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "full_reference_plot_m2": {
+              "status": "resolved",
+              "value": 602.4151212881168,
+              "unit": "m2",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:infrastructure.backup_duration",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:battery_efficiency",
+                "model:battery_unit_kwh",
+                "model:battery_usable_fraction",
+                "model:copies",
+                "model:cost_terrain_map",
+                "model:equipment_per_module",
+                "model:essential_kw",
+                "model:fixed_terrain_map",
+                "model:max_jobs",
+                "model:max_workers",
+                "model:memory_terrain_map",
+                "model:module_clearance_m",
+                "model:module_length_m",
+                "model:module_width_m",
+                "model:precision_earthworks_check",
+                "model:product_fraction",
+                "model:radiator_net_w_m2",
+                "model:radiator_plot_factor",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:solar_land_coverage",
+                "model:solar_net_mean_w_m2",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_tb",
+                "model:support_fraction",
+                "model:tile_size_gb",
+                "model:transfer_gbps",
+                "model:worker_idle_kw",
+                "model:worker_memory_gb",
+                "model:worker_peak_kw",
+                "model:worker_spares",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "pad_slope_limit_deg": {
+              "status": "resolved",
+              "value": 5,
+              "unit": "deg",
+              "provenance_ids": [
+                "model:pad_slope_deg"
+              ],
+              "conditional": true
+            },
+            "corridor_width_m": {
+              "status": "resolved",
+              "value": 4,
+              "unit": "m",
+              "provenance_ids": [
+                "model:corridor_width_m"
+              ],
+              "conditional": true
+            }
+          },
+          "assessment_status": "not_assessed"
+        },
+        {
+          "id": "ground",
+          "name": "Ground and ice",
+          "demand": {
+            "required_allowable_bearing_kpa": {
+              "status": "resolved",
+              "value": 6.193381250000001,
+              "unit": "kPa",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:infrastructure.backup_duration",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:battery_efficiency",
+                "model:battery_unit_kwh",
+                "model:battery_unit_mass_kg",
+                "model:battery_usable_fraction",
+                "model:copies",
+                "model:cost_terrain_map",
+                "model:equipment_per_module",
+                "model:essential_kw",
+                "model:fixed_terrain_map",
+                "model:gravity",
+                "model:max_jobs",
+                "model:max_workers",
+                "model:memory_terrain_map",
+                "model:module_empty_mass_kg",
+                "model:precision_earthworks_check",
+                "model:pressure_allowance_factor",
+                "model:product_fraction",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_mass_kg",
+                "model:storage_unit_tb",
+                "model:support_area_m2",
+                "model:support_count",
+                "model:support_fraction",
+                "model:tile_size_gb",
+                "model:transfer_gbps",
+                "model:worker_mass_kg",
+                "model:worker_memory_gb",
+                "model:worker_spares",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "foundation_settlement_limit_m": {
+              "status": "unresolved",
+              "unit": "m",
+              "missing_inputs": [
+                "engineering:foundation_movement_allowance"
+              ],
+              "provenance_ids": []
+            },
+            "subsurface_ice_policy": {
+              "status": "unresolved",
+              "unit": "policy",
+              "missing_inputs": [
+                "engineering:ice_response_and_ground_thermal_model"
+              ],
+              "provenance_ids": []
+            }
+          },
+          "assessment_status": "not_assessed"
+        },
+        {
+          "id": "solar",
+          "name": "Solar and electrical supply",
+          "demand": {
+            "required_solar_average_kw": {
+              "status": "resolved",
+              "value": 3.4220167114766227,
+              "unit": "kW",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:copies",
+                "model:cost_terrain_map",
+                "model:essential_kw",
+                "model:fixed_terrain_map",
+                "model:max_jobs",
+                "model:max_workers",
+                "model:memory_terrain_map",
+                "model:precision_earthworks_check",
+                "model:product_fraction",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_tb",
+                "model:support_fraction",
+                "model:tile_size_gb",
+                "model:transfer_gbps",
+                "model:worker_idle_kw",
+                "model:worker_memory_gb",
+                "model:worker_peak_kw",
+                "model:worker_spares",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "solar_panel_area_m2": {
+              "status": "resolved",
+              "value": 85.55041778691557,
+              "unit": "m2",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:copies",
+                "model:cost_terrain_map",
+                "model:essential_kw",
+                "model:fixed_terrain_map",
+                "model:max_jobs",
+                "model:max_workers",
+                "model:memory_terrain_map",
+                "model:precision_earthworks_check",
+                "model:product_fraction",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:solar_net_mean_w_m2",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_tb",
+                "model:support_fraction",
+                "model:tile_size_gb",
+                "model:transfer_gbps",
+                "model:worker_idle_kw",
+                "model:worker_memory_gb",
+                "model:worker_peak_kw",
+                "model:worker_spares",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "energy_kwh_per_sol": {
+              "status": "resolved",
+              "value": 84.38590550000008,
+              "unit": "kWh/sol",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:copies",
+                "model:cost_terrain_map",
+                "model:essential_kw",
+                "model:fixed_terrain_map",
+                "model:max_jobs",
+                "model:max_workers",
+                "model:memory_terrain_map",
+                "model:precision_earthworks_check",
+                "model:product_fraction",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_tb",
+                "model:support_fraction",
+                "model:tile_size_gb",
+                "model:transfer_gbps",
+                "model:worker_idle_kw",
+                "model:worker_memory_gb",
+                "model:worker_peak_kw",
+                "model:worker_spares",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "battery_nameplate_kwh": {
+              "status": "resolved",
+              "value": 19.5,
+              "unit": "kWh",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:infrastructure.backup_duration",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:battery_efficiency",
+                "model:battery_usable_fraction",
+                "model:copies",
+                "model:essential_kw",
+                "model:product_fraction",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_tb",
+                "model:support_fraction",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "base_connection_required_kw": {
+              "status": "resolved",
+              "value": 0,
+              "unit": "kW",
+              "provenance_ids": [
+                "input:infrastructure.available_base_power"
+              ],
+              "conditional": false
+            }
+          },
+          "assessment_status": "not_assessed"
+        },
+        {
+          "id": "thermal",
+          "name": "Thermal control",
+          "demand": {
+            "heat_rejection_kw": {
+              "status": "resolved",
+              "value": 8.32,
+              "unit": "kW",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:copies",
+                "model:cost_terrain_map",
+                "model:essential_kw",
+                "model:fixed_terrain_map",
+                "model:max_jobs",
+                "model:max_workers",
+                "model:memory_terrain_map",
+                "model:precision_earthworks_check",
+                "model:product_fraction",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_tb",
+                "model:support_fraction",
+                "model:tile_size_gb",
+                "model:transfer_gbps",
+                "model:worker_memory_gb",
+                "model:worker_peak_kw",
+                "model:worker_spares",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "radiator_emitting_area_m2": {
+              "status": "resolved",
+              "value": 47.542857142857144,
+              "unit": "m2",
+              "provenance_ids": [
+                "input:fleet.0.active_count",
+                "input:jobs.map.deadline",
+                "input:operations.hours_per_sol",
+                "input:project.duration",
+                "input:retention.products",
+                "input:retention.raw",
+                "model:copies",
+                "model:cost_terrain_map",
+                "model:essential_kw",
+                "model:fixed_terrain_map",
+                "model:max_jobs",
+                "model:max_workers",
+                "model:memory_terrain_map",
+                "model:precision_earthworks_check",
+                "model:product_fraction",
+                "model:radiator_net_w_m2",
+                "model:rate_survey",
+                "model:sol_hours",
+                "model:storage_headroom",
+                "model:storage_unit_kw",
+                "model:storage_unit_tb",
+                "model:support_fraction",
+                "model:tile_size_gb",
+                "model:transfer_gbps",
+                "model:worker_memory_gb",
+                "model:worker_peak_kw",
+                "model:worker_spares",
+                "model:working_days"
+              ],
+              "conditional": true
+            },
+            "survival_kw": {
+              "status": "unresolved",
+              "unit": "kW",
+              "missing_inputs": [
+                "engineering:shutdown_survival_design"
+              ],
+              "provenance_ids": []
+            }
+          },
+          "assessment_status": "not_assessed"
+        },
+        {
+          "id": "routes",
+          "name": "Investigation routes",
+          "demand": {
+            "service_distance_limit_m": {
+              "status": "resolved",
+              "value": 3000,
+              "unit": "m",
+              "provenance_ids": [
+                "model:max_service_distance_m"
+              ],
+              "conditional": true
+            },
+            "vehicle_grade_limit_deg": {
+              "status": "resolved",
+              "value": 10,
+              "unit": "deg",
+              "provenance_ids": [
+                "model:vehicle_grade_deg"
+              ],
+              "conditional": true
+            },
+            "network_transfer_gbps": {
+              "status": "resolved",
+              "value": 1,
+              "unit": "Gbps",
+              "provenance_ids": [
+                "model:transfer_gbps"
+              ],
+              "conditional": true
+            }
+          },
+          "assessment_status": "not_assessed"
+        }
+      ]
+    }
+  ],
+  "location_requirements": [
+    {
+      "id": "owner_case_dedicated.BT-01",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-01",
+      "category": "terrain",
+      "name": "Connected area ratio",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering:complete_layout_including_external_works"
+      ],
+      "dataset_ids": [
+        "elevation_10m_study",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "scenario",
+        "slope_10m_study",
+        "slope_10m_window_arcadia_north__arcadia",
+        "slope_10m_window_arcadia_south__arcadia",
+        "slope_10m_window_curiosity_recent",
+        "slope_10m_window_jezero_north__jezero",
+        "slope_10m_window_jezero_south__jezero",
+        "slope_10m_window_near_base_north",
+        "slope_10m_window_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [],
+      "reference_layout": {
+        "status": "reference_layout",
+        "requires_site_refinement": true,
+        "missing_inputs": [],
+        "components": [
+          {
+            "id": "module_1",
+            "kind": "module",
+            "x_m": 3,
+            "y_m": 3,
+            "length_m": 12,
+            "width_m": 4,
+            "clearance_m": 3
+          },
+          {
+            "id": "module_2",
+            "kind": "module",
+            "x_m": 21,
+            "y_m": 3,
+            "length_m": 12,
+            "width_m": 4,
+            "clearance_m": 3
+          },
+          {
+            "id": "solar",
+            "kind": "solar",
+            "x_m": 0,
+            "y_m": 10,
+            "length_m": 13.080551806931966,
+            "width_m": 13.080551806931966
+          },
+          {
+            "id": "radiator",
+            "kind": "radiator",
+            "x_m": 0,
+            "y_m": 23.080551806931965,
+            "length_m": 8.444778606587962,
+            "width_m": 8.444778606587962
+          }
+        ],
+        "net_allocated_area_m2": 602.4151212881168,
+        "bounding_width_m": 36,
+        "bounding_height_m": 31.525330413519924,
+        "limitations": [
+          "Coordinates are local metres, not Mars placements.",
+          "Array and radiator areas depend on unvalidated reference fluxes.",
+          "External utility corridors, delivery staging, setbacks and future expansion remain unresolved."
+        ]
+      }
+    },
+    {
+      "id": "owner_case_dedicated.BT-02",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-02",
+      "category": "terrain",
+      "name": "Complete layout fit",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering:complete_layout_including_external_works"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "scenario"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [],
+      "reference_layout": {
+        "status": "reference_layout",
+        "requires_site_refinement": true,
+        "missing_inputs": [],
+        "components": [
+          {
+            "id": "module_1",
+            "kind": "module",
+            "x_m": 3,
+            "y_m": 3,
+            "length_m": 12,
+            "width_m": 4,
+            "clearance_m": 3
+          },
+          {
+            "id": "module_2",
+            "kind": "module",
+            "x_m": 21,
+            "y_m": 3,
+            "length_m": 12,
+            "width_m": 4,
+            "clearance_m": 3
+          },
+          {
+            "id": "solar",
+            "kind": "solar",
+            "x_m": 0,
+            "y_m": 10,
+            "length_m": 13.080551806931966,
+            "width_m": 13.080551806931966
+          },
+          {
+            "id": "radiator",
+            "kind": "radiator",
+            "x_m": 0,
+            "y_m": 23.080551806931965,
+            "length_m": 8.444778606587962,
+            "width_m": 8.444778606587962
+          }
+        ],
+        "net_allocated_area_m2": 602.4151212881168,
+        "bounding_width_m": 36,
+        "bounding_height_m": 31.525330413519924,
+        "limitations": [
+          "Coordinates are local metres, not Mars placements.",
+          "Array and radiator areas depend on unvalidated reference fluxes.",
+          "External utility corridors, delivery staging, setbacks and future expansion remain unresolved."
+        ]
+      }
+    },
+    {
+      "id": "owner_case_dedicated.BT-03",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-03",
+      "category": "terrain",
+      "name": "Required spatial connections",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-03"
+      ],
+      "dataset_ids": [
+        "elevation_10m_study",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-04",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-04",
+      "category": "terrain",
+      "name": "Overall building-pad slope",
+      "assessment_status": "not_assessed",
+      "definition_status": "specified",
+      "criterion": {
+        "operator": "maximum",
+        "quantity": {
+          "status": "resolved",
+          "value": 5,
+          "unit": "deg",
+          "provenance_ids": [
+            "model:pad_slope_deg"
+          ],
+          "conditional": true
+        },
+        "specification": "pad_slope_limit_deg"
+      },
+      "missing_inputs": [],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "elevation_point_service",
+        "scenario"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [
+        "model:pad_slope_deg"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.BT-05",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-05",
+      "category": "terrain",
+      "name": "Maximum local pad slope",
+      "assessment_status": "not_assessed",
+      "definition_status": "specified",
+      "criterion": {
+        "operator": "maximum",
+        "quantity": {
+          "status": "resolved",
+          "value": 10,
+          "unit": "deg",
+          "provenance_ids": [
+            "model:local_slope_deg"
+          ],
+          "conditional": true
+        },
+        "specification": "local_slope_limit_deg"
+      },
+      "missing_inputs": [],
+      "dataset_ids": [
+        "scenario",
+        "slope_10m_window_arcadia_north__arcadia",
+        "slope_10m_window_arcadia_south__arcadia",
+        "slope_10m_window_curiosity_recent",
+        "slope_10m_window_jezero_north__jezero",
+        "slope_10m_window_jezero_south__jezero",
+        "slope_10m_window_near_base_north",
+        "slope_10m_window_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [
+        "model:local_slope_deg"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.BT-06",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-06",
+      "category": "terrain",
+      "name": "Maximum grading or support correction",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-06"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "elevation_point_service"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-07",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-07",
+      "category": "terrain",
+      "name": "Earthmoving demand",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-07"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-08",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-08",
+      "category": "terrain",
+      "name": "Detrended roughness",
+      "assessment_status": "not_assessed",
+      "definition_status": "specified",
+      "criterion": {
+        "operator": "maximum",
+        "quantity": {
+          "status": "resolved",
+          "value": 0.3,
+          "unit": "m",
+          "provenance_ids": [
+            "model:roughness_m"
+          ],
+          "conditional": true
+        },
+        "specification": "roughness_limit_m"
+      },
+      "missing_inputs": [],
+      "dataset_ids": [
+        "roughness_1m_arcadia_north__arcadia",
+        "roughness_1m_arcadia_south__arcadia",
+        "roughness_1m_curiosity_recent",
+        "roughness_1m_jezero_north__jezero",
+        "roughness_1m_jezero_south__jezero",
+        "roughness_1m_near_base_north",
+        "roughness_1m_near_base_west",
+        "scenario"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [
+        "model:roughness_m"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.BT-09",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-09",
+      "category": "terrain",
+      "name": "Support-interface variation",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-09"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-10",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-10",
+      "category": "terrain",
+      "name": "Abrupt step height",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-10"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "scenario",
+        "slope_1m_arcadia_north__arcadia",
+        "slope_1m_arcadia_south__arcadia",
+        "slope_1m_curiosity_recent",
+        "slope_1m_jezero_north__jezero",
+        "slope_1m_jezero_south__jezero",
+        "slope_1m_near_base_north",
+        "slope_1m_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-11",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-11",
+      "category": "terrain",
+      "name": "Unresolved blocking obstacles",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-11"
+      ],
+      "dataset_ids": [
+        "imagery_hirise_color",
+        "imagery_hirise_gray",
+        "roughness_1m_arcadia_north__arcadia",
+        "roughness_1m_arcadia_south__arcadia",
+        "roughness_1m_curiosity_recent",
+        "roughness_1m_jezero_north__jezero",
+        "roughness_1m_jezero_south__jezero",
+        "roughness_1m_near_base_north",
+        "roughness_1m_near_base_west",
+        "thermal_inertia_themis_1km"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-12",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-12",
+      "category": "terrain",
+      "name": "Obstacle removal demand",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-12"
+      ],
+      "dataset_ids": [
+        "imagery_hirise_color",
+        "imagery_hirise_gray"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-13",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-13",
+      "category": "terrain",
+      "name": "Residual clearance margin",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-13"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "imagery_hirise_color",
+        "imagery_hirise_gray"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-14",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-14",
+      "category": "terrain",
+      "name": "Hazard-envelope overlap",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-14"
+      ],
+      "dataset_ids": [
+        "dune_change_imagery",
+        "dune_fields",
+        "geology_1to60k",
+        "geology_contacts",
+        "geology_contacts__arcadia",
+        "geology_contacts__jezero",
+        "geology_map_index__arcadia",
+        "geology_map_index__jezero",
+        "geology_structures",
+        "geology_structures__arcadia",
+        "geology_structures__jezero",
+        "geology_units",
+        "geology_units__arcadia",
+        "geology_units__jezero",
+        "imagery_ctx",
+        "imagery_ctx_mmgis",
+        "imagery_hirise_color",
+        "imagery_hirise_gray"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-15",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-15",
+      "category": "terrain",
+      "name": "Setback adequacy",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-15"
+      ],
+      "dataset_ids": [
+        "dune_change_imagery",
+        "dune_fields",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-16",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-16",
+      "category": "terrain",
+      "name": "Mobile-terrain clearance",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-16"
+      ],
+      "dataset_ids": [
+        "dune_change_imagery",
+        "dune_fields"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-17",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-17",
+      "category": "terrain",
+      "name": "Corridor width",
+      "assessment_status": "not_assessed",
+      "definition_status": "specified",
+      "criterion": {
+        "operator": "minimum",
+        "quantity": {
+          "status": "resolved",
+          "value": 4,
+          "unit": "m",
+          "provenance_ids": [
+            "model:corridor_width_m"
+          ],
+          "conditional": true
+        },
+        "specification": "corridor_width_m"
+      },
+      "missing_inputs": [],
+      "dataset_ids": [
+        "elevation_10m_study",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "elevation_2m_trip_area",
+        "imagery_hirise_color",
+        "imagery_hirise_gray"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [
+        "model:corridor_width_m"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.BT-18",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-18",
+      "category": "terrain",
+      "name": "Grade and cross-slope utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-18"
+      ],
+      "dataset_ids": [
+        "elevation_10m_study",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "elevation_2m_trip_area",
+        "rover_path",
+        "rover_stops",
+        "slope_10m_study",
+        "slope_1m_arcadia_north__arcadia",
+        "slope_1m_arcadia_south__arcadia",
+        "slope_1m_curiosity_recent",
+        "slope_1m_jezero_north__jezero",
+        "slope_1m_jezero_south__jezero",
+        "slope_1m_near_base_north",
+        "slope_1m_near_base_west",
+        "slope_2m_trip_area"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-19",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-19",
+      "category": "terrain",
+      "name": "Turning fit",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-19"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "imagery_hirise_color",
+        "imagery_hirise_gray"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-20",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-20",
+      "category": "terrain",
+      "name": "Route redundancy",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-20"
+      ],
+      "dataset_ids": [
+        "elevation_10m_study",
+        "imagery_ctx",
+        "imagery_ctx_mmgis",
+        "slope_10m_study"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.BT-21",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "BT-21",
+      "category": "terrain",
+      "name": "Utility route utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.BT-21"
+      ],
+      "dataset_ids": [
+        "elevation_10m_study",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-01",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-01",
+      "category": "ground",
+      "name": "Bearing-capacity adequacy",
+      "assessment_status": "not_assessed",
+      "definition_status": "specified",
+      "criterion": {
+        "operator": "minimum",
+        "quantity": {
+          "status": "resolved",
+          "value": 6.193381250000001,
+          "unit": "kPa",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:infrastructure.backup_duration",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:battery_efficiency",
+            "model:battery_unit_kwh",
+            "model:battery_unit_mass_kg",
+            "model:battery_usable_fraction",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:equipment_per_module",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:gravity",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:module_empty_mass_kg",
+            "model:precision_earthworks_check",
+            "model:pressure_allowance_factor",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_mass_kg",
+            "model:storage_unit_tb",
+            "model:support_area_m2",
+            "model:support_count",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_mass_kg",
+            "model:worker_memory_gb",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "specification": "required_allowable_bearing_kpa"
+      },
+      "missing_inputs": [],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [
+        "input:fleet.0.active_count",
+        "input:infrastructure.backup_duration",
+        "input:jobs.map.deadline",
+        "input:operations.hours_per_sol",
+        "input:project.duration",
+        "input:retention.products",
+        "input:retention.raw",
+        "model:battery_efficiency",
+        "model:battery_unit_kwh",
+        "model:battery_unit_mass_kg",
+        "model:battery_usable_fraction",
+        "model:copies",
+        "model:cost_terrain_map",
+        "model:equipment_per_module",
+        "model:essential_kw",
+        "model:fixed_terrain_map",
+        "model:gravity",
+        "model:max_jobs",
+        "model:max_workers",
+        "model:memory_terrain_map",
+        "model:module_empty_mass_kg",
+        "model:precision_earthworks_check",
+        "model:pressure_allowance_factor",
+        "model:product_fraction",
+        "model:rate_survey",
+        "model:sol_hours",
+        "model:storage_headroom",
+        "model:storage_unit_kw",
+        "model:storage_unit_mass_kg",
+        "model:storage_unit_tb",
+        "model:support_area_m2",
+        "model:support_count",
+        "model:support_fraction",
+        "model:tile_size_gb",
+        "model:transfer_gbps",
+        "model:worker_mass_kg",
+        "model:worker_memory_gb",
+        "model:worker_spares",
+        "model:working_days"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.GI-02",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-02",
+      "category": "ground",
+      "name": "Other support-limit utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-02"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-03",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-03",
+      "category": "ground",
+      "name": "Total settlement utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-03"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-04",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-04",
+      "category": "ground",
+      "name": "Differential movement utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-04"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-05",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-05",
+      "category": "ground",
+      "name": "Unresolved ice interactions",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-05"
+      ],
+      "dataset_ids": [
+        "ice_swim",
+        "water_dan_curiosity",
+        "water_odyssey_grs"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-06",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-06",
+      "category": "ground",
+      "name": "Investigated depth coverage",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-06"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-07",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-07",
+      "category": "ground",
+      "name": "Thermally induced deformation utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-07"
+      ],
+      "dataset_ids": [
+        "thermal_inertia_themis_1km"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [],
+      "dependencies": [
+        "GI-07",
+        "TC-10"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.GI-08",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-08",
+      "category": "ground",
+      "name": "Unassessed influence overlap",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-08"
+      ],
+      "dataset_ids": [
+        "ice_swim"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-09",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-09",
+      "category": "ground",
+      "name": "Construction-budget utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-09"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-10",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-10",
+      "category": "ground",
+      "name": "Unresolved excavation stability cases",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-10"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-11",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-11",
+      "category": "ground",
+      "name": "Critical-zone evidence completion",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-11"
+      ],
+      "dataset_ids": [
+        "geology_1to60k",
+        "geology_contacts",
+        "geology_contacts__arcadia",
+        "geology_contacts__jezero",
+        "geology_map_index",
+        "geology_map_index__arcadia",
+        "geology_map_index__jezero",
+        "geology_structures",
+        "geology_structures__arcadia",
+        "geology_structures__jezero",
+        "geology_units",
+        "geology_units__arcadia",
+        "geology_units__jezero",
+        "rover_path",
+        "rover_stops"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.GI-12",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "GI-12",
+      "category": "ground",
+      "name": "Decision-critical unresolved hypotheses",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.GI-12"
+      ],
+      "dataset_ids": [
+        "geology_1to60k",
+        "geology_contacts",
+        "geology_contacts__arcadia",
+        "geology_contacts__jezero",
+        "geology_map_index__arcadia",
+        "geology_map_index__jezero",
+        "geology_structures",
+        "geology_structures__arcadia",
+        "geology_structures__jezero",
+        "geology_units",
+        "geology_units__arcadia",
+        "geology_units__jezero",
+        "minerals_detections",
+        "thermal_inertia_tes",
+        "thermal_inertia_themis_1km",
+        "water_dan_curiosity",
+        "water_odyssey_grs"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-01",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-01",
+      "category": "solar",
+      "name": "Terrain-shading energy loss",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-01"
+      ],
+      "dataset_ids": [
+        "elevation_463m_region",
+        "horizon_arcadia_north__arcadia",
+        "horizon_arcadia_south__arcadia",
+        "horizon_curiosity_recent",
+        "horizon_jezero_north__jezero",
+        "horizon_jezero_south__jezero",
+        "horizon_near_base_north",
+        "horizon_near_base_west",
+        "sun_table_arcadia_north__arcadia",
+        "sun_table_arcadia_south__arcadia",
+        "sun_table_curiosity_recent",
+        "sun_table_jezero_north__jezero",
+        "sun_table_jezero_south__jezero",
+        "sun_table_near_base_north",
+        "sun_table_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-02",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-02",
+      "category": "solar",
+      "name": "Row-shading energy loss",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-02"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-03",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-03",
+      "category": "solar",
+      "name": "Average solar contribution",
+      "assessment_status": "not_assessed",
+      "definition_status": "specified",
+      "criterion": {
+        "operator": "minimum",
+        "quantity": {
+          "status": "resolved",
+          "value": 3.4220167114766227,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_idle_kw",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "specification": "required_solar_average_kw"
+      },
+      "missing_inputs": [],
+      "dataset_ids": [
+        "dust_climate_mcd",
+        "optical_depth_history",
+        "sun_table_arcadia_north__arcadia",
+        "sun_table_arcadia_south__arcadia",
+        "sun_table_curiosity_recent",
+        "sun_table_jezero_north__jezero",
+        "sun_table_jezero_south__jezero",
+        "sun_table_near_base_north",
+        "sun_table_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [
+        "input:fleet.0.active_count",
+        "input:jobs.map.deadline",
+        "input:operations.hours_per_sol",
+        "input:project.duration",
+        "input:retention.products",
+        "input:retention.raw",
+        "model:copies",
+        "model:cost_terrain_map",
+        "model:essential_kw",
+        "model:fixed_terrain_map",
+        "model:max_jobs",
+        "model:max_workers",
+        "model:memory_terrain_map",
+        "model:precision_earthworks_check",
+        "model:product_fraction",
+        "model:rate_survey",
+        "model:sol_hours",
+        "model:storage_headroom",
+        "model:storage_unit_kw",
+        "model:storage_unit_tb",
+        "model:support_fraction",
+        "model:tile_size_gb",
+        "model:transfer_gbps",
+        "model:worker_idle_kw",
+        "model:worker_memory_gb",
+        "model:worker_peak_kw",
+        "model:worker_spares",
+        "model:working_days"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.SC-04",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-04",
+      "category": "solar",
+      "name": "Worst-season energy adequacy",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-04"
+      ],
+      "dataset_ids": [
+        "dust_climate_mcd",
+        "optical_depth_history",
+        "sun_table_arcadia_north__arcadia",
+        "sun_table_arcadia_south__arcadia",
+        "sun_table_curiosity_recent",
+        "sun_table_jezero_north__jezero",
+        "sun_table_jezero_south__jezero",
+        "sun_table_near_base_north",
+        "sun_table_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-05",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-05",
+      "category": "solar",
+      "name": "Soiling-loss allowance utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-05"
+      ],
+      "dataset_ids": [
+        "optical_depth_history",
+        "surface_dust_tes"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-06",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-06",
+      "category": "solar",
+      "name": "Cleaning-resource utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-06"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-07",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-07",
+      "category": "solar",
+      "name": "Unserved essential energy",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-07"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-08",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-08",
+      "category": "solar",
+      "name": "Storage-limit violations",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-08"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-09",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-09",
+      "category": "solar",
+      "name": "Flexible-work completion",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-09"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-10",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-10",
+      "category": "solar",
+      "name": "Array layout accommodation",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-10"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "slope_10m_window_arcadia_north__arcadia",
+        "slope_10m_window_arcadia_south__arcadia",
+        "slope_10m_window_curiosity_recent",
+        "slope_10m_window_jezero_north__jezero",
+        "slope_10m_window_jezero_south__jezero",
+        "slope_10m_window_near_base_north",
+        "slope_10m_window_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-11",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-11",
+      "category": "solar",
+      "name": "Electrical-route loss",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-11"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-12",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-12",
+      "category": "solar",
+      "name": "Required scenario coverage",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-12"
+      ],
+      "dataset_ids": [
+        "dust_climate_mcd",
+        "optical_depth_history",
+        "sun_table_arcadia_north__arcadia",
+        "sun_table_arcadia_south__arcadia",
+        "sun_table_curiosity_recent",
+        "sun_table_jezero_north__jezero",
+        "sun_table_jezero_south__jezero",
+        "sun_table_near_base_north",
+        "sun_table_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.SC-13",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "SC-13",
+      "category": "solar",
+      "name": "Validation-error utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.SC-13"
+      ],
+      "dataset_ids": [
+        "optical_depth_history"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-01",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-01",
+      "category": "thermal",
+      "name": "Environmental case coverage",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-01"
+      ],
+      "dataset_ids": [
+        "temperature_climate_mcd",
+        "themis_temp_day_aphelion",
+        "themis_temp_day_aphelion__arcadia",
+        "themis_temp_day_aphelion__jezero",
+        "themis_temp_day_perihelion",
+        "themis_temp_day_perihelion__arcadia",
+        "themis_temp_day_perihelion__jezero",
+        "themis_temp_night_aphelion",
+        "themis_temp_night_aphelion__arcadia",
+        "themis_temp_night_aphelion__jezero",
+        "themis_temp_night_perihelion",
+        "themis_temp_night_perihelion__arcadia",
+        "themis_temp_night_perihelion__jezero",
+        "themis_temperature_list",
+        "thermal_day",
+        "thermal_inertia_themis_1km",
+        "thermal_night",
+        "weather_rems"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-02",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-02",
+      "category": "thermal",
+      "name": "Enclosure external-envelope margin",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-02"
+      ],
+      "dataset_ids": [
+        "temperature_climate_mcd"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-03",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-03",
+      "category": "thermal",
+      "name": "Heat-rejection adequacy",
+      "assessment_status": "not_assessed",
+      "definition_status": "specified",
+      "criterion": {
+        "operator": "minimum",
+        "quantity": {
+          "status": "resolved",
+          "value": 8.32,
+          "unit": "kW",
+          "provenance_ids": [
+            "input:fleet.0.active_count",
+            "input:jobs.map.deadline",
+            "input:operations.hours_per_sol",
+            "input:project.duration",
+            "input:retention.products",
+            "input:retention.raw",
+            "model:copies",
+            "model:cost_terrain_map",
+            "model:essential_kw",
+            "model:fixed_terrain_map",
+            "model:max_jobs",
+            "model:max_workers",
+            "model:memory_terrain_map",
+            "model:precision_earthworks_check",
+            "model:product_fraction",
+            "model:rate_survey",
+            "model:sol_hours",
+            "model:storage_headroom",
+            "model:storage_unit_kw",
+            "model:storage_unit_tb",
+            "model:support_fraction",
+            "model:tile_size_gb",
+            "model:transfer_gbps",
+            "model:worker_memory_gb",
+            "model:worker_peak_kw",
+            "model:worker_spares",
+            "model:working_days"
+          ],
+          "conditional": true
+        },
+        "specification": "heat_rejection_kw"
+      },
+      "missing_inputs": [],
+      "dataset_ids": [
+        "temperature_climate_mcd"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [
+        "input:fleet.0.active_count",
+        "input:jobs.map.deadline",
+        "input:operations.hours_per_sol",
+        "input:project.duration",
+        "input:retention.products",
+        "input:retention.raw",
+        "model:copies",
+        "model:cost_terrain_map",
+        "model:essential_kw",
+        "model:fixed_terrain_map",
+        "model:max_jobs",
+        "model:max_workers",
+        "model:memory_terrain_map",
+        "model:precision_earthworks_check",
+        "model:product_fraction",
+        "model:rate_survey",
+        "model:sol_hours",
+        "model:storage_headroom",
+        "model:storage_unit_kw",
+        "model:storage_unit_tb",
+        "model:support_fraction",
+        "model:tile_size_gb",
+        "model:transfer_gbps",
+        "model:worker_memory_gb",
+        "model:worker_peak_kw",
+        "model:worker_spares",
+        "model:working_days"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.TC-04",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-04",
+      "category": "thermal",
+      "name": "Operating-temperature margin",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-04"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-05",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-05",
+      "category": "thermal",
+      "name": "Cold-protection resource utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-05"
+      ],
+      "dataset_ids": [
+        "temperature_climate_mcd"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-06",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-06",
+      "category": "thermal",
+      "name": "Thermal-cycle utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-06"
+      ],
+      "dataset_ids": [
+        "temperature_climate_mcd",
+        "weather_rems"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-07",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-07",
+      "category": "thermal",
+      "name": "Adverse-environment rejection penalty",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-07"
+      ],
+      "dataset_ids": [
+        "dust_climate_mcd",
+        "dust_extinction_navcam",
+        "horizon_arcadia_north__arcadia",
+        "horizon_arcadia_south__arcadia",
+        "horizon_curiosity_recent",
+        "horizon_jezero_north__jezero",
+        "horizon_jezero_south__jezero",
+        "horizon_near_base_north",
+        "horizon_near_base_west",
+        "optical_depth_history",
+        "sun_table_arcadia_north__arcadia",
+        "sun_table_arcadia_south__arcadia",
+        "sun_table_curiosity_recent",
+        "sun_table_jezero_north__jezero",
+        "sun_table_jezero_south__jezero",
+        "sun_table_near_base_north",
+        "sun_table_near_base_west",
+        "surface_dust_tes"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-08",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-08",
+      "category": "thermal",
+      "name": "Thermal-layout accommodation",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-08"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "slope_10m_window_arcadia_north__arcadia",
+        "slope_10m_window_arcadia_south__arcadia",
+        "slope_10m_window_curiosity_recent",
+        "slope_10m_window_jezero_north__jezero",
+        "slope_10m_window_jezero_south__jezero",
+        "slope_10m_window_near_base_north",
+        "slope_10m_window_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-09",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-09",
+      "category": "thermal",
+      "name": "Connection-resource utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-09"
+      ],
+      "dataset_ids": [
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-10",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-10",
+      "category": "thermal",
+      "name": "Ground-interaction utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-10"
+      ],
+      "dataset_ids": [
+        "thermal_inertia_themis_1km"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": [],
+      "dependencies": [
+        "GI-07",
+        "TC-10"
+      ]
+    },
+    {
+      "id": "owner_case_dedicated.TC-11",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-11",
+      "category": "thermal",
+      "name": "Required monitoring completion",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-11"
+      ],
+      "dataset_ids": [
+        "temperature_climate_mcd",
+        "themis_temp_day_aphelion",
+        "themis_temp_day_aphelion__arcadia",
+        "themis_temp_day_aphelion__jezero",
+        "themis_temp_day_perihelion",
+        "themis_temp_day_perihelion__arcadia",
+        "themis_temp_day_perihelion__jezero",
+        "themis_temp_night_aphelion",
+        "themis_temp_night_aphelion__arcadia",
+        "themis_temp_night_aphelion__jezero",
+        "themis_temp_night_perihelion",
+        "themis_temp_night_perihelion__arcadia",
+        "themis_temp_night_perihelion__jezero",
+        "themis_temperature_list",
+        "weather_rems"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.TC-12",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "TC-12",
+      "category": "thermal",
+      "name": "Model validation utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.TC-12"
+      ],
+      "dataset_ids": [
+        "optical_depth_history",
+        "temperature_climate_mcd",
+        "themis_temp_day_aphelion",
+        "themis_temp_day_aphelion__arcadia",
+        "themis_temp_day_aphelion__jezero",
+        "themis_temp_day_perihelion",
+        "themis_temp_day_perihelion__arcadia",
+        "themis_temp_day_perihelion__jezero",
+        "themis_temp_night_aphelion",
+        "themis_temp_night_aphelion__arcadia",
+        "themis_temp_night_aphelion__jezero",
+        "themis_temp_night_perihelion",
+        "themis_temp_night_perihelion__arcadia",
+        "themis_temp_night_perihelion__jezero",
+        "weather_rems"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-01",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-01",
+      "category": "routes",
+      "name": "Stop-to-decision traceability",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-01"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-02",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-02",
+      "category": "routes",
+      "name": "Mandatory objective coverage",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-02"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-03",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-03",
+      "category": "routes",
+      "name": "Mobility-limit utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-03"
+      ],
+      "dataset_ids": [
+        "elevation_10m_study",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "elevation_2m_trip_area",
+        "elevation_point_service",
+        "imagery_hirise_color",
+        "imagery_hirise_gray",
+        "roughness_1m_arcadia_north__arcadia",
+        "roughness_1m_arcadia_south__arcadia",
+        "roughness_1m_curiosity_recent",
+        "roughness_1m_jezero_north__jezero",
+        "roughness_1m_jezero_south__jezero",
+        "roughness_1m_near_base_north",
+        "roughness_1m_near_base_west",
+        "rover_path",
+        "rover_stops",
+        "slope_10m_study",
+        "slope_1m_arcadia_north__arcadia",
+        "slope_1m_arcadia_south__arcadia",
+        "slope_1m_curiosity_recent",
+        "slope_1m_jezero_north__jezero",
+        "slope_1m_jezero_south__jezero",
+        "slope_1m_near_base_north",
+        "slope_1m_near_base_west",
+        "slope_2m_trip_area"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-04",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-04",
+      "category": "routes",
+      "name": "Assessed route coverage",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-04"
+      ],
+      "dataset_ids": [
+        "elevation_2m_trip_area",
+        "imagery_hirise_color",
+        "imagery_hirise_gray",
+        "rover_path",
+        "rover_stops",
+        "slope_2m_trip_area"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-05",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-05",
+      "category": "routes",
+      "name": "Planned-time utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-05"
+      ],
+      "dataset_ids": [
+        "elevation_2m_trip_area",
+        "scenario"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-06",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-06",
+      "category": "routes",
+      "name": "Return-time feasibility",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-06"
+      ],
+      "dataset_ids": [
+        "elevation_2m_trip_area"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-07",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-07",
+      "category": "routes",
+      "name": "Resource utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-07"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-08",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-08",
+      "category": "routes",
+      "name": "Return-resource feasibility",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-08"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-09",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-09",
+      "category": "routes",
+      "name": "Instrument and payload readiness",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-09"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-10",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-10",
+      "category": "routes",
+      "name": "Longest unsupported communication interval",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-10"
+      ],
+      "dataset_ids": [
+        "communications",
+        "elevation_10m_study",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "elevation_463m_region",
+        "horizon_arcadia_north__arcadia",
+        "horizon_arcadia_south__arcadia",
+        "horizon_curiosity_recent",
+        "horizon_jezero_north__jezero",
+        "horizon_jezero_south__jezero",
+        "horizon_near_base_north",
+        "horizon_near_base_west"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-11",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-11",
+      "category": "routes",
+      "name": "Navigation-error utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-11"
+      ],
+      "dataset_ids": [
+        "imagery_hirise_color",
+        "imagery_hirise_gray",
+        "named_sites"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-12",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-12",
+      "category": "routes",
+      "name": "Environmental-limit utilization",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-12"
+      ],
+      "dataset_ids": [
+        "dust_climate_mcd",
+        "dust_extinction_navcam",
+        "optical_depth_history",
+        "radiation_rad",
+        "space_weather_donki",
+        "sun_table_arcadia_north__arcadia",
+        "sun_table_arcadia_south__arcadia",
+        "sun_table_curiosity_recent",
+        "sun_table_jezero_north__jezero",
+        "sun_table_jezero_south__jezero",
+        "sun_table_near_base_north",
+        "sun_table_near_base_west",
+        "temperature_climate_mcd",
+        "weather_rems"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-13",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-13",
+      "category": "routes",
+      "name": "Required contingency coverage",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-13"
+      ],
+      "dataset_ids": [],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    },
+    {
+      "id": "owner_case_dedicated.IR-14",
+      "option_id": "owner_case_dedicated",
+      "metric_id": "IR-14",
+      "category": "routes",
+      "name": "Independent return options",
+      "assessment_status": "not_assessed",
+      "definition_status": "missing_inputs",
+      "criterion": null,
+      "missing_inputs": [
+        "engineering.IR-14"
+      ],
+      "dataset_ids": [
+        "elevation_10m_study",
+        "elevation_1m_arcadia_north__arcadia",
+        "elevation_1m_arcadia_south__arcadia",
+        "elevation_1m_curiosity_recent",
+        "elevation_1m_jezero_north__jezero",
+        "elevation_1m_jezero_south__jezero",
+        "elevation_1m_near_base_north",
+        "elevation_1m_near_base_west",
+        "imagery_ctx",
+        "imagery_ctx_mmgis",
+        "slope_10m_study"
+      ],
+      "evidence_status": "catalog_references_only",
+      "evidence_note": "Catalog association is not a verified local payload or a ground measurement.",
+      "provenance_ids": []
+    }
+  ],
+  "candidate_sizing_tasks": [
+    "Resolve full layout and site-specific shielding/foundations.",
+    "Recompute array area and battery dispatch using candidate seasonal irradiance, shading and dust.",
+    "Recompute radiators and survival loads using candidate thermal conditions.",
+    "Verify bearing, settlement and coupled ground/ice heating through investigation.",
+    "Plan investigation routes with measured mobility, instruments, communication and return reserves."
+  ],
+  "input_issues": [],
+  "assumptions": [
+    {
+      "id": "model:battery_efficiency",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.9,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:battery_unit_kwh",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 100,
+      "unit": "kWh",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:battery_unit_mass_kg",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1000,
+      "unit": "kg",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:battery_usable_fraction",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.8,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:copies",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 2,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:corridor_width_m",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 4,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:cost_terrain_map",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.05,
+      "unit": "reference_worker_hour/GB",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:equipment_per_module",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 12,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:essential_kw",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.5,
+      "unit": "kW",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:fixed_terrain_map",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.1,
+      "unit": "reference_worker_hour/job",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:local_slope_deg",
+      "origin": "model",
+      "source": "repo_scenario",
+      "model_version": "1.0.0",
+      "value": 10,
+      "unit": "deg",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:max_jobs",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 10000,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:max_service_distance_m",
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 3000,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:max_workers",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 256,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:memory_terrain_map",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 64,
+      "unit": "GB",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:module_clearance_m",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 3,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:module_empty_mass_kg",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 6000,
+      "unit": "kg",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:module_length_m",
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 12,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:module_width_m",
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 4,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:pad_slope_deg",
+      "origin": "model",
+      "source": "repo_scenario",
+      "model_version": "1.0.0",
+      "value": 5,
+      "unit": "deg",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:precision_earthworks_check",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:pressure_allowance_factor",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1.5,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:product_fraction",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.1,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:radiator_net_w_m2",
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 175,
+      "unit": "W/m2",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:radiator_plot_factor",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1.5,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:rate_survey",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 2,
+      "unit": "GB/active_robot_hour",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:roughness_m",
+      "origin": "model",
+      "source": "repo_scenario",
+      "model_version": "1.0.0",
+      "value": 0.3,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:solar_land_coverage",
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 0.5,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:solar_net_mean_w_m2",
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 40,
+      "unit": "W/m2",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:storage_headroom",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1.25,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:storage_unit_kw",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.4,
+      "unit": "kW",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:storage_unit_mass_kg",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 80,
+      "unit": "kg",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:storage_unit_tb",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 100,
+      "unit": "TB",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:support_area_m2",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1,
+      "unit": "m2",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:support_count",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 6,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:support_fraction",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.3,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:tile_size_gb",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 10,
+      "unit": "GB",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:transfer_gbps",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1,
+      "unit": "Gbps",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:vehicle_grade_deg",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 10,
+      "unit": "deg",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:worker_idle_kw",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.15,
+      "unit": "kW",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:worker_mass_kg",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 25,
+      "unit": "kg",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:worker_memory_gb",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 128,
+      "unit": "GB",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:worker_peak_kw",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.5,
+      "unit": "kW",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:worker_spares",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    {
+      "id": "model:working_days",
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 2,
+      "unit": "sol",
+      "status": "engineering_assumption"
+    }
+  ],
+  "provenance": {
+    "input:operations.hours_per_sol": {
+      "origin": "owner",
+      "path": "operations.hours_per_sol",
+      "answer": {
+        "state": "specified",
+        "value": 12,
+        "unit": "hour_per_sol"
+      }
+    },
+    "input:project.duration": {
+      "origin": "owner",
+      "path": "project.duration",
+      "answer": {
+        "state": "specified",
+        "value": 180,
+        "unit": "sol"
+      }
+    },
+    "model:precision_earthworks_check": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "input:fleet.0.active_count": {
+      "origin": "owner",
+      "path": "fleet.0.active_count",
+      "answer": {
+        "state": "specified",
+        "value": 4,
+        "unit": "count"
+      }
+    },
+    "input:fleet.0.count": {
+      "origin": "owner",
+      "path": "fleet.0.count",
+      "answer": {
+        "state": "specified",
+        "value": 4,
+        "unit": "count"
+      }
+    },
+    "model:rate_survey": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 2,
+      "unit": "GB/active_robot_hour",
+      "status": "engineering_assumption"
+    },
+    "model:sol_hours": {
+      "origin": "model",
+      "source": "mars_day",
+      "model_version": "1.0.0",
+      "value": 24.6597,
+      "unit": "hour",
+      "status": "physical_constant"
+    },
+    "model:max_jobs": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 10000,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    "model:worker_memory_gb": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 128,
+      "unit": "GB",
+      "status": "engineering_assumption"
+    },
+    "model:transfer_gbps": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1,
+      "unit": "Gbps",
+      "status": "engineering_assumption"
+    },
+    "model:tile_size_gb": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 10,
+      "unit": "GB",
+      "status": "engineering_assumption"
+    },
+    "input:jobs.map.deadline": {
+      "origin": "owner",
+      "path": "jobs.map.deadline",
+      "answer": {
+        "state": "specified",
+        "value": 1,
+        "unit": "hour"
+      }
+    },
+    "model:cost_terrain_map": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.05,
+      "unit": "reference_worker_hour/GB",
+      "status": "engineering_assumption"
+    },
+    "model:fixed_terrain_map": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.1,
+      "unit": "reference_worker_hour/job",
+      "status": "engineering_assumption"
+    },
+    "model:memory_terrain_map": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 64,
+      "unit": "GB",
+      "status": "engineering_assumption"
+    },
+    "model:product_fraction": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.1,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "model:max_workers": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 256,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    "model:worker_spares": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    "input:retention.raw": {
+      "origin": "owner",
+      "path": "retention.raw",
+      "answer": {
+        "state": "specified",
+        "value": 30,
+        "unit": "sol"
+      }
+    },
+    "input:retention.products": {
+      "origin": "owner",
+      "path": "retention.products",
+      "answer": {
+        "state": "specified",
+        "value": 180,
+        "unit": "sol"
+      }
+    },
+    "model:copies": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 2,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    "model:working_days": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 2,
+      "unit": "sol",
+      "status": "engineering_assumption"
+    },
+    "model:storage_headroom": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1.25,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "model:storage_unit_tb": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 100,
+      "unit": "TB",
+      "status": "engineering_assumption"
+    },
+    "model:worker_peak_kw": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.5,
+      "unit": "kW",
+      "status": "engineering_assumption"
+    },
+    "model:storage_unit_kw": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.4,
+      "unit": "kW",
+      "status": "engineering_assumption"
+    },
+    "model:essential_kw": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.5,
+      "unit": "kW",
+      "status": "engineering_assumption"
+    },
+    "model:worker_idle_kw": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.15,
+      "unit": "kW",
+      "status": "engineering_assumption"
+    },
+    "model:support_fraction": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.3,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "input:infrastructure.available_base_power": {
+      "origin": "owner",
+      "path": "infrastructure.available_base_power",
+      "answer": {
+        "state": "specified",
+        "value": 0,
+        "unit": "kW"
+      }
+    },
+    "model:solar_net_mean_w_m2": {
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 40,
+      "unit": "W/m2",
+      "status": "engineering_assumption"
+    },
+    "model:solar_land_coverage": {
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 0.5,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "model:radiator_net_w_m2": {
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 175,
+      "unit": "W/m2",
+      "status": "engineering_assumption"
+    },
+    "model:radiator_plot_factor": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1.5,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "input:infrastructure.backup_duration": {
+      "origin": "owner",
+      "path": "infrastructure.backup_duration",
+      "answer": {
+        "state": "specified",
+        "value": 12,
+        "unit": "hour"
+      }
+    },
+    "model:battery_usable_fraction": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.8,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "model:battery_efficiency": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 0.9,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "model:battery_unit_kwh": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 100,
+      "unit": "kWh",
+      "status": "engineering_assumption"
+    },
+    "model:equipment_per_module": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 12,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    "model:module_length_m": {
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 12,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    "model:module_width_m": {
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 4,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    "model:module_clearance_m": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 3,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    "model:worker_mass_kg": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 25,
+      "unit": "kg",
+      "status": "engineering_assumption"
+    },
+    "model:storage_unit_mass_kg": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 80,
+      "unit": "kg",
+      "status": "engineering_assumption"
+    },
+    "model:battery_unit_mass_kg": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1000,
+      "unit": "kg",
+      "status": "engineering_assumption"
+    },
+    "model:module_empty_mass_kg": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 6000,
+      "unit": "kg",
+      "status": "engineering_assumption"
+    },
+    "model:gravity": {
+      "origin": "model",
+      "source": "mars_gravity",
+      "model_version": "1.0.0",
+      "value": 3.71,
+      "unit": "m/s2",
+      "status": "physical_constant"
+    },
+    "model:support_count": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 6,
+      "unit": "count",
+      "status": "engineering_assumption"
+    },
+    "model:support_area_m2": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1,
+      "unit": "m2",
+      "status": "engineering_assumption"
+    },
+    "model:pressure_allowance_factor": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 1.5,
+      "unit": "ratio",
+      "status": "engineering_assumption"
+    },
+    "model:pad_slope_deg": {
+      "origin": "model",
+      "source": "repo_scenario",
+      "model_version": "1.0.0",
+      "value": 5,
+      "unit": "deg",
+      "status": "engineering_assumption"
+    },
+    "model:local_slope_deg": {
+      "origin": "model",
+      "source": "repo_scenario",
+      "model_version": "1.0.0",
+      "value": 10,
+      "unit": "deg",
+      "status": "engineering_assumption"
+    },
+    "model:roughness_m": {
+      "origin": "model",
+      "source": "repo_scenario",
+      "model_version": "1.0.0",
+      "value": 0.3,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    "model:corridor_width_m": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 4,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    "model:max_service_distance_m": {
+      "origin": "model",
+      "source": "repo_reference",
+      "model_version": "1.0.0",
+      "value": 3000,
+      "unit": "m",
+      "status": "engineering_assumption"
+    },
+    "model:vehicle_grade_deg": {
+      "origin": "model",
+      "source": "screening_design",
+      "model_version": "1.0.0",
+      "value": 10,
+      "unit": "deg",
+      "status": "engineering_assumption"
+    }
+  },
+  "sources": {
+    "repo_reference": {
+      "title": "Legacy reference facility: sensitivity ranges, not calibrated demand",
+      "path": "docs/reference-facility.md",
+      "status": "engineering_assumption"
+    },
+    "repo_scenario": {
+      "title": "Provisional Gale screening limits",
+      "path": "scenario/gale.json",
+      "status": "engineering_assumption"
+    },
+    "screening_design": {
+      "title": "Explicit construction screening assumptions v1; not measured or Mars-qualified",
+      "path": "docs/sizing-model.md",
+      "status": "engineering_assumption"
+    },
+    "mars_day": {
+      "title": "NASA Mars Fact Sheet: mean solar day 24.6597 hours",
+      "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html",
+      "status": "physical_constant"
+    },
+    "mars_gravity": {
+      "title": "JPL planetary physical parameters: Mars surface gravity",
+      "url": "https://ssd.jpl.nasa.gov/planets/phys_par.html",
+      "status": "physical_constant"
+    }
+  },
+  "limitations": [
+    "No site feasibility determination has been performed.",
+    "One operating phase with project-wide jobs; robot safety and control remain onboard.",
+    "Reference layout areas are incomplete conditional estimates, not certified land requirements.",
+    "Survey area and structure types describe the project; calibrated area/complexity cost models are not available."
+  ]
+}

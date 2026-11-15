@@ -143,6 +143,12 @@ def build_parser() -> argparse.ArgumentParser:
     df.add_argument("--region", default=None, help="comma-separated region ids (gale, jezero, arcadia); default all")
     for sp in (dp, du, df):
         sp.add_argument("--data-root", type=Path, default=Path("data"))
+    sizing = sub.add_parser("size", help="Convert a construction brief into conditional facility requirements")
+    sizing.add_argument("--input", required=True, type=Path)
+    sizing.add_argument("--output", type=Path)
+    sizing.add_argument("--input-format", choices=("request", "guided"), default="request")
+    sizing.add_argument("--model-bundle", type=Path)
+    sizing.add_argument("--evidence-only", action="store_true")
     return p
 
 
@@ -395,6 +401,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     raw = list(argv) if argv is not None else sys.argv[1:]
     args = parser.parse_args(_join_dash_values(raw))
     try:
+        if args.command == "size":
+            from .sizing.cli import run
+            return run(args)
         if args.command == "layers":
             return cmd_layers(args)
         if args.command == "tile":

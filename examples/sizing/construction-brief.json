@@ -1,0 +1,84 @@
+{
+  "schema_version": "construction-sizing/1",
+  "request_id": "test",
+  "project_revision": 1,
+  "project": {
+    "id": "gale_build",
+    "name": "Landing pad",
+    "structure_types": [
+      "landing_pad"
+    ],
+    "duration": {
+      "state": "specified",
+      "value": 180,
+      "unit": "sol"
+    },
+    "survey_area": {
+      "state": "specified",
+      "value": 20000,
+      "unit": "m2"
+    }
+  },
+  "fleet": [
+    {
+      "id": "survey",
+      "role": "survey",
+      "count": {
+        "state": "specified",
+        "value": 4,
+        "unit": "count"
+      },
+      "active_count": {
+        "state": "specified",
+        "value": 4,
+        "unit": "count"
+      }
+    }
+  ],
+  "operations": {
+    "hours_per_sol": {
+      "state": "specified",
+      "value": 12,
+      "unit": "hour_per_sol"
+    },
+    "precision": "earthworks_check"
+  },
+  "jobs": [
+    {
+      "id": "map",
+      "type": "terrain_map",
+      "cadence": "once_per_sol",
+      "deadline": {
+        "state": "specified",
+        "value": 1,
+        "unit": "hour"
+      }
+    }
+  ],
+  "retention": {
+    "raw": {
+      "state": "specified",
+      "value": 30,
+      "unit": "sol"
+    },
+    "products": {
+      "state": "specified",
+      "value": 180,
+      "unit": "sol"
+    }
+  },
+  "infrastructure": {
+    "deployment": "dedicated",
+    "power_strategy": "solar_storage",
+    "available_base_power": {
+      "state": "specified",
+      "value": 0,
+      "unit": "kW"
+    },
+    "backup_duration": {
+      "state": "specified",
+      "value": 12,
+      "unit": "hour"
+    }
+  }
+}

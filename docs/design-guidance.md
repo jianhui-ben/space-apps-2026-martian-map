@@ -142,9 +142,11 @@ The requirement view explains why each site constraint exists. The comparison vi
 
 Candidate feedback must distinguish observations, derived estimates, modeled results, assumptions, and missing evidence. Never hide a critical conflict inside an average score. Use “candidate,” “screening,” and “requires measurement” where appropriate. Preserve a smaller base-integrated installation as a possible outcome.
 
-### Construction intake alternatives
+### Selected construction intake
 
-[The construction intake mock](../design-reference/mars-construction-intake.html) incorporates the construction-owner inputs in two interactive alternatives. Neither alternative has been selected yet.
+**Selected: Guided brief.** [The connected flow](../design-reference/mars-guided-flow.html) opens on the interactive Mars globe. “Define construction project” opens the guided Project → Robots → Operations → Review sequence. “Back to globe” preserves entries and the current step; “Continue project brief” resumes them. The introduction now describes construction support rather than research workloads.
+
+[The earlier comparison](../design-reference/mars-construction-intake.html) retains these two alternatives for reference:
 
 - **Guided brief:** project, robots, operations, and review steps, with a persistent project summary and Mars illustration.
 - **Project worksheet:** project and fleet editing in one view, with expandable schedule/output details and a brief summary.

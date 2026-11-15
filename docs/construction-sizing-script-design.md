@@ -1,5 +1,7 @@
 # Construction inputs to location requirements: script design
 
+> Implementation status (2026-11-15): the single-phase conditional screening engine is now implemented. See [sizing-model.md](sizing-model.md) for the supported API, assumptions and remaining scope; this document retains the broader target design.
+
 Status: proposed implementation design, 2026-11-15. The owner-input → sizing → location-requirements workflow is agreed. The interfaces and implementation choices below are design proposals. This document does not implement the estimator or select engineering coefficients.
 
 ## 1. Goal and boundary

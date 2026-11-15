@@ -60,7 +60,8 @@ Gale crater is the demonstration region. The construction project, base, and fac
 | [Facility-to-location requirements](docs/facility-to-location-requirements.md) | Traceability from facility outputs to five assessment categories |
 | [Reference facility](docs/reference-facility.md) | Legacy numerical comparison case; not estimator output |
 | [Design guidance](docs/design-guidance.md) | Visual and writing conventions for the ARES site-planning app: colors, typography, layout, components, copy |
-| [Construction intake mock](design-reference/mars-construction-intake.html) | Two interactive proposals: Guided brief and Project worksheet, using construction inputs; sizing is not connected |
+| [Selected guided flow](design-reference/mars-guided-flow.html) | Interactive globe introduction → Guided brief → review; preserves entries when returning to the globe; sizing is not connected |
+| [Intake comparison](design-reference/mars-construction-intake.html) | Earlier Guided brief / Project worksheet alternatives; Guided brief selected |
 | [Earlier design reference](design-reference/mars-copy-balance.html) | Historical landing-page copy comparison; visual reference only for the former population/research intake |
 | [3D map prototype](design-reference/map-prototype/) | 3D map prototype in three looks (diorama, survey sheet, helmet HUD) with screenshots, run steps and the map's tech stack (three.js r170, 3d-tiles-renderer 0.5.4, fonts) vendored |
 | [Buildable terrain](docs/requirements/buildable-terrain.md) | 21 metrics (BT-01 to BT-21): area, slope, roughness, obstacles, hazards, access |
@@ -219,3 +220,14 @@ or is computed from them. See that page for details.
 ## License
 
 [MIT](LICENSE) © 2026 jianhui-ben
+
+
+### Construction sizing engine
+
+The offline sizing engine now converts a construction brief into conditional equipment, power, heat, reference footprint and ground-load requirements, with a handoff for all five location categories. Run:
+
+```sh
+python -m martian_map size --input examples/sizing/construction-brief.json --output /tmp/facility-requirements.json
+```
+
+See [the implemented model, assumptions and UI adapter](docs/sizing-model.md). Coefficients remain explicit screening assumptions; `--evidence-only` leaves unvalidated estimates unresolved. This engine does not declare a candidate site feasible.

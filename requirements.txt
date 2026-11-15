@@ -4,3 +4,5 @@ numpy>=1.22,<2.1
 zstandard>=0.22
 # Tests
 pytest>=7.0
+
+jsonschema>=4.18,<5
