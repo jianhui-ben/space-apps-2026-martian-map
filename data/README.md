@@ -4,7 +4,9 @@ Downloaded and computed data for the data-center site study: Gale crater, plus J
 Planitia for comparison. Every dataset is described in [`catalog.json`](catalog.json). That file, this README
 and [`release.json`](release.json) are the only ones here committed to git.
 
-Download a copy of the data from the GitHub release named in `release.json` (about 780 MB) with:
+The data files themselves are zips attached to the GitHub release
+[data-2026-11-15](https://github.com/jianhui-ben/space-apps-2026-martian-map/releases/tag/data-2026-11-15) (Gale 454 MB, Jezero 154 MB, Arcadia Planitia 173 MB). Download, check and
+unpack them here with:
 
 ```bash
 python -m martian_map data fetch

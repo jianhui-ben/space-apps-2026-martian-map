@@ -16,7 +16,8 @@ No accounts or API keys are needed. Every source used today is public.
 
 ## Get the data without running the snapshot
 
-The data files are about 1 GB, too big for git. A copy is attached to a GitHub release instead. To get it:
+The data files are about 1 GB, too big for git. A copy is attached to the GitHub release
+[data-2026-11-15](https://github.com/jianhui-ben/space-apps-2026-martian-map/releases/tag/data-2026-11-15) instead, one zip per region. To get it:
 
 ```bash
 python -m martian_map data fetch                  # all three regions, about 780 MB to download
