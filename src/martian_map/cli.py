@@ -20,6 +20,7 @@ from .traverse import (
     plan_traverse,
 )
 from .trek import LAYERS, TrekClient, TrekError, check_grid
+from .http import FetchError
 
 # Illustrative demo site: lower Mount Sharp (Aeolis Mons) in Gale crater, the
 # region the challenge cites for Curiosity's 2025 boxwork study. Coordinates
@@ -100,7 +101,124 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--zoom", type=_zoom, default=7)
     d.add_argument("--out", type=Path, default=Path("data/tiles"))
     d.add_argument("--max-range", type=_nonneg_float, default=10.0)
+
+    s = sub.add_parser("snapshot", help="download or compute every local dataset into data/ and write data/catalog.json")
+    s.add_argument("--only", default=None, help="comma-separated step or dataset ids; always re-runs them")
+    s.add_argument("--refresh", action="store_true", help="fetch again even if files are up to date")
+    s.add_argument("--stretch", action="store_true", help="also run stretch steps")
+    s.add_argument("--data-root", type=Path, default=Path("data"))
+    s.add_argument("--scenario", type=Path, default=Path("scenario/gale.json"))
+
+    c = sub.add_parser("catalog", help="inspect data/catalog.json")
+    csub = c.add_subparsers(dest="catalog_command", required=True)
+    cc = csub.add_parser("check", help="check every local file against the catalog")
+    cc.add_argument("--strict", action="store_true", help="exit 1 if any file is missing or different")
+    cs = csub.add_parser("search", help="find datasets by words, factor or category")
+    cs.add_argument("words", nargs="*")
+    cs.add_argument("--factor", default=None)
+    cs.add_argument("--category", default=None)
+    cs.add_argument("--metric", default=None, help="requirement metric id, e.g. BT-05")
+    ct = csub.add_parser("table", help="print the catalog as a markdown table")
+    ct.add_argument("--write", type=Path, default=None, help="replace the table between the markers in this file")
+    cr = csub.add_parser("references", help="print the data references for the submission (NASA / partner / other)")
+    cr.add_argument("--write", type=Path, default=None, help="replace the text between the references markers in this file")
+    cm = csub.add_parser("metrics", help="which datasets support each requirement metric (BT/GI/SC/TC/IR)")
+    cm.add_argument("--write", type=Path, default=None, help="replace the text between the metrics markers in this file")
+    cm.add_argument("--requirements", type=Path, default=Path("docs/requirements/metric-data-availability.md"))
+    for sp in (cc, cs, ct, cr, cm):
+        sp.add_argument("--data-root", type=Path, default=Path("data"))
     return p
+
+
+def cmd_snapshot(args, fetcher=None, out=None) -> int:
+    from .http import Fetcher
+    from .scenario import load_scenario
+    from .snapshot import SnapshotError, run_snapshot
+
+    out = out if out is not None else sys.stdout
+    scenario = load_scenario(args.scenario)
+    only = {x.strip() for x in args.only.split(",") if x.strip()} if args.only else None
+    try:
+        report = run_snapshot(
+            scenario,
+            args.data_root,
+            fetcher if fetcher is not None else Fetcher(),
+            only=only,
+            refresh=args.refresh,
+            include_stretch=args.stretch,
+            log=lambda m: print(m, file=out),
+        )
+    except SnapshotError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    print(f"catalog: {args.data_root / 'catalog.json'} ({len(report.catalog.entries)} datasets)", file=out)
+    for w in report.warnings:
+        print(f"warning: {w}", file=out)
+    for step_id, message in report.failed:
+        print(f"failed: {step_id}: {message}", file=out)
+    return 1 if report.failed else 0
+
+
+_STATE_LABEL = {"ok": "ok", "not_downloaded": "not downloaded", "different": "different (re-run snapshot)"}
+
+
+def cmd_catalog(args, out=None) -> int:
+    from .catalog import Catalog
+
+    out = out if out is not None else sys.stdout
+    path = args.data_root / "catalog.json"
+    if not path.is_file():
+        print(f"error: no catalog at {path}; run python -m martian_map snapshot first", file=sys.stderr)
+        return 1
+    catalog = Catalog.load(path)
+    if args.catalog_command == "check":
+        results = catalog.check(args.data_root)
+        bad = 0
+        for r in results:
+            if r.state != "ok":
+                bad += 1
+            print(f"{_STATE_LABEL[r.state]:<28} {r.dataset_id:<34} {r.path}", file=out)
+        print(f"{len(results) - bad}/{len(results)} files ok", file=out)
+        return 1 if (args.strict and bad) else 0
+    if args.catalog_command == "search":
+        hits = catalog.search(" ".join(args.words), factor=args.factor, category=args.category, metric=args.metric)
+        for e in hits:
+            print(f"{e['id']:<34} [{e.get('access')}, {e.get('evidence_type')}] {e.get('title')}", file=out)
+        print(f"{len(hits)} match(es)", file=out)
+        return 0
+    if args.catalog_command == "table":
+        table = catalog.markdown_table()
+        if args.write is not None:
+            from .catalog import update_doc_table
+
+            changed = update_doc_table(args.write, table)
+            print(f"{args.write}: {'updated' if changed else 'already up to date'}", file=out)
+        else:
+            out.write(table)
+        return 0
+    if args.catalog_command == "metrics":
+        from .catalog import METRICS_END, METRICS_START, update_doc_table
+        from .metrics import coverage_markdown, parse_availability
+
+        md = coverage_markdown(catalog, parse_availability(args.requirements.read_text(encoding="utf-8")))
+        if args.write is not None:
+            changed = update_doc_table(args.write, md, METRICS_START, METRICS_END)
+            print(f"{args.write}: {'updated' if changed else 'already up to date'}", file=out)
+        else:
+            out.write(md)
+        return 0
+    if args.catalog_command == "references":
+        from .catalog import REFERENCES_END, REFERENCES_START, update_doc_table
+        from .references import references_markdown
+
+        md = references_markdown(catalog)
+        if args.write is not None:
+            changed = update_doc_table(args.write, md, REFERENCES_START, REFERENCES_END)
+            print(f"{args.write}: {'updated' if changed else 'already up to date'}", file=out)
+        else:
+            out.write(md)
+        return 0
+    return 2  # pragma: no cover
 
 
 def _print_traverse(summary: TraverseSummary, out=None) -> None:
@@ -233,7 +351,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return cmd_traverse(args)
         if args.command == "demo":
             return cmd_demo(args)
-    except TrekError as exc:
+        if args.command == "snapshot":
+            return cmd_snapshot(args)
+        if args.command == "catalog":
+            return cmd_catalog(args)
+    except (TrekError, FetchError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except (ValueError, TypeError) as exc:

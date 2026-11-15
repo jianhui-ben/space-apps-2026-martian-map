@@ -1,0 +1,653 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "uniqueIdField": {
+  "name": "OBJECTID",
+  "isSystemMaintained": true
+ },
+ "globalIdFieldName": "",
+ "geometryProperties": {
+  "shapeAreaFieldName": "Shape__Area",
+  "shapeLengthFieldName": "Shape__Length",
+  "units": "esriMeters"
+ },
+ "geometryType": "esriGeometryPolygon",
+ "spatialReference": {
+  "wkid": 104905,
+  "latestWkid": 104905
+ },
+ "fields": [
+  {
+   "name": "OBJECTID",
+   "type": "esriFieldTypeOID",
+   "alias": "OBJECTID",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Unit",
+   "type": "esriFieldTypeString",
+   "alias": "Unit",
+   "sqlType": "sqlTypeOther",
+   "length": 8,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "UnitDesc",
+   "type": "esriFieldTypeString",
+   "alias": "UnitDesc",
+   "sqlType": "sqlTypeOther",
+   "length": 50,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "SphArea_km",
+   "type": "esriFieldTypeSingle",
+   "alias": "SphArea_km",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "PrimaryCharacteristics",
+   "type": "esriFieldTypeString",
+   "alias": "Primary Characteristics",
+   "sqlType": "sqlTypeOther",
+   "length": 5000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "AdditionalCharacteristics",
+   "type": "esriFieldTypeString",
+   "alias": "Additional Characteristics",
+   "sqlType": "sqlTypeOther",
+   "length": 5000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Interpretation",
+   "type": "esriFieldTypeString",
+   "alias": "Interpretation",
+   "sqlType": "sqlTypeOther",
+   "length": 5000,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "UnitGroup",
+   "type": "esriFieldTypeString",
+   "alias": "UnitGroup",
+   "sqlType": "sqlTypeOther",
+   "length": 255,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Field",
+   "type": "esriFieldTypeInteger",
+   "alias": "Field",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Shape__Area",
+   "type": "esriFieldTypeDouble",
+   "alias": "Shape__Area",
+   "sqlType": "sqlTypeDouble",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Shape__Length",
+   "type": "esriFieldTypeDouble",
+   "alias": "Shape__Length",
+   "sqlType": "sqlTypeDouble",
+   "domain": null,
+   "defaultValue": null
+  }
+ ],
+ "exceededTransferLimit": false,
+ "features": [
+  {
+   "attributes": {
+    "OBJECTID": 754,
+    "Unit": "Htu",
+    "UnitDesc": "Hesperian transition undivided unit",
+    "SphArea_km": 4454.948,
+    "PrimaryCharacteristics": "Irregular plateaus hundreds of kilometers across. Layered. Hundreds of meters to kilometers thick. (lat \u20136.41\u00b0 N., long 156.42\u00b0 E; lat \u20136.17\u00b0 N., long 286.05\u00b0 E.; localities 26, 28)\r\n",
+    "AdditionalCharacteristics": "In southern Elysium Planitia along highland/lowland boundary and within and east of Valles Marineris. Superposes units Nhu, Nve, mNh, and eNh; gradational with units eHt, Hve, and HNt (Hesperian part); overlain by units lHt, Ht, Hto, AHtu, Aa, and lAv. Includes hydrated sulfate spectral signatures; fluted slopes in places. Linear ridges, anabranching sinuous ridges, and wrinkle ridges common",
+    "Interpretation": "Fine-grained eolian sediments and (or) pyroclastic air-fall deposits. Modified by fluvial dissection and eolian erosion. Linear ridges and grooves form yardangs. Tectonically contracted. Channels mostly inverted. Altered by acidic weathering in places",
+    "UnitGroup": "Transition Units",
+    "Field": null,
+    "Shape__Area": 3641761381.5288086,
+    "Shape__Length": 248578.91687803384
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       137.724457632803,
+       -4.45647823873063
+      ],
+      [
+       137.732977804028,
+       -4.45693801228138
+      ],
+      [
+       137.741533634309,
+       -4.45760569121017
+      ],
+      [
+       137.762969600711,
+       -4.45951431079287
+      ],
+      [
+       137.775835187129,
+       -4.46056886654056
+      ],
+      [
+       137.784412713404,
+       -4.46112473067927
+      ],
+      [
+       137.792992931358,
+       -4.46144567471798
+      ],
+      [
+       137.801684182295,
+       -4.46142633333508
+      ],
+      [
+       137.810379258919,
+       -4.46116919215473
+      ],
+      [
+       137.81907657114,
+       -4.46078485438577
+      ],
+      [
+       137.845163357179,
+       -4.45944495222598
+      ],
+      [
+       137.853840834262,
+       -4.4591129828089
+      ],
+      [
+       137.858169483028,
+       -4.45902053925273
+      ],
+      [
+       137.862487348037,
+       -4.45900686595728
+      ],
+      [
+       137.866790055942,
+       -4.45910389771463
+      ],
+      [
+       137.871071788655,
+       -4.45935394851837
+      ],
+      [
+       137.875324938801,
+       -4.4598124051344
+      ],
+      [
+       137.879493887726,
+       -4.46051425939935
+      ],
+      [
+       137.883634777477,
+       -4.46142055813716
+      ],
+      [
+       137.88775494757,
+       -4.4624778302822
+      ],
+      [
+       137.891860012752,
+       -4.46364513672123
+      ],
+      [
+       137.895954216885,
+       -4.4648915242178
+      ],
+      [
+       137.904121943801,
+       -4.46753490036521
+      ],
+      [
+       137.936732229218,
+       -4.47857988166533
+      ],
+      [
+       137.944914476526,
+       -4.48116571829687
+      ],
+      [
+       137.949020795509,
+       -4.48236638884033
+      ],
+      [
+       137.953142700858,
+       -4.48347226290338
+      ],
+      [
+       137.957285969458,
+       -4.48444807121689
+      ],
+      [
+       137.96145814144,
+       -4.48524769999033
+      ],
+      [
+       137.965807516046,
+       -4.48585049617449
+      ],
+      [
+       137.970187514153,
+       -4.48626754835992
+      ],
+      [
+       137.974589943881,
+       -4.4865498061214
+      ],
+      [
+       137.983438872758,
+       -4.48685480295687
+      ],
+      [
+       137.992321517426,
+       -4.48696975556367
+      ],
+      [
+       138.005672654936,
+       -4.48699950599874
+      ],
+      [
+       138.019031513583,
+       -4.48694028782981
+      ],
+      [
+       138.027929748731,
+       -4.48680594291957
+      ],
+      [
+       138.036806882393,
+       -4.48648440362647
+      ],
+      [
+       138.041230103048,
+       -4.48619688339356
+      ],
+      [
+       138.045636818046,
+       -4.48577846686334
+      ],
+      [
+       137.724457632803,
+       -4.45647823873063
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 775,
+    "Unit": "AHi",
+    "UnitDesc": "Amazonian and Hesperian impact unit",
+    "SphArea_km": 87031.06,
+    "PrimaryCharacteristics": "Craters with rims and surrounding blankets; some include single to multi-lobed blanket forms, dense secondary crater chains, and (or) central peak or pit. Blanket thicknesses of meters to a few hundred meters. (lat 23.17\u00b0 N., long 207.77\u00b0 E.",
+    "AdditionalCharacteristics": "Global occurrence. Superposes Noachian units; other unit superposition relations diverse. High kilometer-scale surface roughness; crater floors may be smooth to rough",
+    "Interpretation": "Upturned, ejected, and brecciated target rocks and sediments, with local areas of impact melt. Post-impact mass-wasting and fluvial-lacustrine and eolian infill of craters common",
+    "UnitGroup": "Impact Unit",
+    "Field": null,
+    "Shape__Area": 71241942748.68646,
+    "Shape__Length": 1663425.082569979
+   },
+   "geometry": {
+    "rings": [
+     [
+      [
+       138.027121188093,
+       -2.321401110244
+      ],
+      [
+       138.03133279033,
+       -2.32168245141835
+      ],
+      [
+       138.035574760561,
+       -2.3221072928348
+      ],
+      [
+       138.039838087879,
+       -2.32263155053765
+      ],
+      [
+       138.048404020887,
+       -2.32385868269162
+      ],
+      [
+       138.065593578752,
+       -2.32660218451478
+      ],
+      [
+       138.074180984749,
+       -2.32804772942991
+      ],
+      [
+       138.082736724981,
+       -2.32959366165247
+      ],
+      [
+       138.09122368099,
+       -2.3313631303904
+      ],
+      [
+       138.095422107358,
+       -2.3323976353668
+      ],
+      [
+       138.099574929351,
+       -2.33358484156863
+      ],
+      [
+       138.103648936716,
+       -2.33495038357162
+      ],
+      [
+       138.107679205558,
+       -2.33646732215725
+      ],
+      [
+       138.111679310112,
+       -2.33809432839834
+      ],
+      [
+       138.119627905594,
+       -2.34156007239381
+      ],
+      [
+       138.135453811348,
+       -2.34886863218477
+      ],
+      [
+       138.14721722059,
+       -2.35448199484907
+      ],
+      [
+       138.15483035701,
+       -2.35832856829859
+      ],
+      [
+       138.158479696139,
+       -2.36032041816188
+      ],
+      [
+       138.161955718025,
+       -2.36238827272306
+      ],
+      [
+       138.165183366518,
+       -2.36456560319738
+      ],
+      [
+       138.168061948085,
+       -2.36689740485858
+      ],
+      [
+       138.170458134606,
+       -2.36944326812821
+      ],
+      [
+       138.172197687455,
+       -2.37228105370498
+      ],
+      [
+       138.173141698693,
+       -2.37548157931911
+      ],
+      [
+       138.173426398259,
+       -2.37897565146049
+      ],
+      [
+       138.17322714181,
+       -2.3826853216341
+      ],
+      [
+       138.172678020623,
+       -2.38655101346538
+      ],
+      [
+       138.171880189453,
+       -2.39052778260273
+      ],
+      [
+       138.170908950747,
+       -2.39458215256345
+      ],
+      [
+       138.168651802781,
+       -2.40283191864428
+      ],
+      [
+       138.166184911118,
+       -2.41117433196699
+      ],
+      [
+       138.162351472221,
+       -2.42372985506179
+      ],
+      [
+       138.158419846782,
+       -2.43624716246359
+      ],
+      [
+       138.155662366353,
+       -2.44452877027271
+      ],
+      [
+       138.154199355191,
+       -2.44863616354046
+      ],
+      [
+       138.152649375776,
+       -2.45271110577882
+      ],
+      [
+       138.150996444065,
+       -2.45673759183923
+      ],
+      [
+       138.149254110081,
+       -2.46073336873579
+      ],
+      [
+       138.147444129526,
+       -2.4647080167302
+      ],
+      [
+       138.027121188093,
+       -2.321401110244
+      ]
+     ],
+     [
+      [
+       137.716011711484,
+       -4.45645025825542
+      ],
+      [
+       137.711836517064,
+       -4.45671320448469
+      ],
+      [
+       137.707709012259,
+       -4.45725213810945
+      ],
+      [
+       137.7036254294,
+       -4.45812913416987
+      ],
+      [
+       137.699589778071,
+       -4.45928355045083
+      ],
+      [
+       137.695589291851,
+       -4.46064176502844
+      ],
+      [
+       137.691614194214,
+       -4.46214743065198
+      ],
+      [
+       137.683712556157,
+       -4.46544174309594
+      ],
+      [
+       137.671919281473,
+       -4.47072974560062
+      ],
+      [
+       137.656229755457,
+       -4.47796629539553
+      ],
+      [
+       137.640578762206,
+       -4.48527594736405
+      ],
+      [
+       137.628933019611,
+       -4.4909261332819
+      ],
+      [
+       137.620978839623,
+       -4.49501935633137
+      ],
+      [
+       137.609140990103,
+       -4.50133973740108
+      ],
+      [
+       137.577711794368,
+       -4.518452125373
+      ],
+      [
+       137.562075615339,
+       -4.52713377056902
+      ],
+      [
+       137.554346713556,
+       -4.53161831114215
+      ],
+      [
+       137.550528902815,
+       -4.53393590395422
+      ],
+      [
+       137.546850033924,
+       -4.53625895941165
+      ],
+      [
+       137.539581410802,
+       -4.54104929576069
+      ],
+      [
+       137.521639094188,
+       -4.55339853945361
+      ],
+      [
+       137.507354944943,
+       -4.56338841891743
+      ],
+      [
+       137.496693871639,
+       -4.57094382848197
+      ],
+      [
+       137.489663095287,
+       -4.57607158986996
+      ],
+      [
+       137.486193291647,
+       -4.57868966330927
+      ],
+      [
+       137.48277026391,
+       -4.58136342377671
+      ],
+      [
+       137.479411161592,
+       -4.58411333819448
+      ],
+      [
+       137.476152392638,
+       -4.58693594917016
+      ],
+      [
+       137.472957035359,
+       -4.58983415747262
+      ],
+      [
+       137.466694044976,
+       -4.59578294519041
+      ],
+      [
+       137.457471357166,
+       -4.60491150538616
+      ],
+      [
+       137.436130890226,
+       -4.62642223615717
+      ],
+      [
+       137.426860986227,
+       -4.63547464942607
+      ],
+      [
+       137.420509095915,
+       -4.64128006332864
+      ],
+      [
+       137.417236310112,
+       -4.64405339811542
+      ],
+      [
+       137.413867024949,
+       -4.64669777513293
+      ],
+      [
+       137.410261508404,
+       -4.64926708159844
+      ],
+      [
+       137.406553937537,
+       -4.65169996941988
+      ],
+      [
+       137.398937128872,
+       -4.65629608773398
+      ],
+      [
+       137.387250610122,
+       -4.66284054965229
+      ],
+      [
+       137.716011711484,
+       -4.45645025825542
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

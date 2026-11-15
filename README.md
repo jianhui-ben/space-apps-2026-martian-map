@@ -85,17 +85,22 @@ them is a NASA standard.
 
 ## What this repo does today
 
-- `martian_map.trek`: a small client for Mars Trek's public, key-less WMTS tile services. It reads a layer's capabilities, checks the tile grid, and downloads the tile that covers a given point. Three layers are built in, one per data kind:
-  - `viking`: Viking MDIM 2.1 color mosaic, 232 m/px (optical)
-  - `mola`: MGS MOLA color shaded relief, 463 m/px (topographic)
-  - `themis`: Mars Odyssey THEMIS daytime IR mosaic, 100 m/px, latitudes ±65° (thermal)
-- `martian_map.geo`: pure helpers. Longitude normalisation, great-circle distance on Mars, and conversion between lat/lon and Mars Trek tile/pixel coordinates.
-- `martian_map.traverse`: pure helpers for a simple Marswalk plan. It computes leg distances, average slopes, a slope hazard class (`ok` / `caution` / `avoid`), the walking time and a range check.
-- A CLI (`python -m martian_map`) that ties these together, including a `demo` at lower Mount Sharp in Gale crater.
-
-> The traverse model is a transparent starting point, not a validated planning
-> tool. It uses the average slope between waypoints, and the demo route's
-> elevations are illustrative placeholders. They are not DEM samples.
+- **`python -m martian_map snapshot`** downloads or computes every dataset the map needs for the Gale study
+  into `data/`, and writes the index [`data/catalog.json`](data/catalog.json). The index labels every layer
+  as observation, derived, model, interpretation, assumption or reference, as the project plan requires.
+  - Terrain: 10 m screening and 1 m site elevation, slope and bumpiness, sand dunes, and live HiRISE/CTX photo maps.
+  - Ground: geologic map, mineral detections, and Curiosity's driven path.
+  - Solar: crater-wide elevation, per-site skylines and sun tables.
+  - Thermal: four THEMIS temperature images, plus Curiosity's daily weather.
+  - Routes: assumptions, place names, and a live height lookup.
+- **`python -m martian_map catalog check|search|table`** inspects the index.
+- **[`scenario/gale.json`](scenario/gale.json)** holds the team's assumptions: base, candidate sites and placeholder limits.
+- **[docs/data-sources.md](docs/data-sources.md)** explains what each dataset tells you, and what it can't, in plain
+  language. **[docs/data-extraction.md](docs/data-extraction.md)** explains how to fetch, refresh and read it.
+- **Older helpers:**
+  - `martian_map.trek` is a small Mars Trek tile client;
+  - `martian_map.geo` and `martian_map.traverse` are pure coordinate and walking-route helpers;
+  - the `layers`, `tile`, `traverse` and `demo` commands use them.
 
 ## Setup
 
@@ -146,13 +151,26 @@ pytest --run-network      # also runs the live Mars Trek test (marked @pytest.ma
 │   ├── cli.py           # layers / tile / traverse / demo commands
 │   ├── geo.py           # pure coordinate and tile math
 │   ├── traverse.py      # pure Marswalk planning helpers
-│   └── trek.py          # Mars Trek WMTS client (injectable HTTP session)
+│   ├── trek.py          # Mars Trek WMTS client (injectable HTTP session)
+│   ├── http.py          # polite downloader (allowlist, rate limit, size caps)
+│   ├── scenario.py      # loads scenario/gale.json
+│   ├── catalog.py       # the data index (data/catalog.json)
+│   ├── snapshot.py      # runs the data steps and writes the index
+│   ├── grids.py, png.py, terrain.py, horizon.py, sun.py, alignment.py, pds3.py, geotiff.py
+│   ├── references.py    # who made each dataset (feeds docs/data-references.md)
+│   ├── metrics.py       # which requirement metrics each dataset supports
+│   └── sources/         # one module per data source (elevation, arcgis, rover, weather, solar, themis,
+│                        #   thermal_inertia, water, static)
 ├── tests/               # pytest suite + recorded WMTS capabilities fixtures
-├── data/                # downloaded tiles and caches (not committed; see data/README.md)
+├── data/                # downloaded data (not committed) + catalog.json (committed); see data/README.md
+├── scenario/            # gale.json: the team's assumptions (committed)
 ├── docs/
 │   ├── project-plan.md          # objective, scenario, five factors, shared evidence rules
 │   ├── reference-facility.md    # assumed facility used by every factor
-│   ├── data-sources.md
+│   ├── data-sources.md          # what data we have, in plain words
+│   ├── data-extraction.md       # how the data gets into data/
+│   ├── data-references.md       # who made each dataset; NASA / partner / other (for the submission)
+│   ├── metric-data-coverage.md  # which datasets feed each of the 72 requirement metrics
 │   └── requirements/            # one spec per factor + metric data availability; images/
 ├── notebooks/           # exploration notebooks (optional)
 ├── pyproject.toml
@@ -170,8 +188,19 @@ These resources are linked from the challenge's Resources tab:
 - [NASA Worldview](https://worldview.earthdata.nasa.gov/): Earth satellite imagery, linked for inspiration on layered maps.
 - [Mars Perseverance raw images](https://mars.nasa.gov/mars2020/multimedia/raw-images/): more than a million surface images, useful for point-of-view context.
 
+**Every dataset the map uses, who made it, how to credit it, and which are NASA data:**
+[docs/data-references.md](docs/data-references.md). That page is written to be copied into the
+submission form's "NASA Data" and "Space Agency Partner Data and Other References" fields.
+
 The challenge page notes that NASA does not endorse non-U.S. Government
 entities. Participants must follow each third-party site's own data-use terms.
+
+## Use of AI tools
+
+The data pipeline code in `src/martian_map/`, its tests and the docs were written with an AI coding
+assistant (Claude Code by Anthropic), working from the team's plan and decisions. No data values were
+generated by AI; every number comes from the sources in [docs/data-references.md](docs/data-references.md)
+or is computed from them. See that page for details.
 
 ## Team / Author
 

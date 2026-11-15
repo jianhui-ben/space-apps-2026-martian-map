@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1I00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1I00.xsd">
+  <Identification_Area>
+    <logical_identifier>urn:nasa:pds:msl_ice-dust:data_derived:line_of_sight</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>Mars Science Laboratory Atmospheric Ice, Dust</title>
+    <information_model_version>1.18.0.0</information_model_version>
+    <product_class>Product_Observational</product_class>
+  </Identification_Area>
+  <Observation_Area>
+    <Time_Coordinates>
+      <start_date_time>2012-12-04T08:51:18.978124Z</start_date_time>
+      <stop_date_time>2022-11-25T16:58:56.986259Z</stop_date_time>
+    </Time_Coordinates>
+    <Primary_Result_Summary>
+      <purpose>Science</purpose>
+      <processing_level>Derived</processing_level>
+      <Science_Facets>
+        <domain>Atmosphere</domain>
+        <discipline_name>Atmospheres</discipline_name>
+        <facet1>Meteorology</facet1>
+      </Science_Facets>
+    </Primary_Result_Summary>
+    <Investigation_Area>
+      <name>Mars Science Laboratory</name>
+      <type>Mission</type>
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:investigation:mission.mars_science_laboratory</lid_reference>
+        <reference_type>data_to_investigation</reference_type>
+      </Internal_Reference>
+    </Investigation_Area>
+    <Observing_System>
+      <name>Mars Science Laboratory</name>
+      <Observing_System_Component>
+        <name>Mars Science Laboratory</name>
+        <type>Host</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.msl</lid_reference>
+          <reference_type>is_instrument_host</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+      <Observing_System_Component>
+        <name>NAVIGATION CAMERA</name>
+        <type>Instrument</type>
+        <Internal_Reference>
+          <lid_reference>urn:nasa:pds:context:instrument:navcam.msl</lid_reference>
+          <reference_type>is_instrument</reference_type>
+        </Internal_Reference>
+      </Observing_System_Component>
+    </Observing_System>
+    <Target_Identification>
+      <name>Mars</name>
+      <type>Planet</type>
+      <Internal_Reference>
+        <lid_reference>urn:nasa:pds:context:target:planet.mars</lid_reference>
+        <reference_type>data_to_target</reference_type>
+      </Internal_Reference>
+    </Target_Identification>
+  </Observation_Area>
+  <Reference_List>
+    <Internal_Reference>
+      <lid_reference>urn:nasa:pds:lab.hydrocarbon_spectra:document:user_guide</lid_reference>
+      <reference_type>data_to_document</reference_type>
+    </Internal_Reference>
+  </Reference_List>
+  <File_Area_Observational>
+    <File>
+      <file_name>line_of_sight.csv</file_name>
+      <local_identifier>table</local_identifier>
+      <creation_date_time>2022-12-02T12:00:00</creation_date_time>
+      <file_size unit="byte">20471</file_size>
+      <records>592</records>
+    </File>
+    <Table_Delimited>
+      <name>line_of_sight.csv</name>
+      <local_identifier>filename_table</local_identifier>
+      <offset unit="byte">0</offset>
+      <object_length unit="byte">20471</object_length>
+      <parsing_standard_id>PDS DSV 1</parsing_standard_id>
+      <description>Line-of-sight observations of extinction</description>
+      <records>592</records>
+      <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+      <field_delimiter>Comma</field_delimiter>
+      <Record_Delimited>
+        <fields>6</fields>
+        <groups>0</groups>
+        <Field_Delimited>
+          <name>Sol</name>
+          <field_number>1</field_number>
+          <data_type>ASCII_Real</data_type>
+          <unit>Sol</unit>
+          <description>Sol</description>
+        </Field_Delimited>
+        <Field_Delimited>
+          <name>Ls</name>
+          <field_number>2</field_number>
+          <data_type>ASCII_Real</data_type>
+          <unit>degree</unit>
+          <description>Solar Longitude</description>
+        </Field_Delimited>
+        <Field_Delimited>
+          <name>MY</name>
+          <field_number>3</field_number>
+          <data_type>ASCII_Real</data_type>
+          <description>Mars Year</description>
+        </Field_Delimited>
+        <Field_Delimited>
+          <name>LTST</name>
+          <field_number>4</field_number>
+          <data_type>ASCII_Real</data_type>
+          <unit>hour</unit>
+          <description>Local True Solar Time</description>
+          <Special_Constants>
+            <saturated_constant>999.0000</saturated_constant>
+            <invalid_constant>-999.0000</invalid_constant>
+          </Special_Constants>
+        </Field_Delimited>
+        <Field_Delimited>
+          <name>Extinction</name>
+          <field_number>5</field_number>
+          <data_type>ASCII_Real</data_type>
+          <unit>km^-1</unit>
+          <description>Line-of-sight extinction due to dust</description>
+          <Special_Constants>
+            <saturated_constant>999.0000</saturated_constant>
+            <invalid_constant>-999.0000</invalid_constant>
+          </Special_Constants>
+        </Field_Delimited>
+        <Field_Delimited>
+          <name>Error</name>
+          <field_number>6</field_number>
+          <data_type>ASCII_Real</data_type>
+          <unit>km^-1</unit>
+          <description>Line-of-sight extinction due to dust - error</description>
+        </Field_Delimited>
+      </Record_Delimited>
+    </Table_Delimited>
+  </File_Area_Observational>
+</Product_Observational>

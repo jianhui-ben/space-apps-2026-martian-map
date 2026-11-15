@@ -1,4 +1,6 @@
 # Runtime
 requests>=2.31
+numpy>=1.22,<2.1
+zstandard>=0.22
 # Tests
 pytest>=7.0

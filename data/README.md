@@ -1,7 +1,24 @@
 # data/
 
-Working folder for downloaded Mars Trek tiles (`data/tiles/`) and other caches.
+Downloaded and computed data for the Gale data-center site study. Every dataset is described in
+[`catalog.json`](catalog.json), which is the only file here (besides this README) that is committed to git.
+Recreate everything with:
 
-Raw and downloaded data is **not committed**: `.gitignore` ignores everything
-here except this README and `.gitkeep`. Re-create it with the CLI, for example
-`python -m martian_map demo`.
+```bash
+python -m martian_map snapshot
+```
+
+| Folder | Contents |
+|---|---|
+| `elevation/` | ground height, steepness and bumpiness grids (`.f32`) and coloured overlays (`.png`) |
+| `vectors/` | geology, mineral detections, dune outlines, geologic map index (`.geojson`) |
+| `thermal/` | orbiter (THEMIS) temperature images (`.f32` kelvin + `.png`), the list of all images, and the 1 km thermal inertia grid |
+| `water/` | Mars Odyssey water map, 5 degree cells (`.f32` weight percent + `.png` + `.json` table) |
+| `weather/` | Curiosity's daily weather (trimmed `rems.json` and the raw feed) |
+| `rover/` | Curiosity's path, stops, current position, named sites, MMGIS map settings |
+| `solar/` | per-site skylines (`horizon_<site>.u8`) and sun tables (`sun_table_<site>.json`) |
+| `scenario.json` | a copy of `scenario/gale.json` (edit the original, not this copy) |
+| `tiles/` | single map tiles saved by the older `tile`/`demo` commands |
+
+Grid files are raw little-endian numbers with no header; read the shape and edges from the file's `grid`
+entry in `catalog.json`. See [docs/data-extraction.md](../docs/data-extraction.md) for how to read them.

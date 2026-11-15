@@ -1,0 +1,13 @@
+See https://www.sciencedirect.com/science/article/abs/pii/S0019103523004001
+Optical depth (tau) as measured with MSL Mastcam by Mark Lemmon, MLemmon@SpaceScience.org
+L7, M34, 880-nm
+Generated: Wed Sep 20 10:01:49 2023
+(Values of -1 indicate absence of validated data)
+Lines of data in this table:            5
+*************************************************************
+                    Product_ID,      Sol,   L_s,   tau, sigma
+0033MR0000080040100792D01_DXXX,  33.5036, 168.5, 0.693, 0.035
+0033MR0000090040100812D01_DXXX,  33.6702, 168.6, 0.664, 0.017
+0037MR0000990110100924L01_DXXX,  37.6346, 170.9, 0.737, 0.023
+0037MR0000990110101179L01_DXXX,  37.6360, 170.9, 0.756, 0.023
+3616MR1028630011702683C00_DXXX,3616.3110, 317.8, 1.214,******

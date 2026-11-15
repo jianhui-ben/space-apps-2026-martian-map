@@ -31,6 +31,7 @@ htmlcov/
 data/*
 !data/.gitkeep
 !data/README.md
+!data/catalog.json
 .cache/
 *.log
 
