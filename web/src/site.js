@@ -13,6 +13,7 @@ import { createReadout } from './ui/readout.js';
 import { probeAt, activeProbeId } from './probes.js';
 import { mapHasFocus } from './ui/controls.js';
 import { LOOKS, lookUniforms, setLookUniforms, lookBlend, wallLines } from './looks.js';
+import { createSheetLayer, fillSheetSlope, sheetSlopeAt } from './sheet.js';
 
 export { siteFrame } from './frame.js'; // the route module imports it from here when site.frame is absent
 
@@ -676,6 +677,8 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
   if (S) for (const g of [S.geometry, S.skirt]) g.setAttribute('slopeColor', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 4), 4));
   // lon/lat per vertex (offsets from the frame centre) for overlays; filled the first time one is shown
   for (const s of [S, T]) if (s) for (const g of [s.geometry, s.skirt]) g.setAttribute('lonLat', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+  // the Survey sheet's slope classes per vertex (-1: no data until sheet.js fills them the first time the sheet is shown)
+  for (const s of [S, T]) if (s) for (const g of [s.geometry, s.skirt]) g.setAttribute('sheetSlope', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(-1), 1));
 
   const group = new THREE.Group(); // placement: matrix = frame.matrix
   group.name = 'site:' + site.id;
@@ -716,6 +719,7 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
   // ---- layout ----
   const fpMats = new Map(); // footprint id -> its own materials, so each plot takes its own status colour
   const fpStatus = new Map(); // footprint id -> 'met' | 'conflict' | 'unresolved'
+  let planMode = false; // footprints drawn as plan outlines (the Survey sheet; planStyle)
   function matsFor(id) {
     if (!fpMats.has(id)) {
       const c = new THREE.Color(FOOTPRINT_COLOURS[fpStatus.get(id) || 'unresolved']);
@@ -817,6 +821,7 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
       tagFor(fp.id).position.set(o.west.x, o.west.y, o.west.z);
     }
     for (const [id, t] of tags) if (!footprints.has(id)) { t.visible = false; t.userData.gone = true; } else t.userData.gone = false;
+    if (planMode) planStyle();
     if (selected && !footprints.has(selected)) selected = footprints.has('compound') ? 'compound' : null;
     placeHandles();
     showHandles();
@@ -868,6 +873,7 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
       for (const k of ['fill', 'ribbon', 'edge', 'pattern']) m[k].color.copy(c);
       paintTag(id);
     }
+    if (planMode) planStyle();
   }
   function paintSelection() {
     for (const m of fpMats.values()) m.line.color.setHex(selected ? ACCENT : INK);
@@ -1062,12 +1068,14 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
         factor: activeProbeId(), rows: probe.rows }, x, y);
       return;
     }
+    const sl = sheetSlopeAt(site, lon, lat);
     readout.show({
       title: inside ? site.name : 'Around ' + site.name,
       lon, lat, positionEvidence: eg && eg.evidence,
       rows: [
         { label: 'Elevation', value: elevationAt(site, lon, lat), digits: 1, unit: 'm', evidence: eg && eg.evidence },
-        { label: 'Slope (10 m)', value: inside ? cellValue(g.slope10, lon, lat) : NaN, digits: 1, unit: '°', evidence: g.slope10 && g.slope10.evidence },
+        // the site's slope grid inside the box; around it (or at a gap) the slope over 10 m from an elevation grid, named
+        { label: sl.label, value: sl.deg, digits: 1, unit: '°', evidence: sl.grid && sl.grid.evidence },
         { label: 'Roughness', value: inside ? cellValue(g.roughness, lon, lat) : NaN, digits: 2, unit: 'm', evidence: g.roughness && g.roughness.evidence },
       ],
     }, x, y);
@@ -1087,6 +1095,7 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     if (!drag) { fitOutlines(); showHandles(); }
     if (siteDrape) siteDrape.flush();
     if (tripDrape) tripDrape.flush();
+    if (sheet) sheet.update();
   });
 
   globe.scene.add(group);
@@ -1242,6 +1251,44 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     if (walls) for (const w of walls) { w.visible = lines; w.material.color.set(t.wallTop); }
     setExaggeration(t.exag);
     setSun(sunAt);
+    showSheet(id === 'survey');
+  }
+
+  // ---- the Survey sheet's slope classes, neat line, labels and map furniture (sheet.js), built the first time ----
+  let sheet = null;
+  const scen = site.catalog && site.catalog.scenario && site.catalog.scenario.assumptions;
+  const limitDeg = Number(scen && scen.max_construction_slope_deg && scen.max_construction_slope_deg.value) || LOOKS.survey.slopeLimitDeg;
+  function showSheet(on) {
+    if (on && !sheet) {
+      fillSheetSlope(site, frame, [S && S.geometry, T && T.geometry]);
+      if (!lonLatFilled) fillLonLat();
+      const [w, s, e, n] = site.bounds;
+      LU.sheetBox.value.set(w - frame.lon0, s - frame.lat0, e - frame.lon0, n - frame.lat0);
+      LU.sheetBoxOn.value = S && T ? 1 : 0; // the neat line marks where the 1 m grid meets the trip-area grid
+      LU.sheetLimits.value.x = limitDeg;
+      sheet = createSheetLayer({
+        site, root, camera: globe.camera, canvas, geometries: [S && S.geometry, T && T.geometry], heightAt: frame.heightAt, limitDeg,
+        footprints: () => [...footprints.values()].map((f) => ({ id: f.fp.id, name: FOOTPRINT_NAMES[f.fp.id] || f.fp.id, w: f.fp.w, h: f.fp.h,
+          centre: { x: f.centre.x, y: f.centre.y + BOX_M, z: f.centre.z }, east: f.east })),
+      });
+    }
+    if (sheet) sheet.show(on);
+    planMode = on;
+    planStyle();
+  }
+  // Footprints as plan drawings in the sheet: no walls or ground ring, a dark outline and a light status-coloured fill
+  // (the tags keep the status icon, so colour is never the only cue). Other looks: the boxes as before.
+  function planStyle() {
+    const plan = planMode;
+    for (const [id, m] of fpMats) {
+      const c = new THREE.Color(FOOTPRINT_COLOURS[fpStatus.get(id) || 'unresolved']);
+      m.ribbon.color.copy(plan ? new THREE.Color(INK) : c);
+      m.pattern.color.copy(plan ? new THREE.Color(INK) : c);
+      m.pattern.opacity = plan ? 0.45 : 0.8;
+      m.fill.opacity = plan ? 0.5 : FILL_OPACITY;
+      m.edge.visible = !plan;
+    }
+    for (const f of footprints.values()) f.walls.visible = !plan;
   }
 
   // ---- overlays: a factor view's PNG draped on the terrain by lon/lat, over the look ----
@@ -1281,6 +1328,7 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
   function setSun(dir) {
     if (disposed) return;
     sunAt = dir || null;
+    LU.sheetLight.value = sunAt ? 0 : 1; // the sheet is drawn unlit, except under the Solar view's sun and shadows
     const shadows = !!sunAt || (look && LOOKS[look].ground === 'shadow'); // the Solar view's sun, or the Diorama's soft shadow
     if (sunAt) {
       const az = sunAt.azDeg * DEG, el = Math.max(1, sunAt.elDeg) * DEG;
@@ -1318,6 +1366,7 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     floor: floor && floor.visible ? 'plinth' : grid && grid.visible ? 'grid' : 'none',
     background: '#' + new THREE.Color(LOOKS[look] ? LOOKS[look].background : 0).getHexString(), tiles: !hidTiles,
   });
+  debug.sheet = () => (sheet ? { ...sheet.debug(), limitDeg, neatLine: LU.sheetBoxOn.value === 1 } : null);
   // The site stands alone as a lifted-out block: the globe tiles are hidden while it is open (R33).
   let hidTiles = false;
   if (globe.setTilesVisible) { globe.setTilesVisible(false); hidTiles = true; }
@@ -1341,6 +1390,7 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     removeEventListener('keydown', onLayoutKey);
     removeEventListener('blur', onBlur);
     readout.dispose();
+    if (sheet) sheet.dispose();
     for (const el of css2d) el.remove(); // CSS2DObject only removes its element when it is the object removed
     focusEl.remove();
     globe.scene.remove(group);

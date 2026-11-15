@@ -183,8 +183,8 @@ export function lookKey({ catalog }) {
       const range = rampRange(siteView), k = siteView.root.scale.y, hirise = siteView.debug.drape().mode === 'hirise';
       const span = range ? 'dark (' + metres(range.lo) + ') to light (' + metres(range.hi) + ')' : 'dark low to light high';
       if (look === 'survey') {
-        return { text: 'Survey sheet: slope, light blue flat to dark blue 30° and steeper (the build limit is 5°), dark contours every 10 m (heavier every 50 m). Heights ×' + k + '.',
-          source: 'From the 1 m HiRISE elevation model (derived).', missing: false };
+        return { text: 'Survey sheet: a topographic plan. Hillshade, contours every 2 m (labelled every 10 m), slope classes: buildable ≤ 5° (faint green), marginal 5–15° (amber), too steep > 15° (red-orange, hatched), no data (grey, hatched); 500 m grid. Heights ×' + k + '.',
+          source: 'From the 1 m HiRISE elevation model inside the site box and the trip-area grid around it (derived).', missing: false };
       }
       if (look === 'hud') {
         return { text: (hirise ? 'Helmet HUD: the HiRISE photo in true grey, dimmed' : 'Helmet HUD: grey by elevation, ' + span + ' (no HiRISE photo here)')
