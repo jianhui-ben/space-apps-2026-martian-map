@@ -3,7 +3,7 @@
 // on every screen, the factor bar in the region and site views, and References at the bottom left.
 // The UI and the window.__map hooks call the same functions, so a test drives exactly what a user does.
 import * as THREE from 'three';
-import { loadCatalog, getSite, loadTripArea, regionOf, regionSiteBytes } from './catalog.js';
+import { loadCatalog, getSite, loadTripArea, regionOf, regionSiteBytes, siteBytes } from './catalog.js';
 import { createGlobe, R, START } from './globe.js';
 import { footprintSpecs, bestSpot, clampPlacement, createLayoutStore } from './layout.js';
 import { terrainChecks } from './checks.js';
@@ -35,6 +35,7 @@ const $ = (id) => document.getElementById(id);
 // panel, so the layout lands in its middle.
 const SITE_FLY = { altM: 700, tiltDeg: 55, ms: 1600 };
 const REGION_CHECK_MS = 200;
+const DEFER_SITE_BYTES = 60e6; // a larger site's grids load when it is opened, so the region's list is ranked sooner
 const REFERENCE_COMPOUND_M = 60, MIN_ARRIVAL_ALT_M = 250; // a smaller compound is framed from lower, so its handles show on arrival
 
 function showDebug(globe) {
@@ -62,6 +63,8 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
   const terrainBySite = new Map(); // siteId -> the last terrainChecks Map (keeps BT-01 through a drag)
   const regionLoads = new Map(); // regionId -> Promise
   const envByRegion = new Map(); // regionId -> loadEnvironment() result (Task 12)
+  const ranked = new Map(); // regionId -> Set of the site ids its ranking covers (every checked site; a deferred one joins when opened)
+  const lateLoads = new Map(); // siteId -> Promise, a deferred site loading on its first open
   const sizeBySite = new Map(); // siteId -> the plot sizes for that site (a brief setup only), kept through drags
   let view = null, opening = 0;
 
@@ -100,11 +103,12 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     store.set('results', new Map(store.get('results')).set(siteId, merged));
   }
 
-  // The region's priority, once every one of its sites has results. Only prioritize() orders sites.
+  // The region's priority over the sites it covers, once each has results. Only prioritize() orders sites.
   function reprioritize(regionId) {
-    const region = regionById(regionId), results = store.get('results');
-    if (!region || !region.sites.every((s) => results.has(s.id))) return;
-    const rows = prioritize(region.sites.map((s) => ({ id: s.id, results: results.get(s.id) })), metrics);
+    const region = regionById(regionId), results = store.get('results'), covered = ranked.get(regionId);
+    const list = region && covered ? region.sites.filter((s) => covered.has(s.id)) : [];
+    if (!list.length || !list.every((s) => results.has(s.id))) return;
+    const rows = prioritize(list.map((s) => ({ id: s.id, results: results.get(s.id) })), metrics);
     store.set('priority', new Map(store.get('priority')).set(regionId, rows));
   }
 
@@ -117,38 +121,70 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     if (r) reprioritize(r.id);
   });
 
-  // First entry to a region: load all its sites, place each layout on its best spot and check it as it arrives (the
-  // list shows it, unranked), and rank them once all are in. The loading status carries done (site ids) and bytes.
+  // Load a site, place its layout on its best spot and check it (the layout listener ranks it if its region covers it).
+  async function loadAndCheck(s, onBytes, envLoad) {
+    const site = await getSite(catalog, s.id, { tripArea: false, onBytes }); // the trip area waits for the site view
+    await envLoad; // its environment checks need the region's data
+    sites.set(site.id, site);
+    placeSite(site, store.get('setup')); // the setup now, not when loading began; checks it
+  }
+
+  // A region's sites checked on entry (up to DEFER_SITE_BYTES each) and the larger ones deferred to their first open.
+  function splitDeferred(region) {
+    const upfront = region.sites.filter((s) => siteBytes(catalog, s.id) <= DEFER_SITE_BYTES);
+    const deferred = region.sites.filter((s) => !upfront.includes(s)).map((s) => s.id);
+    return { upfront, deferred, deferredBytes: Object.fromEntries(deferred.map((id) => [id, siteBytes(catalog, id)])) };
+  }
+
+  // First entry to a region: load its sites of up to DEFER_SITE_BYTES, place and check each as it arrives (the list
+  // shows it, unranked), and rank them once all are in. The loading status carries done (site ids) and bytes; the
+  // ready status lists the deferred (larger, unchecked, never ranked) sites, which load when opened (loadLate).
   function ensureRegion(regionId) {
     if (regionLoads.has(regionId)) return regionLoads.get(regionId);
     const region = regionById(regionId);
     if (!region) return Promise.reject(new Error('unknown region ' + regionId));
-    const done = [], totalBytes = regionSiteBytes(catalog, regionId);
+    const { upfront, deferred, deferredBytes } = splitDeferred(region);
+    const done = [], totalBytes = regionSiteBytes(catalog, regionId, upfront.map((s) => s.id));
     let bytes = 0, shownAt = 0;
     const progress = (now) => {
       if (!now && Date.now() - shownAt < 250) return;
       shownAt = Date.now();
       const st = store.get('regions').get(regionId);
-      if (!st || st.state === 'loading') setRegionStatus(regionId, { state: 'loading', done: [...done], bytes, totalBytes });
+      if (!st || st.state === 'loading') setRegionStatus(regionId, { state: 'loading', done: [...done], bytes, totalBytes, deferred, deferredBytes });
     };
     progress(true);
     const p = (async () => {
       const envLoad = loadEnvironment(catalog, regionId).catch((e) => ({ errors: { environment: errText(e) }, themis: {}, ids: {} }))
         .then((env) => { envByRegion.set(regionId, env); });
       const onBytes = (n) => { bytes += n; progress(false); };
-      await Promise.all(region.sites.map(async (s) => {
-        const site = await getSite(catalog, s.id, { tripArea: false, onBytes }); // the trip area waits for the site view
-        await envLoad; // its environment checks need the region's data
-        sites.set(site.id, site);
-        placeSite(site, store.get('setup')); // the setup now, not when loading began; checks it; ranks once every site is in
-        done.push(site.id);
+      await Promise.all(upfront.map(async (s) => {
+        await loadAndCheck(s, onBytes, envLoad);
+        done.push(s.id);
         progress(true);
       }));
+      ranked.set(regionId, new Set(upfront.map((s) => s.id)));
       reprioritize(regionId);
-      setRegionStatus(regionId, { state: 'ready' });
+      setRegionStatus(regionId, { state: 'ready', deferred, deferredBytes });
     })();
     p.catch((e) => setRegionStatus(regionId, { state: 'failed', error: errText(e) }));
     regionLoads.set(regionId, p);
+    return p;
+  }
+
+  // A deferred site, on its first open: load, place and check it, then rerank its region with it included. The ready
+  // status names it as checking meanwhile, and drops it from deferred once it is in.
+  function loadLate(regionId, siteId) {
+    if (sites.has(siteId)) return Promise.resolve();
+    if (lateLoads.has(siteId)) return lateLoads.get(siteId);
+    const status = (fn) => { const st = store.get('regions').get(regionId) || {}; setRegionStatus(regionId, { ...st, ...fn(st) }); };
+    status(() => ({ checking: siteId }));
+    const p = (async () => {
+      await loadAndCheck(regionById(regionId).sites.find((s) => s.id === siteId), null, envByRegion.get(regionId));
+      ranked.get(regionId).add(siteId);
+      reprioritize(regionId);
+      status((st) => ({ deferred: (st.deferred || []).filter((id) => id !== siteId) }));
+    })().finally(() => { lateLoads.delete(siteId); status(() => ({ checking: null })); });
+    lateLoads.set(siteId, p);
     return p;
   }
 
@@ -189,6 +225,7 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     const region = regionOf(catalog, siteId);
     if (!region) throw new Error('unknown site ' + siteId);
     await ensureRegion(region.id);
+    await loadLate(region.id, siteId); // a deferred (large) site loads and joins the ranking on its first open
     await loadTripArea(catalog, sites.get(siteId)); // only the site view draws it, so it loads on the first open
     if (ticket !== opening) return null;
     const site = sites.get(siteId);

@@ -162,17 +162,19 @@ function siteFiles(catalog, siteId) {
     SC01: withFile('SC-01', 'u8'), SC03: withFile('SC-03', 'json') };
 }
 
-// The bytes getSite({ tripArea: false }) downloads for every site of a region, from the catalog's file sizes (a
-// progress line's denominator; 0 where the catalog gives no sizes).
-export function regionSiteBytes(catalog, regionId) {
-  const region = catalog.regions.find((r) => r.id === regionId);
-  if (!region) return 0;
+// The bytes getSite({ tripArea: false }) downloads for one site, from the catalog's file sizes (0 where it gives none).
+export function siteBytes(catalog, siteId) {
   const fmt = { BT04: 'f32', BT05: 'f32', BT08: 'f32', SC01: 'u8', SC03: 'json' };
   let total = 0;
-  for (const s of region.sites) {
-    for (const [k, d] of Object.entries(siteFiles(catalog, s.id))) { const f = d && fileOf(d, fmt[k]); total += (f && f.bytes) || 0; }
-  }
+  for (const [k, d] of Object.entries(siteFiles(catalog, siteId))) { const f = d && fileOf(d, fmt[k]); total += (f && f.bytes) || 0; }
   return total;
+}
+
+// The same for every site of a region, or for those of its sites in ids (a progress line's denominator).
+export function regionSiteBytes(catalog, regionId, ids = null) {
+  const region = catalog.regions.find((r) => r.id === regionId);
+  if (!region) return 0;
+  return region.sites.filter((s) => !ids || ids.includes(s.id)).reduce((t, s) => t + siteBytes(catalog, s.id), 0);
 }
 
 // onBytes(n), when given, hears every chunk of the site's own files as it arrives (a progress line).

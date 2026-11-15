@@ -204,6 +204,8 @@ details[open] > summary::before { content: "▾"; }
 .site-row[aria-pressed="true"] { border-color: var(--accent); background: var(--selected); }
 .site-row .prio { grid-row: span 3; align-self: start; font: 500 24px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--text-primary); text-align: center; }
 .site-row.failed .prio { color: var(--conflict); }
+.site-row.deferred { border-style: dashed; }
+.site-row.deferred .prio { color: var(--text-secondary); }
 .site-row .nm { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .site-row .verdict { font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
 .site-row.failed .verdict { color: var(--conflict); }

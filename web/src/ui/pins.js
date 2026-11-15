@@ -130,8 +130,9 @@ export function addRegionPins(globe, catalog, { onRegion = null, onSite = () => 
     const state = status ? status.state : null;
     const ready = state === 'ready' && rows && rows.length;
     const sites = p.n + (p.n === 1 ? ' site' : ' sites');
-    p.note.textContent = ready ? '' : state === 'loading' ? sites + ' · checking…' : state === 'failed' ? sites + ' · check failed' : sites + ' · not yet checked';
-    p.note.hidden = !!ready;
+    const late = ready && status.deferred && status.deferred.length;
+    p.note.textContent = late ? 'ranked ' + rows.length + ' of ' + sites + '; ' + status.deferred.length + ' checked when opened' : ready ? '' : state === 'loading' ? sites + ' · checking…' : state === 'failed' ? sites + ' · check failed' : sites + ' · not yet checked';
+    p.note.hidden = !!ready && !late;
     if (!ready) { if (p.key !== null) { p.rows.replaceChildren(); p.key = null; } return; }
     if (p.key === rows) return; // rows are replaced whenever anything they show changes
     p.key = rows;
@@ -189,8 +190,8 @@ export function addSitePins(globe, catalog, { onSite = () => {} } = {}) {
     const byId = new Map((rows || []).map((x, i) => [x.siteId, { row: x, i }]));
     for (const [id, m] of marks) {
       const hit = byId.get(id);
-      m.obj.userData.hidden = hidden || !hit || m.regionId !== region;
-      if (!hit) continue;
+      m.obj.userData.hidden = hidden || m.regionId !== region;
+      if (!hit) { m.prio.textContent = '·'; m.el.classList.remove('failed'); m.order = byId.size; continue; } // unranked: not checked yet
       m.prio.textContent = String(hit.row.priority);
       m.el.classList.toggle('failed', hit.row.failures.length > 0);
       m.order = hit.i;

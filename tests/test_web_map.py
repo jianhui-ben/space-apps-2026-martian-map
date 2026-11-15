@@ -1803,6 +1803,16 @@ def test_flow_brief_sizes_and_ranks(page, server_url):
     page.locator("#facility-assess").click()
     page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     _enter(page, "gale")
+    # curiosity_recent's grids (169 MB) load when it is opened: until then the list ranks 2 of 3 and shows it unranked
+    assert page.evaluate("__map.store.get('priority').get('gale').length") == 2
+    late = [r for r in _rows(page) if r["site"] == "curiosity_recent"]
+    assert len(late) == 1 and late[0]["prio"] == "·" and all(i.endswith(":?") for i in late[0]["icons"]), late
+    assert re.fullmatch(r"Large site \(\d+ MB\): checked when you open it", late[0]["verdict"]), late
+    assert "Ranked 2 of 3 sites" in page.locator("#panel").inner_text()
+    page.evaluate("__map.openSite('curiosity_recent').then(() => true)")  # loads, checks and ranks it
+    page.evaluate("__map.closeSite().then(() => true)")
+    page.wait_for_function("__map.store.get('priority').get('gale').length === 3", timeout=FLOW_TIMEOUT_MS)
+    _wait_list(page, "gale")
     prio = page.evaluate("__map.store.get('priority').get('gale').map((r) => [r.siteId, r.priority, r.failures])")
     near = [p for p in prio if p[0] in ("near_base_north", "near_base_west")]
     aside = [p for p in prio if p[0] == "curiosity_recent"]

@@ -180,13 +180,20 @@ export function createList(el, { onSite, onRegion, onEdit }) {
     head.append(h('h3', 'region-name', region.name), h('span', 'count', plural(region.sites.length, 'candidate site')));
     el.append(head);
     if (!status || status.state === 'loading') {
-      el.append(...loadingEls(region, status || {}, results, metrics, names));
+      el.append(...loadingEls(region, status || {}, results, metrics, names, onSite));
       el.scrollTop = scroll;
       return;
     }
     if (status.state === 'failed') {
       el.append(h('p', 'failed', 'The sites could not be checked: ' + status.error + '. Nothing here is ranked.'));
       return;
+    }
+    const late = (status.deferred || []).filter((id) => !(rows || []).some((r) => r.siteId === id));
+    if (late.length) { // the ranking covers only the checked sites, and says so
+      const cover = h('p', 'progress', 'Ranked ' + (rows || []).length + ' of ' + plural(region.sites.length, 'site') + '; '
+        + plural(late.length, 'larger site') + ' not checked yet, so not ranked');
+      cover.setAttribute('role', 'status');
+      el.append(cover);
     }
     if ((rows || []).length && rows.every((r) => r.failures.length)) el.append(h('p', 'no-candidate', 'No candidate meets every requirement for this facility'));
     el.append(factorHeader('cols'));
@@ -221,6 +228,7 @@ export function createList(el, { onSite, onRegion, onEdit }) {
       li.append(b);
       list.append(li);
     }
+    for (const id of late) list.append(deferredRow(id, { names, status, metrics, onSite, selected: id === selectedSite }));
     el.append(list);
     if (chosen) el.append(nextCheckEl(nextCheck(chosen, metrics), 'Next check · ' + shortName(names.get(chosen.siteId) || chosen.siteId)));
     el.scrollTop = scroll;
@@ -228,11 +236,39 @@ export function createList(el, { onSite, onRegion, onEdit }) {
   return { render, focus: () => { const t = el.querySelector('h2'); if (t) t.focus({ preventScroll: true }); } };
 }
 
+// A site whose grids load only when it is opened (main.js DEFER_SITE_BYTES): never numbered, its factors all "?"
+// (not checked is never fine), its size and when it is checked in words, and clickable.
+export function deferredRow(siteId, { names, status, metrics, onSite, selected = false, bytes = null }) {
+  const li = h('li', '');
+  const b = h('button', 'site-row deferred');
+  b.type = 'button';
+  b.dataset.site = siteId;
+  b.dataset.state = 'deferred';
+  b.setAttribute('aria-pressed', String(selected));
+  const name = (names && names.get(siteId)) || siteId;
+  b.title = 'Open ' + name + ' on the terrain (loads and checks it)';
+  const prio = h('span', 'prio', '·');
+  prio.setAttribute('aria-label', 'Not ranked: not checked yet');
+  const mb = bytes !== null ? bytes : ((status.deferredBytes || {})[siteId] || 0);
+  const text = status.checking === siteId ? 'Loading its grids and checking it…'
+    : 'Large site' + (mb ? ' (' + Math.round(mb / 1e6) + ' MB)' : '') + ': checked when you open it';
+  const facts = h('span', 'facts'), icons = h('span', 'icons');
+  for (const f of FACTORS) {
+    icons.append(iconEl({ factor: f.id, name: f.name, icon: '?', simulated: false,
+      tip: f.name + ' — not checked yet: open the site to check it', title: f.name + ': not checked yet' }));
+  }
+  facts.append(icons);
+  b.append(prio, h('span', 'nm', shortName(name)), h('span', 'verdict', text), facts);
+  b.addEventListener('click', () => onSite(siteId));
+  li.append(b);
+  return li;
+}
+
 // While a region loads: what is happening, the bytes so far, and a row per site, in the region's order and never
 // numbered: a checked site shows its factor icons, one still loading says so (missing data never reads as fine).
 // The ranked, clickable rows replace these once every site is in.
-export function loadingEls(region, status, results, metrics, names) {
-  const n = region.sites.length, done = new Set(status.done || []);
+export function loadingEls(region, status, results, metrics, names, onSite = () => {}) {
+  const late = new Set(status.deferred || []), n = region.sites.length - late.size, done = new Set(status.done || []);
   const mb = (b) => Math.round(b / 1e6);
   const out = [h('p', 'loading', 'Checking ' + plural(n, 'site') + ': loading the elevation, slope and roughness grids and placing the facility…')];
   const prog = h('p', 'progress', 'Loading ' + plural(n, 'site') + (status.totalBytes ? ' · ' + mb(Math.min(status.bytes || 0, status.totalBytes)) + ' of ' + mb(status.totalBytes) + ' MB' : '')
@@ -241,6 +277,7 @@ export function loadingEls(region, status, results, metrics, names) {
   out.push(prog, factorHeader('cols'));
   const list = h('ol', 'rows pending-rows');
   for (const s of region.sites) {
+    if (late.has(s.id)) { list.append(deferredRow(s.id, { names, status, metrics, onSite })); continue; }
     const res = done.has(s.id) ? results.get(s.id) : null;
     const li = h('li', '');
     const row = h('div', 'site-pending');

@@ -4,7 +4,7 @@
 // in the catalog, grouped, and the demo parts (Task 12). The current view's one-line key stays in the panel (ui/factors.js).
 import { FOOTPRINT_COLOURS } from '../site.js';
 import { EVIDENCE, EVIDENCE_MEANING, chipEl } from './chips.js';
-import { FACILITY_LABEL } from './landing.js';
+import { facilityLabel } from './landing.js';
 import { statusSvg } from './icons.js';
 
 // The catalog references of the given datasets, each once, in the order first met. Unknown ids are skipped.
@@ -87,8 +87,8 @@ function howToRead() {
     + 'estimate here, not a real result; it never changes a status or the priority. Hover an icon in the list for its meaning.');
   s.append(na, sim);
   const fp = h('p', 'fp-note', 'The same three colours mark each status, always with its label and icon, never colour alone. The facility layout '
-    + '(compound, radiator plot north and solar plot south) is the reference facility: ');
-  fp.append(h('span', 'illustrative', FACILITY_LABEL), ' It is drawn as 5 m boxes, each coloured by its own checks:');
+    + '(compound, radiator plot north and solar plot south) is sized from your brief: ');
+  fp.append(h('span', 'illustrative', facilityLabel({ source: 'brief' })), ' Each plot is coloured by its own checks:');
   s.append(fp);
   for (const st of STATUSES) {
     const row = h('p', 'fp');
