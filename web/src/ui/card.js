@@ -12,6 +12,7 @@ import { statusSvg } from './icons.js';
 import { resultChips, alignmentCaveat, chipEl } from './chips.js';
 import { nextCheck, nextCheckEl } from './list.js';
 import { facilityEl } from './landing.js';
+import { routeMetricIds } from '../nav.js';
 
 const LOAD_FAILED = 'data failed to load';
 const GAPS = 'elevation gaps under the layout';
@@ -228,6 +229,8 @@ const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 export function createCard(el, { onBack, onView = () => {}, hasView = () => false }) {
   const openGroups = new Set(); // <details> left open by the user survive re-renders
   let siteId = null;
+  const tripEl = h('div', 'trip-panel'); // the navigation lane's trip panel (renderTripPanel) lives here through re-renders
+  tripEl.id = 'trip-panel';
 
   function clear() {
     el.replaceChildren();
@@ -318,8 +321,57 @@ export function createCard(el, { onBack, onView = () => {}, hasView = () => fals
     return box;
   }
 
-  // ctx: {problems: [{kind, message}], regionName, setup, names (siteId -> name), metrics, brief (the brief's line, Task 9d)}
-  function render(model, { problems = [], regionName = '', setup = null, names = new Map(), metrics = [], brief = '' } = {}) {
+  // "Route" (T11), only when the navigation lane loaded (routing set): "Plan route for N field checks", the trip panel,
+  // the route's own results (route.metrics: shown here only, never ranked) with what is not on the trip, and the walk's
+  // tags as SIMULATED notes, which change no status.
+  function routeEl(routing, metrics) {
+    const sec = h('section', 'sec sec-route');
+    sec.dataset.section = 'route';
+    sec.append(h('h3', '', 'Route'));
+    const nameOf = (id) => { const m = metrics.find((x) => x.id === id); return (m && m.name) || 'An unnamed check'; };
+    const b = h('button', 'secondary plan-route', 'Plan route for ' + plural(routing.checks, 'field check'));
+    b.type = 'button';
+    b.id = 'plan-route';
+    b.addEventListener('click', routing.onPlan);
+    sec.append(b, tripEl);
+    const route = routing.route;
+    if (route) {
+      const ids = [...routeMetricIds(route)];
+      const m = route.metrics;
+      const resultOf = (id) => (m instanceof Map ? m.get(id) : Array.isArray(m) ? m.find((x) => x && typeof x === 'object' && x.id === id) : m[id]) || null;
+      if (ids.length) {
+        const ul = h('ul', 'route-metrics');
+        ul.setAttribute('aria-label', 'From the route, not ranked');
+        for (const id of ids) {
+          const r = resultOf(id);
+          const li = h('li', '');
+          li.dataset.metric = id;
+          const label = r && r.status ? statusLabel(r, nameOf(id)) : { text: 'Unresolved: needs data', kind: 'unresolved' }; // missing never reads as fine
+          li.append(h('span', 'nm', nameOf(id)), ' ', h('span', 'st k-' + label.kind, label.text), ' ', h('span', 'demo-chip', 'Route estimate'));
+          ul.append(li);
+        }
+        sec.append(ul, h('p', 'route-note', 'Route results are estimates from the plan; they do not change the priority.'));
+      }
+      const off = route.notOnTrip || [];
+      if (off.length) sec.append(h('p', 'not-on-trip', 'Not on this trip: ' + off.map(nameOf).join(', ') + '.'));
+    }
+    if (routing.tags.length) {
+      const ul = h('ul', 'sim-tags');
+      ul.setAttribute('aria-label', 'Simulated walk tags');
+      for (const t of routing.tags) {
+        const li = h('li', 'sim-tag');
+        li.append(h('span', 'demo-chip sim-chip', 'SIMULATED'), ' ' + (t.note || 'Tag') + ' · ' + t.lat.toFixed(3) + '°, ' + t.lon.toFixed(3) + '°');
+        li.title = 'Simulated for the demo: not data, and it changes no status or priority';
+        ul.append(li);
+      }
+      sec.append(ul);
+    }
+    return sec;
+  }
+
+  // ctx: {problems: [{kind, message}], regionName, setup, names (siteId -> name), metrics, brief (the brief's line, Task 9d),
+  // routing ({checks, route, tags, onPlan}, or null without the navigation lane)}
+  function render(model, { problems = [], regionName = '', setup = null, names = new Map(), metrics = [], brief = '', routing = null } = {}) {
     if (model.siteId !== siteId) { openGroups.clear(); siteId = model.siteId; }
     const body0 = el.querySelector('.card-body');
     const scroll = body0 ? body0.scrollTop : 0;
@@ -406,8 +458,9 @@ export function createCard(el, { onBack, onView = () => {}, hasView = () => fals
     else nd.append(h('p', 'none', 'The next check appears once every site in the region has been checked.'));
     next.append(nd);
     body.append(next);
+    if (routing) body.append(routeEl(routing, metrics));
     el.append(body);
     body.scrollTop = scroll;
   }
-  return { render, clear };
+  return { render, clear, tripEl };
 }

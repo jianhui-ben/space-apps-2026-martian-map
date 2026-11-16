@@ -296,19 +296,19 @@ test('site drape material: photo where the drape has pixels, the ramp elsewhere,
 });
 
 // ---- the three looks (Task 12, R32) ----
-import { LOOKS, LOOK_ORDER, lookUniforms, setLookUniforms, lookBlend, SLOPE_BLUE } from '../src/looks.js';
+import { LOOKS, LOOK_ORDER, lookUniforms, setLookUniforms, lookBlend } from '../src/looks.js';
 
 test('looks: the prototype THEMES constants, verbatim', () => {
   assertEq(LOOK_ORDER, ['diorama', 'survey', 'hud']);
   assertEq(LOOK_ORDER.map((k) => LOOKS[k].name), ['Diorama', 'Survey sheet', 'Helmet HUD']);
   const pick = (t) => [t.exag, t.contours, t.contourInterval, t.contourColor, t.contourOpacity, t.wallTop, t.wallMode, t.ground, t.hemiSky, t.hemiGround, t.hemi, t.sun, t.sunColor, t.exposure, t.photoDim];
-  assertEq(pick(LOOKS.survey), [2, true, 10, 0x1d2226, 0.3, 0xdedbd2, 'solid', 'none', 0xffffff, 0xbdbdb4, 1.5, 1.3, 0xffffff, 1.0, 1]);
+  assertEq(pick(LOOKS.survey), [2, true, 2, 0x8a5a36, 0.9, 0xe4dccb, 'solid', 'none', 0xffffff, 0xbdbdb4, 1.5, 1.3, 0xffffff, 1.0, 1]);
   assertEq(pick(LOOKS.hud), [2.5, true, 5, 0x6fe3ff, 0.55, 0x6fe3ff, 'lines', 'grid', 0xa9dcff, 0x0a1422, 0.9, 1.7, 0xe6f6ff, 0.95, 0.72]);
   assertEq(pick(LOOKS.diorama), [2, false, 5, 0x3a1d10, 0.35, 0x93583a, 'solid', 'shadow', 0xfff4e8, 0x7a4a33, 1.25, 2.3, 0xfff0dc, 1.0, 1]);
-  assertEq(LOOKS.survey.paper, 0xe9e6dd);
+  assertEq(LOOKS.survey.paper, 0xf4efe3); // the topographic sheet's warm paper
 });
 
-test('looks: Survey paints the slope ramp, the HUD true grey, and an overlay lies over the look by lon/lat', () => {
+test('looks: Survey paints the paper with the buildable class, the HUD true grey, and an overlay lies over the look by lon/lat', () => {
   const r = renderer();
   const U = lookUniforms();
   const cv = document.createElement('canvas');
@@ -320,10 +320,11 @@ test('looks: Survey paints the slope ramp, the HUD true grey, and an overlay lie
   tex.colorSpace = THREE.SRGBColorSpace;
   const mat = lookBlend(new THREE.MeshLambertMaterial({ vertexColors: true }), U);
   // two quads: the left at lon/lat offset (0, 0), the right at (5, 5)
+  // z 0.5: off the Survey sheet's 500 m grid line at local z 0 (the sheet grids the local x/z ground plane)
   const pos = [], col = [], nor = [], ll = [], el = [], idx = [];
   [[0, 0], [5, 5]].forEach(([lo, la], q) => {
     const k = pos.length / 3;
-    for (const [x, y] of [[q, 0], [q + 1, 0], [q, 1], [q + 1, 1]]) { pos.push(x, y, 0); col.push(0.8, 0.2, 0.1); nor.push(0, 1, 0); ll.push(lo, la); el.push(3); }
+    for (const [x, y] of [[q, 0], [q + 1, 0], [q, 1], [q + 1, 1]]) { pos.push(x, y, 0.5); col.push(0.8, 0.2, 0.1); nor.push(0, 1, 0); ll.push(lo, la); el.push(3); }
     idx.push(k, k + 1, k + 2, k + 2, k + 1, k + 3);
   });
   const geo = new THREE.BufferGeometry();
@@ -332,6 +333,9 @@ test('looks: Survey paints the slope ramp, the HUD true grey, and an overlay lie
   geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
   geo.setAttribute('lonLat', new THREE.Float32BufferAttribute(ll, 2));
   geo.setAttribute('elevation', new THREE.Float32BufferAttribute(el, 1));
+  // the Survey sheet's slope class per vertex (site.js sets it on the terrain): 0 degrees, buildable; without it the
+  // shader reads a stale generic attribute value
+  geo.setAttribute('sheetSlope', new THREE.Float32BufferAttribute(new Array(el.length).fill(0), 1));
   geo.setIndex(idx);
   const scene = new THREE.Scene();
   scene.add(new THREE.Mesh(geo, mat), new THREE.AmbientLight(0xffffff, Math.PI)); // Lambert returns its albedo
@@ -347,8 +351,11 @@ test('looks: Survey paints the slope ramp, the HUD true grey, and an overlay lie
   assert(dio[0] > 180 && dio[2] < 120, 'Diorama keeps the colour, got ' + dio);
   setLookUniforms(U, 'survey');
   const [paper] = shot();
-  const want = new THREE.Color(SLOPE_BLUE[0]); // flat ground: the ramp's 0 degree stop (linear; the target holds linear values)
-  assertClose(paper[0] / 255, want.r, 0.03, 'ramp r'); assertClose(paper[2] / 255, want.b, 0.03, 'ramp b');
+  // flat, fully lit ground at 0 degrees: the paper with the buildable class's faint green over it (linear; the target
+  // holds linear values)
+  const want = new THREE.Color(LOOKS.survey.paper).lerp(new THREE.Color(LOOKS.survey.classes.buildable), 0.10);
+  assertClose(paper[0] / 255, want.r, 0.03, 'paper r'); assertClose(paper[1] / 255, want.g, 0.03, 'paper g');
+  assertClose(paper[2] / 255, want.b, 0.03, 'paper b');
   setLookUniforms(U, 'hud');
   const [grey] = shot();
   assert(Math.abs(grey[0] - grey[1]) <= 2 && Math.abs(grey[1] - grey[2]) <= 2, 'HUD is grey, got ' + grey);
@@ -367,7 +374,7 @@ test('site setLook: lights, exaggeration, contours and line walls per look; Dior
   assertEq([before.look, before.mode, before.exaggeration, before.contours, before.walls], ['diorama', 0, 2, 0, 'solid']);
   const tint = v.terrain.material.color.getHex();
   v.setLook('survey');
-  assertEq([v.debug.look().mode, v.debug.look().exaggeration, v.debug.look().contours, v.debug.look().walls], [1, 2, 10, 'solid']);
+  assertEq([v.debug.look().mode, v.debug.look().exaggeration, v.debug.look().contours, v.debug.look().walls], [1, 2, 2, 'solid']); // 2 m contours
   v.setLook('hud');
   const hud = v.debug.look();
   assertEq([hud.mode, hud.exaggeration, hud.contours, hud.walls], [2, 2.5, 5, 'lines']);
@@ -383,7 +390,7 @@ test('site setLook: lights, exaggeration, contours and line walls per look; Dior
   assert(v.debug.look().sunAt === null && v.debug.look().shadows, 'the Diorama keeps its soft shadow on the plinth');
   assertEq([v.debug.look().floor, v.debug.look().background, v.debug.look().tiles], ['plinth', '#070b0f', true]); // the fake globe has no tiles to hide
   v.setLook('survey');
-  assertEq([v.debug.look().floor, v.debug.look().background, v.debug.look().shadows], ['none', '#e9e6dd', false]);
+  assertEq([v.debug.look().floor, v.debug.look().background, v.debug.look().shadows], ['none', '#e4dccb', false]);
   v.setLook('hud');
   assertEq([v.debug.look().floor, v.debug.look().background], ['grid', '#06101a']);
   v.dispose();

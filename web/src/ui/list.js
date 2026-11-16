@@ -126,7 +126,7 @@ export function nextCheckEl(next, title) {
 
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 
-export function createList(el, { onSite, onRegion, onEdit }) {
+export function createList(el, { onSite, onRegion, onEdit, onAllRegions = () => {} }) {
   let lastKey = null;
 
   // state: {region, status: {state, error}, rows, results (siteId -> Map), sites (siteId -> Site), metrics, openSiteId,
@@ -176,6 +176,12 @@ export function createList(el, { onSite, onRegion, onEdit }) {
       return;
     }
 
+    const all = h('button', 'text-action all-regions', '← All regions'); // back out to the whole planet and its region cards
+    all.type = 'button';
+    all.id = 'all-regions';
+    all.setAttribute('aria-label', 'Back to all regions on the whole planet');
+    all.addEventListener('click', onAllRegions);
+    el.append(all);
     const head = h('div', 'region-head');
     head.append(h('h3', 'region-name', region.name), h('span', 'count', plural(region.sites.length, 'candidate site')));
     el.append(head);

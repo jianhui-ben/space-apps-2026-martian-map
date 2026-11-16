@@ -130,8 +130,8 @@ export function createLanding(el, { onStart }) {
 
 // "1 Construction brief · 2 Facility specifications · 3 Location assessment" under the header, on every screen (on the
 // landing none is current yet). The current step is marked; earlier steps are buttons (onStep(stage)), later ones are
-// reached by "Find area" and "Assess locations →". On the brief and the facility step, "Back to globe" returns to the
-// landing (onStep('landing')).
+// reached by "Find area" and "Assess locations →". On the brief and the facility step, "Back to globe" goes to the
+// location assessment's globe: the whole planet with its region pins (onStep('globe')); the brief keeps its entries.
 export function createStepper(el, { onStep }) {
   el.setAttribute('aria-label', 'Planning stages');
   let shown = null;
@@ -154,7 +154,7 @@ export function createStepper(el, { onStep }) {
       el.replaceChildren(ol);
       if (stage === 'brief' || stage === 'facility') {
         const home = button('text-action home-link', 'Back to globe', 'home-link');
-        home.addEventListener('click', () => onStep('landing'));
+        home.addEventListener('click', () => onStep('globe'));
         el.append(home);
       }
     },

@@ -27,6 +27,8 @@ import { createControls } from './ui/controls.js';
 import { LOOKS } from './looks.js';
 import { FACTORS, factorSentence } from './plain.js';
 import { attachDiorama } from './diorama.js';
+import { createRecords } from './records.js';
+import { loadNavigation, replanStatuses, nextPlanArgs } from './nav.js';
 
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
@@ -295,10 +297,20 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     return ids;
   }
 
+  // A record change: the named sites checked again (their field records apply in computeResults) and their regions reranked.
+  function recheck(siteIds) {
+    for (const id of siteIds) {
+      if (!sites.has(id) || !layoutStore.get(id)) continue;
+      computeResults(id, true);
+      const r = regionOf(catalog, id);
+      if (r) reprioritize(r.id);
+    }
+  }
+
   let pins = null;
   const setPins = (p) => { pins = p; };
   return {
-    sites, ensureRegion, openSiteById, closeSite, setSetup, applySetup, onScreen, setPins, env: (regionId) => envByRegion.get(regionId) || null,
+    sites, ensureRegion, recheck, openSiteById, closeSite, setSetup, applySetup, onScreen, setPins, env: (regionId) => envByRegion.get(regionId) || null,
     get view() { return view; },
     results: (siteId) => (store.get('results').get(siteId) || null),
   };
@@ -342,6 +354,12 @@ async function boot() {
   });
   window.__map.store = store;
   const header = createHeader($('header'));
+  // The navigation lane (src/route/, src/walk/), when its manifest says it is present; ?navstub=1 loads the test stub.
+  const navLoad = loadNavigation(params.get('navstub') ? './tests/fixtures/route-stub/' : './src/');
+  // Field records and simulated tags (localStorage). A field record changes its metric's status through computeResults;
+  // a simulated tag is a SIMULATED note only and never changes a status, the priority or the verdict.
+  const records = createRecords();
+  store.set('records', records.list());
 
   // The landing, the brief and the facility step work before the catalog arrives. Every brief change goes to the store,
   // so the stepper, Close and Edit keep the values. "Find area" sizes toSizingBrief(values) with the coefficient bundle
@@ -378,7 +396,14 @@ async function boot() {
     setup: () => store.get('setup'), brief: () => (store.get('setup') || {}).brief || null, // what was sized
     onAssess: () => { go('explore'); assessed(); }, onEdit: () => go('brief'),
   });
-  const stepper = createStepper($('stepper'), { onStep: (stage) => go(stage) });
+  // "Back to globe" (brief, facility): the location assessment's whole planet with its region pins; the brief keeps its
+  // entries, and the facility on the map is whatever is sized so far (sizeCurrent, as on the landing).
+  const stepper = createStepper($('stepper'), { onStep: (stage) => (stage === 'globe' ? toGlobe() : go(stage)) });
+  let wholePlanet = () => {};
+  function toGlobe() {
+    go('explore');
+    wholePlanet();
+  }
   function go(stage) {
     store.set('stage', stage);
     if (stage === 'landing') landing.focus();
@@ -433,7 +458,12 @@ async function boot() {
   const sitePins = addSitePins(globe, catalog, { onSite: (id) => open(id) });
   const basePins = addBasePins(globe, catalog);
   app.setPins({ setHidden: (v) => { pins.setHidden(v); sitePins.setHidden(v); } });
-  list = createList($('panel'), { onSite: (id) => open(id), onRegion: flyToRegion, onEdit: () => go('brief') });
+  // The whole planet, Gale in the middle: an open site is closed first, so the region pins and cards show.
+  wholePlanet = () => {
+    if (store.get('openSiteId')) app.closeSite({ flyMs: 0 });
+    return globe.flyTo(START.lon, START.lat, START.alt, 1200);
+  };
+  list = createList($('panel'), { onSite: (id) => open(id), onRegion: flyToRegion, onEdit: () => go('brief'), onAllRegions: () => wholePlanet() });
   // "Assess locations →" goes to the globe: the whole planet, Gale in the middle, unless a region or a site is in view.
   assessed = () => { if (!store.get('region') && !store.get('openSiteId')) globe.flyTo(START.lon, START.lat, START.alt, 1200); };
   // The view control (R32): three looks over the five factor tabs. Terrain is Task 9c's; Task 12's four join below.
@@ -456,6 +486,87 @@ async function boot() {
       .map(({ f, s }) => ({ id: f.id + ':estimate', name: f.name + ' estimate', text: s.text.split(' · ')[0] + ' (seeded by the site, not data)' }));
   };
   attachDiorama({ globe, store, app, metrics, layoutStore }); // the Diorama look's plaque, callouts and profiles (Task 10)
+
+  // ---- field records and the navigation lane (T11) ----
+  const nav = await navLoad; // null: no "Plan route" button
+  const fieldSites = (list) => new Set((list || []).filter((r) => r.kind === 'field').map((r) => r.siteId));
+  // trip: the open site's route plan. lastRoute's ids (route.metrics) are shown under "Route" only: never ranked.
+  const trip = { siteId: null, args: null, route: null, group: null, walking: null };
+  const tripEl = card.tripEl;
+  function resetTrip() {
+    if (trip.group) trip.group.removeFromParent();
+    if (trip.walking) { try { nav.walk.exitWalk(); } catch (e) { /* the walk is ending anyway */ } endWalk(); }
+    Object.assign(trip, { siteId: null, args: null, route: null, group: null });
+    tripEl.replaceChildren();
+  }
+  function plan(args) {
+    const id = store.get('openSiteId'), v = app.view;
+    if (!nav || !id || !v || v.site.id !== id) return;
+    trip.args = { ...args, statuses: replanStatuses(store.get('results').get(id), trip.route) };
+    trip.siteId = id;
+    trip.route = nav.route.planRoute(trip.args);
+    if (trip.group) trip.group.removeFromParent();
+    trip.group = nav.route.drawRoute(trip.route, v.root);
+    nav.route.renderTripPanel(trip.route, tripEl, { onChange: onTripChange });
+    schedule();
+  }
+  const replan = () => { if (trip.args && trip.siteId === store.get('openSiteId')) plan(trip.args); };
+  function planFirst() {
+    const id = store.get('openSiteId'), v = app.view;
+    if (!id || !v) return;
+    const region = regionOf(catalog, id);
+    plan({ site: v.site, layout: layoutStore.get(id), base: (region && region.base) || null, mode: 'walk' });
+  }
+  function onTripChange(change) {
+    if (change && change.action === 'walk') return startWalk();
+    const next = nextPlanArgs(trip.args, change);
+    if (next) plan(next);
+  }
+  // The walk: true-scale ground, the globe's own controls off; onExit puts both back and keeps the walk's tags as
+  // SIMULATED notes (records.addSimTag), which change no status.
+  function startWalk() {
+    const v = app.view;
+    if (!nav || !v || !trip.route || trip.walking) return;
+    trip.walking = { exaggeration: v.root.scale.y, controls: globe.controls.enabled };
+    v.setExaggeration(1);
+    globe.controls.enabled = false;
+    const siteId = v.site.id;
+    nav.walk.enterWalk(trip.route, {
+      renderer: globe.renderer, scene: globe.scene, root: v.root, terrain: v.terrain, tripTerrain: v.tripTerrain, frame: v.frame,
+      hudRoot: $('labels'), site: v.site, onTag: () => {}, // tags are kept once, on exit
+      onExit: (result) => {
+        endWalk();
+        for (const t of (result && result.tags) || []) {
+          if (Number.isFinite(t.lon) && Number.isFinite(t.lat)) records.addSimTag({ siteId, lon: t.lon, lat: t.lat, note: t.note || '' });
+        }
+      },
+    });
+  }
+  function endWalk() {
+    const w = trip.walking;
+    if (!w) return;
+    trip.walking = null;
+    if (app.view) app.view.setExaggeration(w.exaggeration);
+    globe.controls.enabled = w.controls;
+  }
+  records.subscribe((list) => {
+    const changed = new Set([...fieldSites(store.get('records')), ...fieldSites(list)]);
+    store.set('records', list);
+    app.recheck(changed);
+    replan();
+  });
+  // Re-plan on a layout's final change (a drag's end, a key, a setup change re-placing it), never on a route's own ids.
+  layoutStore.onLayoutChange((siteId, layout, { final }) => {
+    if (final && trip.args && siteId === trip.siteId) plan({ ...trip.args, layout });
+  });
+  store.subscribe('openSiteId', () => { if (trip.siteId !== store.get('openSiteId')) resetTrip(); });
+  const routeCtx = (id) => {
+    if (!nav) return null;
+    const statuses = replanStatuses(store.get('results').get(id), trip.siteId === id ? trip.route : null);
+    const checks = [...statuses.values()].filter((r) => r && r.status === 'needs_fieldwork').length;
+    const tags = (store.get('records') || []).filter((r) => r.kind === 'simulated_tag' && r.siteId === id);
+    return { checks, route: trip.siteId === id ? trip.route : null, tags, onPlan: planFirst };
+  };
   let viewCtx = { globe, siteView: null, site: null, regionId: null };
   const references = createReferences($('refs'), catalog, {
     globe, onScreen: () => [...app.onScreen(), ...viewDatasets(bar.active(), viewCtx)], demoParts: () => [...demoParts(undefined, viewCtx), ...simulatedParts()],
@@ -495,11 +606,13 @@ async function boot() {
       const rows = priority.get(siteRegion.id) || [];
       const row = rows.find((x) => x.siteId === openId) || null;
       const problems = store.get('problems');
-      const key = [openId, idOf(results.get(openId)), idOf(row), idOf(rows), idOf(s), JSON.stringify(problems), line].join('|');
+      const routing = routeCtx(openId);
+      const key = [openId, idOf(results.get(openId)), idOf(row), idOf(rows), idOf(s), JSON.stringify(problems), line,
+        idOf(routing && routing.route), idOf(store.get('records'))].join('|');
       if (key !== cardKey) {
         cardKey = key;
         const model = cardModel({ site: view.site, results: results.get(openId), row, metrics, setup: s, catalog, rows, allResults: results, names });
-        card.render(model, { problems, regionName: siteRegion.name, setup: s, names, metrics, brief: line });
+        card.render(model, { problems, regionName: siteRegion.name, setup: s, names, metrics, brief: line, routing });
         view.setFootprintStatus(footprintStatus(results.get(openId)));
       }
     } else if (cardKey !== null) { card.clear(); cardKey = null; }
@@ -532,6 +645,9 @@ async function boot() {
     site: (siteId) => app.sites.get(siteId) || null,
     view: (id) => getView(id), // the factor views (their debug hooks)
     env: (regionId) => app.env(regionId),
+    records, // field records and simulated tags (T11)
+    nav, // the navigation lane's {route, walk}, or null
+    trip: () => ({ siteId: trip.siteId, route: trip.route, walking: !!trip.walking }),
   });
 }
 

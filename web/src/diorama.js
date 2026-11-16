@@ -10,11 +10,13 @@ import { profileLine, renderProfiles } from './ui/profiles.js';
 
 // Where each callout stands and what it reads: the footprint, its factor, its order in the collision pass (lower wins)
 // and the box's offset from the ground point in pixels (y down). The three fan out east of the layout (the footprint
-// tags sit on its west side): the radiator plot (north) up, the compound across, the solar plot (south) down.
+// tags sit on its west side) and upward, stacked in the layout's north-south order: the radiator plot (north) highest,
+// then the compound, then the solar plot (south) level with its plot, so all three clear the profile panel below the
+// layout at 1280 x 800 (the solar box used to hang down under it and be culled).
 export const CALLOUTS = [
-  { footprint: 'compound', name: 'Compound', factor: 'BT', priority: 1, dx: 110, dy: 0 },
-  { footprint: 'radiator', name: 'Radiator plot', factor: 'TC', priority: 2, dx: 90, dy: -64 },
-  { footprint: 'solar', name: 'Solar plot', factor: 'SC', priority: 3, dx: 90, dy: 60 },
+  { footprint: 'compound', name: 'Compound', factor: 'BT', priority: 1, dx: 110, dy: -32 },
+  { footprint: 'radiator', name: 'Radiator plot', factor: 'TC', priority: 2, dx: 90, dy: -60 },
+  { footprint: 'solar', name: 'Solar plot', factor: 'SC', priority: 3, dx: 130, dy: 0 },
 ];
 const ICON_CLASS = { '✗': 'bad', '✓': 'ok', '?': 'open', '—': 'none' };
 const DECLUTTER_MS = 120;

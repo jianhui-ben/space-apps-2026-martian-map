@@ -604,9 +604,16 @@ def test_flow_intake_to_priority_list(page, server_url):
     assert "3 candidate sites" in page.locator('#panel .region-card[data-region="gale"]').inner_text()
     page.locator('#panel .region-card[data-region="gale"]').click()  # a region card flies there
     _wait_list(page, "gale")
-    rows = _rows(page)
-    assert len(rows) == 3, rows
-    assert {r["site"] for r in rows} == {"near_base_north", "near_base_west", "curiosity_recent"}, rows
+    all_rows = _rows(page)
+    assert len(all_rows) == 3, all_rows
+    assert {r["site"] for r in all_rows} == {"near_base_north", "near_base_west", "curiosity_recent"}, all_rows
+    # curiosity_recent's grids (169 MB) load when it is opened: until then the list ranks 2 of 3 and shows it unranked
+    assert "Ranked 2 of 3 sites" in page.locator("#panel").inner_text()
+    late = [r for r in all_rows if r["site"] == "curiosity_recent"]
+    assert len(late) == 1 and late[0]["prio"] == "·" and all(i.endswith(":?") for i in late[0]["icons"]), late
+    assert re.fullmatch(r"Large site \(\d+ MB\): checked when you open it", late[0]["verdict"]), late
+    rows = [r for r in all_rows if r["site"] != "curiosity_recent"]
+    assert [r["site"] for r in all_rows][-1] == "curiosity_recent", all_rows  # the unranked row comes after the ranked ones
     for r in rows:
         assert re.fullmatch(r"\d+", r["prio"]), r
         assert [i.split(":")[0] for i in r["icons"]] == ["BT", "GI", "SC", "TC", "IR"], r
@@ -620,13 +627,14 @@ def test_flow_intake_to_priority_list(page, server_url):
     names = page.evaluate("[...document.querySelectorAll('#panel .cols .fc')].map((c) => c.textContent)")
     assert names[:5] == ["Terrain", "Ground & ice", "Solar", "Thermal", "Routes"], names  # plain names, never codes
     # the Gale pin steps aside while its list is on screen; its rows are there for the globe view
-    assert page.locator(".pin[data-region=gale] .pin-row").count() == 3
+    assert page.locator(".pin[data-region=gale] .pin-row").count() == 2  # the ranked rows; the pin's note names the deferred one
+    assert page.locator(".pin[data-region=gale] .note").text_content() == "ranked 2 of 3 sites; 1 checked when opened"
     page.locator(".pin[data-region=gale]").wait_for(state="hidden", timeout=20000)
     # site markers carry the same priorities on the map
     page.locator('.site-pin[data-site="near_base_north"]').wait_for(state="visible", timeout=20000)
     marks = page.evaluate("[...document.querySelectorAll('.site-pin')].filter((m) => m.offsetParent && getComputedStyle(m).display !== 'none')"
                           ".map((m) => [m.dataset.site, m.querySelector('.sprio').textContent])")
-    assert sorted(marks) == sorted([r["site"], r["prio"]] for r in rows), marks
+    assert sorted(marks) == sorted([r["site"], r["prio"]] for r in all_rows), marks  # the deferred site's marker shows "·"
     assert settle_tiles(page)
     _shot(page, "flow-gale-list.png")
     assert hosts <= GLOBE_HOSTS, hosts
@@ -652,11 +660,17 @@ def test_flow_globe_rows(page, server_url):
         _wait_list(page, region)
     _fly(page, 128.0, 14.0, 1.05e7)  # the whole planet with all three regions facing the camera
     page.wait_for_function("document.getElementById('panel').dataset.region === undefined || document.getElementById('panel').dataset.region === ''", timeout=20000)
-    for region, n in (("gale", 3), ("jezero", 2), ("arcadia", 2)):
+    # Gale's pin carries its two ranked rows; curiosity_recent (169 MB) is checked when opened, as the pin's note says
+    for region, n in (("gale", 2), ("jezero", 2), ("arcadia", 2)):
         pin = page.locator(".pin[data-region=%s]" % region)
         pin.wait_for(state="visible", timeout=30000)
         rows = pin.locator(".pin-row")
         assert rows.count() == n, region
+        note = pin.locator(".note")
+        if region == "gale":
+            assert note.is_visible() and note.text_content() == "ranked 2 of 3 sites; 1 checked when opened", note.text_content()
+        else:
+            assert not note.is_visible(), (region, note.text_content())
         for i in range(n):
             assert rows.nth(i).locator(".icon").count() == 5, (region, i)
             assert re.fullmatch(r"\d+", rows.nth(i).locator(".prio").inner_text().strip()), (region, i)
@@ -736,8 +750,14 @@ def test_flow_base_only_marks_solar_na(page, server_url):
     _boot(page, server_url)
     _start(page)
     _enter(page, "gale")
+    # curiosity_recent (169 MB) is checked on its first open: open it first, so every Gale site is loaded and ranked
+    page.evaluate("__map.openSite('curiosity_recent').then(() => true)")
+    page.evaluate("__map.closeSite().then(() => true)")
+    page.wait_for_function("__map.store.get('priority').get('gale').length === 3", timeout=FLOW_TIMEOUT_MS)
+    _wait_list(page, "gale")
     _open_row(page, SITE)
     before = page.evaluate("__map.store.get('priority').get('gale')")
+    assert len(before) == 3, before
     assert any(f["id"] == "solar" for f in page.evaluate("__map.layoutStore.get('%s').footprints" % SITE))
     page.evaluate("__map.applySetup({loadKw: 150, power: 'base_only'})")  # test-only: the UI offers no power choice
     page.wait_for_function("__map.store.get('setup').power === 'base_only'", timeout=10000)
@@ -803,8 +823,10 @@ def test_drag_failure_reads_plainly(page, server_url):
     page.wait_for_function(
         """([id, lead]) => { const r = document.querySelector('#panel .site-row[data-site="' + id + '"]');
             return r && r.querySelector('.verdict').textContent.startsWith(lead); }""", arg=[SITE, lead], timeout=30000)
-    rows = _rows(page)
-    assert rows[-1]["site"] == SITE and rows[-1]["icons"][0] == "BT:✗", rows  # failures go last
+    all_rows = _rows(page)
+    rows = [r for r in all_rows if r["prio"] != "·"]  # the ranked rows; curiosity_recent (169 MB) waits, unranked, below them
+    assert [r["site"] for r in all_rows if r["prio"] == "·"] == ["curiosity_recent"] and all_rows[-1]["site"] == "curiosity_recent", all_rows
+    assert rows[-1]["site"] == SITE and rows[-1]["icons"][0] == "BT:✗", rows  # failures go last among the ranked
     assert rows[-1]["verdict"].startswith(lead), rows
     assert page.locator("#card .card-head .verdict").text_content().startswith(lead)
     terrain = page.locator('#card .factor[data-factor="BT"]')
@@ -1368,7 +1390,7 @@ LOOK_NAMES = (("diorama", "Diorama"), ("survey", "Survey sheet"), ("hud", "Helme
 
 _LOOK_STATE = {  # R33: each look its own scene
     "diorama": {"exaggeration": 2, "contours": 0, "walls": "solid", "floor": "plinth", "background": "#070b0f", "shadows": True},
-    "survey": {"exaggeration": 2, "contours": 10, "walls": "solid", "floor": "none", "background": "#e9e6dd", "shadows": False},
+    "survey": {"exaggeration": 2, "contours": 2, "walls": "solid", "floor": "none", "background": "#e4dccb", "shadows": False},
     "hud": {"exaggeration": 2.5, "contours": 5, "walls": "lines", "floor": "grid", "background": "#06101a", "shadows": False},
 }
 _LOOK_CAMERA = {"diorama": (2600, 50), "survey": (1500, 8), "hud": (150, 76)}
@@ -1402,11 +1424,17 @@ def test_three_looks(page, server_url):
         assert set(fps) <= {"#b8dfc2", "#ffb19b", "#e3c78f"}, fps
         page.wait_for_timeout(800)
         centre.append(page.evaluate(_PIXEL_JS, [640, 300]))
+        # the Survey sheet's printed layer (sheet.js: key, title block, north arrow) shows only in the Survey sheet
+        sheet_on = page.evaluate("(() => { const l = document.querySelector('.sheet-layer'); return !!l && !l.hidden && l.getClientRects().length > 0; })()")
+        assert sheet_on == (look == "survey"), (look, sheet_on)
+        if look == "survey":
+            assert page.evaluate("__map.siteView.debug.sheet() !== null")
+            assert "Slope over 10 m" in page.locator(".sheet-layer .sheet-key").text_content()
         _shot(page, "look-%s.png" % look)
     d, sv, hd = centre
     dist = lambda a, b: max(abs(x - y) for x, y in zip(a, b))
     assert dist(d, sv) > 40 and dist(sv, hd) > 40 and dist(d, hd) > 20, centre  # three clearly different scenes
-    assert sv[2] > sv[0], centre  # the survey's blue slope ramp
+    assert sv[0] >= sv[2] and min(sv) > 120, centre  # the survey's warm paper (looks.js paper #f4efe3), not a blue ramp
     page.locator("#card .back").click()
     _wait_list(page, "gale")
     page.wait_for_function("(() => { const f = document.getElementById('factors'); return f.hidden || f.querySelector('.looks').hidden; })()", timeout=10000)
@@ -1764,13 +1792,15 @@ def test_stepper_keeps_values(page, server_url):
     page.locator("#brief").wait_for(state="visible", timeout=10000)
     page.locator("#brief details[data-defaults] > summary").click()
     page.locator('#brief [data-input="name"]').fill("North field utility trench")
-    # "Back to globe" returns to the landing; its action now continues the brief
+    # "Back to globe" opens the location assessment's whole planet with its three region cards; the brief keeps its entries
     assert page.locator("#home-link").text_content() == "Back to globe"
     page.locator("#home-link").click()
-    page.wait_for_function("__map.store.get('stage') === 'landing'", timeout=10000)
+    page.wait_for_function("__map.store.get('stage') === 'explore'", timeout=10000)
     assert page.locator("#home-link").count() == 0 and page.locator("#brief").is_hidden()
-    assert page.locator("#landing-start").text_content() == LANDING_CONTINUE
-    page.locator("#landing-start").click()
+    page.locator("#panel").wait_for(state="visible", timeout=10000)
+    page.wait_for_function("document.querySelectorAll('#panel .region-card').length === 3", timeout=20000)
+    page.locator('#stepper [data-step="1"] button').click()  # back to the brief, as it was left
+    page.wait_for_function("__map.store.get('stage') === 'brief'", timeout=10000)
     page.locator("#brief").wait_for(state="visible", timeout=10000)
     assert page.locator('#brief [data-input="name"]').input_value() == "North field utility trench"
     page.locator('#brief [data-input="robots"]').fill("22")
@@ -1905,7 +1935,7 @@ def test_diorama_plaque_callouts_profiles(page, server_url):
     verdict = page.locator("#card .verdict").text_content()
     assert name in d["plaque"] and prio in d["plaque"] and verdict in d["plaque"], (d["plaque"], name, prio, verdict)
     assert sorted(d["where"]) == ["compound", "radiator", "solar"], d
-    assert len(d["shown"]) >= 2, d  # at 1280x800 the declutter may hide the third behind the profile panel
+    assert len(d["shown"]) >= 3, d  # all three fit above the profile panel at 1280x800
     factor_names = ("Terrain", "Solar", "Thermal")
     assert sum(any(f in t for t in d["shown"]) for f in factor_names) >= 2, d["shown"]
     assert d["profiles"] == 2 and "West" in d["profileText"] and "South" in d["profileText"], d
@@ -2020,11 +2050,8 @@ def test_e2e_full_flow(page, server_url):
     page.locator("#card .back").click()
     page.wait_for_function("__map.siteView === null && document.getElementById('card').children.length === 0", timeout=20000)
     _wait_list(page, "gale")
-    for _ in range(12):  # zoom out until the panel lists the regions again
-        if page.locator("#panel .region-card").count() == 3:
-            break
-        page.locator("#globe-out").click()
-        page.wait_for_function("!__map.globe.flying()", timeout=20000)
+    page.locator("#all-regions").click()  # the region list's way back to the whole planet
+    page.wait_for_function("document.querySelectorAll('#panel .region-card').length === 3", timeout=30000)
     page.locator('#panel .region-card[data-region="jezero"]').wait_for(state="visible", timeout=20000)
     page.locator('#panel .region-card[data-region="jezero"]').click()
     _wait_list(page, "jezero")
@@ -2048,3 +2075,145 @@ def test_e2e_full_flow(page, server_url):
     # 7. no console errors and no page errors anywhere on the way
     assert page.console_errors == [], page.console_errors
     print("e2e flow: %.1f s" % (time.time() - t0))
+
+
+# ---------- back to the whole planet: "Back to globe" and "← All regions" ----------
+
+def _whole_planet(page):
+    """The explore stage's whole planet: no region in view, the three region cards and the three region pins."""
+    page.wait_for_function(
+        "__map.store.get('stage') === 'explore' && !__map.store.get('region') && !__map.store.get('openSiteId')"
+        " && document.querySelectorAll('#panel .region-card').length === 3 && !__map.globe.flying()", timeout=20000)
+    page.wait_for_function("__map.globe.altitude() > 2e6", timeout=20000)
+    assert page.locator("#panel").is_visible()
+    assert page.locator(".pin[data-region]").count() == 3
+
+
+def test_back_to_globe_goes_to_whole_planet(page, server_url):
+    _boot(page, server_url)
+    page.locator("#landing-start").click()
+    page.locator("#brief").wait_for(state="visible", timeout=10000)
+    page.locator("#brief details[data-defaults] > summary").click()
+    page.locator('#brief [data-input="name"]').fill("North field utility trench")
+    assert page.locator("#home-link").text_content() == "Back to globe"
+    page.locator("#home-link").click()
+    _whole_planet(page)
+    assert page.locator("#landing").is_hidden() and page.locator("#brief").is_hidden()
+    assert page.evaluate("__map.store.get('brief').name") == "North field utility trench"
+    # the brief keeps its entries; from the facility step too
+    page.locator('#stepper [data-step="1"] button').click()
+    page.locator("#brief").wait_for(state="visible", timeout=10000)
+    assert page.locator('#brief [data-input="name"]').input_value() == "North field utility trench"
+    _find_area(page)
+    page.locator("#home-link").click()
+    _whole_planet(page)
+    assert page.evaluate("__map.store.get('setup').source") == "brief"
+    assert page.console_errors == []
+
+
+def test_all_regions_link_returns_to_whole_planet(page, server_url):
+    _boot(page, server_url)
+    _start(page)
+    _enter(page, "gale")
+    link = page.locator("#panel #all-regions")
+    assert link.text_content() == "← All regions"
+    box = link.bounding_box()
+    assert box["height"] >= 44 and box["width"] >= 44, box
+    assert page.evaluate("document.querySelector('#panel #all-regions').getBoundingClientRect().top"
+                         " < document.querySelector('#panel .region-head').getBoundingClientRect().top")
+    link.click()
+    _whole_planet(page)
+    assert page.locator("#panel #all-regions").count() == 0
+    # a region card flies back in
+    page.locator('#panel .region-card[data-region="gale"]').click()
+    _wait_list(page, "gale")
+    assert page.console_errors == []
+
+
+# ---------- field records and the navigation lane's hooks (T11) ----------
+
+STUB_ROUTE_IDS = ["IR-05", "IR-06"]  # web/tests/fixtures/route-stub/route/index.js
+_STATUSES_JS = """(id) => [...__map.results(id)].map(([k, r]) => k + ':' + r.status).join(',')
+    + '|' + JSON.stringify(__map.store.get('priority').get('gale'))"""
+
+
+def _route_calls(page, fn):
+    return page.evaluate("(fn) => (window.__routeCalls || []).filter((c) => c.fn === fn).map((c) => c.args)", fn)
+
+
+def _open_with_nav(page, server_url, query):
+    if not os.environ.get("MARTIAN_MAP_DATA"):
+        pytest.skip("MARTIAN_MAP_DATA is not set")
+    page.set_viewport_size({"width": 1280, "height": 800})
+    page.goto(server_url + "/" + query)
+    wait_ready(page, timeout_ms=60000)
+    page.locator("#landing").wait_for(state="visible", timeout=30000)
+    _start(page)
+    _enter(page, "gale")
+    _open_row(page, SITE)
+
+
+def test_nav_hidden_without_module(page, server_url):
+    _open_with_nav(page, server_url, "")
+    assert page.evaluate("__map.nav") is None
+    assert page.locator("#plan-route").count() == 0 and page.locator('#card [data-section="route"]').count() == 0
+    assert page.evaluate("(window.__routeCalls || []).length") == 0
+    assert page.console_errors == []
+
+
+def test_nav_plan_draw_and_replan(page, server_url):
+    _open_with_nav(page, server_url, "?navstub=1")
+    btn = page.locator("#plan-route")
+    btn.wait_for(state="visible", timeout=10000)
+    n = page.evaluate("(id) => [...__map.results(id).values()].filter((r) => r.status === 'needs_fieldwork').length", SITE)
+    assert btn.text_content() == "Plan route for %d field check%s" % (n, "" if n == 1 else "s")
+    btn.click()
+    page.wait_for_function("(window.__routeCalls || []).some((c) => c.fn === 'renderTripPanel')", timeout=10000)
+    plans = _route_calls(page, "planRoute")
+    assert len(plans) == 1, plans
+    assert plans[0]["site"]["id"] == SITE and plans[0]["mode"] == "walk" and plans[0]["layout"], plans[0].keys()
+    assert len(_route_calls(page, "drawRoute")) == 1
+    assert page.evaluate("!!__map.siteView.root.getObjectByName('stub-route')")
+    assert page.locator("#trip-panel").text_content() == "Stub trip: stop-1 → stop-2"
+    # the route's own results under "Route", never ranked
+    page.wait_for_function("document.querySelectorAll('#card .route-metrics li').length === 2", timeout=10000)
+    assert [li.get_attribute("data-metric") for li in page.locator("#card .route-metrics li").all()] == STUB_ROUTE_IDS
+    assert page.evaluate("(id) => ['IR-05', 'IR-06'].every((m) => __map.results(id).get(m).note !== 'stub route')", SITE)
+    # a drag's intermediate moves do not re-plan; its end does, without the route's own ids
+    move = """([id, final]) => { const p = { ...__map.layoutStore.get(id).placement };
+        __map.layoutStore.set(id, { ...p, centerLon: p.centerLon + 1e-4 }, { final }); }"""
+    page.evaluate(move, [SITE, False])
+    assert len(_route_calls(page, "planRoute")) == 1
+    page.evaluate(move, [SITE, True])
+    plans = _route_calls(page, "planRoute")
+    assert len(plans) == 2, plans
+    assert not set(STUB_ROUTE_IDS) & set(plans[1]["statusIds"]), plans[1]["statusIds"]
+    assert len(_route_calls(page, "drawRoute")) == 2
+    assert page.evaluate("__map.siteView.root.children.filter((c) => c.name === 'stub-route').length") == 1
+    _no_metric_ids(page, "#card", SITE)
+    assert page.console_errors == []
+
+
+def test_nav_walk_enter_exit_restores(page, server_url):
+    _open_with_nav(page, server_url, "?navstub=1")
+    page.evaluate("localStorage.removeItem('martian-map.records.v1')")
+    page.locator("#plan-route").click()
+    page.wait_for_function("typeof window.__routeOnChange === 'function'", timeout=10000)
+    exag = page.evaluate("__map.siteView.root.scale.y")
+    assert exag != 1
+    before = page.evaluate(_STATUSES_JS, SITE)
+    page.evaluate("window.__routeOnChange({ action: 'walk' })")
+    assert len(_route_calls(page, "enterWalk")) == 1
+    assert page.evaluate("__map.siteView.root.scale.y") == 1
+    assert page.evaluate("__map.globe.controls.enabled") is False
+    page.evaluate("import('/tests/fixtures/route-stub/walk/index.js').then((m) => { m.exitWalk(); return true; })")
+    assert page.evaluate("__map.siteView.root.scale.y") == exag
+    assert page.evaluate("__map.globe.controls.enabled") is True
+    tags = page.evaluate("__map.records.list().filter((r) => r.kind === 'simulated_tag')")
+    assert len(tags) == 1 and tags[0]["siteId"] == SITE and tags[0]["note"] == "stub tag", tags
+    tag = page.locator("#card .sim-tags .sim-tag")
+    tag.wait_for(state="visible", timeout=10000)
+    assert tag.locator(".sim-chip").text_content() == "SIMULATED" and "stub tag" in tag.text_content()
+    assert page.evaluate(_STATUSES_JS, SITE) == before  # a simulated tag changes no status and no priority
+    page.evaluate("localStorage.removeItem('martian-map.records.v1')")
+    assert page.console_errors == []

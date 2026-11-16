@@ -46,43 +46,62 @@ def dist_url(dist):
     srv.server_close()
 
 
-@pytest.fixture(scope="module")
-def _browser():
+def _in_own_thread(fn, *args):
+    """Run fn in a fresh thread with its own sync_playwright: another module's session-scoped Playwright (as
+    test_web_map.py's) keeps an asyncio loop running on the main thread, where a second sync API would refuse to start."""
+    out = {}
+
+    def run():
+        try:
+            out["value"] = fn(*args)
+        except BaseException as exc:  # re-raised on the test's thread, assertion or skip alike
+            out["error"] = exc
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join()
+    if "error" in out:
+        raise out["error"]
+    return out["value"]
+
+
+def _check_dist(dist_url):
     with sync_playwright() as p:
         try:
             browser = p.chromium.launch(args=CHROMIUM_ARGS)
-        except Exception as exc:
+        except Exception as exc:  # browser not installed or cannot start
             pytest.skip("Chromium will not launch: %s" % str(exc).splitlines()[0])
-        yield browser
-        browser.close()
+        try:
+            page = browser.new_page()
+            errors, hosts = [], set()
+            page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+            page.on("pageerror", lambda e: errors.append("pageerror: %s" % e))
+            page.on("request", lambda r: hosts.add(urlparse(r.url).hostname))
+            page.goto(dist_url + "/")
+            page.wait_for_function("window.__map !== undefined", timeout=120000)
+            page.evaluate("window.__map.ready")
+            got = page.evaluate(
+                """async () => {
+                  const cat = await (await fetch('./data/catalog.json')).json();
+                  const d = cat.datasets.find((x) => x.id === 'elevation_1m_near_base_north');
+                  const f = d.files.find((x) => x.format === 'f32');
+                  const buf = await (await fetch('./data/' + f.path)).arrayBuffer();
+                  return { n: cat.datasets.length, res: d.resolution_m, w: f.grid.width, h: f.grid.height,
+                           bytes: buf.byteLength, declared: f.bytes };
+                }"""
+            )
+            has_catalog = page.evaluate("window.__map.catalog !== null")
+            page.close()
+            return got, has_catalog, errors, hosts
+        finally:
+            browser.close()
 
 
-def test_dist_runs_from_static_files(_browser, dist_url):
-    page = _browser.new_page()
-    errors, hosts = [], set()
-    page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-    page.on("pageerror", lambda e: errors.append("pageerror: %s" % e))
-    page.on("request", lambda r: hosts.add(urlparse(r.url).hostname))
-    try:
-        page.goto(dist_url + "/")
-        page.wait_for_function("window.__map !== undefined", timeout=120000)
-        page.evaluate("window.__map.ready")
-
-        got = page.evaluate(
-            """async () => {
-              const cat = await (await fetch('./data/catalog.json')).json();
-              const d = cat.datasets.find((x) => x.id === 'elevation_1m_near_base_north');
-              const f = d.files.find((x) => x.format === 'f32');
-              const buf = await (await fetch('./data/' + f.path)).arrayBuffer();
-              return { n: cat.datasets.length, res: d.resolution_m, w: f.grid.width, h: f.grid.height,
-                       bytes: buf.byteLength, declared: f.bytes };
-            }"""
-        )
-        assert got["n"] > 10
-        assert got["res"] == 2
-        assert got["bytes"] == got["declared"] == got["w"] * got["h"] * 4
-        assert page.evaluate("window.__map.catalog !== null")
-        assert errors == []
-        assert hosts <= ALLOWED_HOSTS, hosts
-    finally:
-        page.close()
+def test_dist_runs_from_static_files(dist_url):
+    got, has_catalog, errors, hosts = _in_own_thread(_check_dist, dist_url)
+    assert got["n"] > 10
+    assert got["res"] == 2
+    assert got["bytes"] == got["declared"] == got["w"] * got["h"] * 4
+    assert has_catalog
+    assert errors == []
+    assert hosts <= ALLOWED_HOSTS, hosts

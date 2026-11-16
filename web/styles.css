@@ -55,6 +55,7 @@ h1, h2, h3 { font-weight: 400; }
 .secondary:hover { background: var(--surface-hover); }
 .text-action { min-height: 44px; min-width: 44px; padding: 0 10px; border: 1px solid transparent; border-radius: 7px;
   background: transparent; color: var(--text-secondary); font: 500 14px/1 var(--font); cursor: pointer; }
+#panel .all-regions { display: inline-flex; align-items: center; margin: 8px 0 0 -10px; }
 .text-action:hover { color: var(--text-primary); background: var(--surface-hover); }
 summary { min-height: 44px; display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; }
 summary::-webkit-details-marker { display: none; }
@@ -362,6 +363,11 @@ details.group .line { padding-left: 8px; }
 .sec-why .verdict-tech, .sec-why .why-tech { margin: 0 0 4px; font-size: 12px; color: var(--text-secondary); }
 .sec-why .rule { margin: 8px 0 0; font-size: 12px; color: var(--text-secondary); }
 .sec-next { margin-top: 4px; }
+.sec-route .plan-route { margin: 6px 0; }
+.sec-route ul { margin: 6px 0; padding: 0; list-style: none; font-size: 13px; }
+.sec-route li { margin: 4px 0; }
+.sec-route .st.k-met { color: var(--met); } .sec-route .st.k-conflict { color: var(--conflict); } .sec-route .st.k-unresolved { color: var(--unresolved); }
+.sec-route .route-note, .sec-route .not-on-trip, .sec-route .trip-panel { margin: 4px 0; font-size: 12px; color: var(--text-secondary); }
 .sec-next .next-check { margin-top: 2px; }
 
 /* ---------- bottom left: References, the one disclosure (how to read the map, the data on screen, all the data) ---------- */
