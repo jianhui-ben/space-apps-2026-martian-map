@@ -218,3 +218,15 @@ test('specs from a brief setup: thousands of robots give a compact block, and th
     assert(a[2] <= b[0] || b[2] <= a[0] || a[3] <= b[1] || b[3] <= a[1], lay.footprints[i].id + ' overlaps ' + lay.footprints[j].id);
   }
 });
+
+test('placed footprints keep their offsets, so re-placing them (as the site view does on a drag) reproduces the layout', () => {
+  const specs = footprintSpecs(sizedSetup('example_filled'));
+  const pl = { centerLon: 137.44, centerLat: -4.57, rotationDeg: 30 };
+  const a = placeLayout(specs, pl);
+  const again = placeLayout(a.footprints.map((f) => ({ id: f.id, w: f.w, h: f.h, dy: f.dy })), pl); // site.js specsOf
+  for (const f of a.footprints) {
+    const g = again.footprints.find((x) => x.id === f.id);
+    assertClose(g.center.lat, f.center.lat, 1e-12, f.id);
+    assertClose(g.center.lon, f.center.lon, 1e-12, f.id);
+  }
+});

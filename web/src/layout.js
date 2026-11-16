@@ -68,7 +68,9 @@ export function placeLayout(specs, placement) {
       return toLL(e, n);
     });
     const [lon, lat] = toLL(ce, cn);
-    return { id: sp.id, w: sp.w, h: sp.h, ...(Number.isFinite(sp.dy) ? { dy: sp.dy } : {}), center: { lon, lat }, rotationDeg, polygon };
+    const fp = { id: sp.id, w: sp.w, h: sp.h, center: { lon, lat }, rotationDeg, polygon };
+    if (Number.isFinite(sp.dy)) fp.dy = sp.dy; // a sized footprint keeps its offset, so it can be placed again
+    return fp;
   });
   return { placement: { centerLon, centerLat, rotationDeg }, footprints };
 }

@@ -308,9 +308,10 @@ def _assert_arrival_alt(page, site_id):
     """R23 as built: the fly-in ends above the layout centre, 700 m for the 60 m reference compound and proportionally
     closer for a smaller sized one (never below 250 m), so the sized layout's handles show on arrival."""
     alt = page.evaluate("__map.globe.altitude()")
-    w = page.evaluate("(id) => __map.layoutStore.get(id).footprints.find((f) => f.id === 'compound').w", site_id)
-    want = max(250, 700 * min(1, w / 60))
-    assert 0.86 * want < alt < 1.2 * want, (alt, want, w)  # sized block layouts frame a little wider
+    w = page.evaluate("(id) => { const c = __map.layoutStore.get(id).footprints.find((f) => f.id === 'compound'); return Math.max(c.w, c.h); }", site_id)
+    want = max(250, 700 * min(1, w / 60))  # the module block's longer side
+    # 14%, or 40 m at the 250 m floor, where the ground's own height above the target is a larger share
+    assert abs(alt - want) < max(0.14 * want, 40), (alt, want, w)
 
 
 def _open_site(page, server_url, site_id=SITE):

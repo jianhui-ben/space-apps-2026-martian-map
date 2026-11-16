@@ -243,7 +243,8 @@ function createApp({ store, catalog, metrics, globe, layoutStore }) {
     store.set('openSiteId', siteId);
     if (store.get('stage') !== 'explore') store.set('stage', 'explore'); // the site card is the working panel now
     const compound = ((layoutStore.get(siteId) || {}).footprints || []).find((f) => f.id === 'compound');
-    const altM = Math.max(MIN_ARRIVAL_ALT_M, SITE_FLY.altM * Math.min(1, (compound ? compound.w : REFERENCE_COMPOUND_M) / REFERENCE_COMPOUND_M));
+    const side = compound ? Math.max(compound.w, compound.h) : REFERENCE_COMPOUND_M; // the module block's longer side
+    const altM = Math.max(MIN_ARRIVAL_ALT_M, SITE_FLY.altM * Math.min(1, side / REFERENCE_COMPOUND_M));
     await flyToLayout(siteId, flyMs, { ...SITE_FLY, altM }); // the arrival only; the looks and a setup change keep SITE_FLY
     return ticket === opening ? v : null;
   }

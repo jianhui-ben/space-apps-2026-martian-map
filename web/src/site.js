@@ -930,7 +930,6 @@ export function openSite(globe, site, { layoutStore, onLayoutChange = null, exag
     return hit ? hit.object.userData.footprintId : null;
   }
   const centreLocal = () => frame.toLocal(layout.placement.centerLon, layout.placement.centerLat, frame.elevRef);
-  // the sized offsets (dy) travel with the footprints, so a drag clamps the same layout that was placed
   const specsOf = (lay) => lay.footprints.map((f) => ({ id: f.id, w: f.w, h: f.h, ...(Number.isFinite(f.dy) ? { dy: f.dy } : {}) }));
 
   function placementFor(d, x, y) {
