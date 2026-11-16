@@ -1,0 +1,666 @@
+// Boot and wiring: landing -> 1 construction brief -> 2 facility specifications -> 3 location assessment (globe -> region
+// priority list -> site card), in one working panel on the left with the map beside it, the stepper under the header
+// on every screen, the factor bar in the region and site views, and References at the bottom left.
+// The UI and the window.__map hooks call the same functions, so a test drives exactly what a user does.
+import * as THREE from 'three';
+import { loadCatalog, getSite, loadTripArea, regionOf, regionSiteBytes, siteBytes } from './catalog.js';
+import { createGlobe, R, START } from './globe.js';
+import { footprintSpecs, bestSpot, clampPlacement, createLayoutStore } from './layout.js';
+import { terrainChecks } from './checks.js';
+import { siteSizing, briefChecks } from './requirements.js';
+import { loadEnvironment, environmentChecks } from './environment.js';
+import { groundView, solarView, thermalView, routesView } from './layers.js';
+import { initialStatuses, mergeResults } from './status.js';
+import { prioritize } from './priority.js';
+import { openSite, assertOpenable } from './site.js';
+import { sizeBrief, briefSetup } from './sizing/index.js';
+import { loadBundle } from './sizing/engine.js';
+import { createStore, FIXED_SETUP, DEFAULT_BRIEF } from './state.js';
+import { addRegionPins, addSitePins, addBasePins, regionCentre, REGION_FLY_ALT_M } from './ui/pins.js';
+import { createLanding, createStepper, createFacility } from './ui/landing.js';
+import { createBrief, briefLine, toSizingBrief } from './ui/brief.js';
+import { createList, cameraTarget, regionInView } from './ui/list.js';
+import { createCard, cardModel, footprintStatus } from './ui/card.js';
+import { createReferences } from './ui/references.js';
+import { createFactorBar, registerView, hasView, getView, viewDatasets, lookKey, terrainView, demoParts } from './ui/factors.js';
+import { createControls } from './ui/controls.js';
+import { LOOKS } from './looks.js';
+import { FACTORS, factorSentence } from './plain.js';
+import { attachDiorama } from './diorama.js';
+import { createRecords } from './records.js';
+import { loadNavigation, replanStatuses, nextPlanArgs } from './nav.js';
+
+const params = new URLSearchParams(location.search);
+const $ = (id) => document.getElementById(id);
+
+// The fly-in ends this high over the layout centre, tilted, facing north (R23). The canvas is the map area right of the
+// panel, so the layout lands in its middle.
+const SITE_FLY = { altM: 700, tiltDeg: 55, ms: 1600 };
+const REGION_CHECK_MS = 200;
+const DEFER_SITE_BYTES = 60e6; // a larger site's grids load when it is opened, so the region's list is ranked sooner
+const REFERENCE_COMPOUND_M = 60, MIN_ARRIVAL_ALT_M = 250; // a smaller compound is framed from lower, so its handles show on arrival
+
+function showDebug(globe) {
+  const box = document.createElement('div');
+  box.id = 'debug';
+  box.className = 'panel';
+  document.body.append(box);
+  let last = 0;
+  globe.onFrame((dt, now) => {
+    if (now - last < 1000) return;
+    last = now;
+    const alt = globe.altitude();
+    const rows = Object.entries(globe.stats.layers).map(([k, v]) =>
+      `${k.padEnd(7)} ok ${v.ok}  bad ${v.bad}  pending ${v.pending}  maxZ ${v.maxZ}`);
+    box.textContent = `alt ${alt > 1e4 ? (alt / 1000).toFixed(0) + ' km' : alt.toFixed(0) + ' m'}   fps ${globe.stats.fps}\n` + rows.join('\n');
+  });
+}
+
+const errText = (e) => String((e && e.message) || e);
+
+// The app's state and actions: loading a region's sites, placing their layouts, checking them, ranking them,
+// opening and closing a site, changing the setup.
+function createApp({ store, catalog, metrics, globe, layoutStore }) {
+  const sites = new Map(); // siteId -> Site, every site loaded so far
+  const terrainBySite = new Map(); // siteId -> the last terrainChecks Map (keeps BT-01 through a drag)
+  const regionLoads = new Map(); // regionId -> Promise
+  const envByRegion = new Map(); // regionId -> loadEnvironment() result (Task 12)
+  const ranked = new Map(); // regionId -> Set of the site ids its ranking covers (every checked site; a deferred one joins when opened)
+  const lateLoads = new Map(); // siteId -> Promise, a deferred site loading on its first open
+  const sizeBySite = new Map(); // siteId -> the plot sizes for that site (a brief setup only), kept through drags
+  let view = null, opening = 0;
+
+  const regionById = (id) => catalog.regions.find((r) => r.id === id) || null;
+  const setRegionStatus = (id, status) => store.set('regions', new Map(store.get('regions')).set(id, status));
+
+  // The best spot when there is a slope grid to judge it; otherwise the box centre, kept inside the box.
+  function placeFor(site, specs) {
+    if (site.grids && site.grids.slope10) return bestSpot(site, specs);
+    const [w, s, e, n] = site.bounds;
+    return clampPlacement(site, specs, { centerLon: (w + e) / 2, centerLat: (s + n) / 2, rotationDeg: 0 });
+  }
+
+  // Place a site for the setup now: a brief setup sizes the solar and radiator plots from this site's own conditions first.
+  // The layout store remembers the specs; the size is kept per site for the checks.
+  function placeSite(site, setup) {
+    const size = setup.source === 'brief' ? siteSizing(site, setup, envByRegion.get(site.regionId)) : null;
+    if (size) sizeBySite.set(site.id, size); else sizeBySite.delete(site.id);
+    const specs = footprintSpecs(setup, size);
+    layoutStore.set(site.id, placeFor(site, specs), { final: true, specs });
+  }
+
+  // Results for one site: initial statuses from the setup, then the computed checks, then field records.
+  // Environment metrics (Task 12) join `computed` here; field records (Task 11) come through the records key.
+  function computeResults(siteId, final) {
+    const site = sites.get(siteId), setup = store.get('setup'), layout = layoutStore.get(siteId);
+    const terrain = terrainChecks(site, layout, setup, catalog.scenario, { final });
+    const prev = terrainBySite.get(siteId);
+    if (!final && !terrain.has('BT-01') && prev && prev.has('BT-01')) terrain.set('BT-01', prev.get('BT-01'));
+    terrainBySite.set(siteId, terrain);
+    const env = environmentChecks(site, layout, setup, envByRegion.get(site.regionId));
+    const records = (store.get('records') || []).filter((r) => r.siteId === siteId);
+    const size = sizeBySite.get(siteId);
+    const brief = setup.source === 'brief' && size ? briefChecks(site, layout, setup, size) : new Map(); // last, so its Results replace same-id ones
+    const merged = mergeResults(initialStatuses(metrics, setup), new Map([...env, ...terrain, ...brief]), records);
+    store.set('results', new Map(store.get('results')).set(siteId, merged));
+  }
+
+  // The region's priority over the sites it covers, once each has results. Only prioritize() orders sites.
+  function reprioritize(regionId) {
+    const region = regionById(regionId), results = store.get('results'), covered = ranked.get(regionId);
+    const list = region && covered ? region.sites.filter((s) => covered.has(s.id)) : [];
+    if (!list.length || !list.every((s) => results.has(s.id))) return;
+    const rows = prioritize(list.map((s) => ({ id: s.id, results: results.get(s.id) })), metrics);
+    store.set('priority', new Map(store.get('priority')).set(regionId, rows));
+  }
+
+  // Every layout change (a drag, a setup change, the first placement) rechecks that site and reranks its region.
+  layoutStore.onLayoutChange((siteId, layout, { final }) => {
+    if (!sites.has(siteId)) return;
+    computeResults(siteId, final);
+    store.set('layouts', new Map(store.get('layouts')).set(siteId, layout.placement));
+    const r = regionOf(catalog, siteId);
+    if (r) reprioritize(r.id);
+  });
+
+  // Load a site, place its layout on its best spot and check it (the layout listener ranks it if its region covers it).
+  async function loadAndCheck(s, onBytes, envLoad) {
+    const site = await getSite(catalog, s.id, { tripArea: false, onBytes }); // the trip area waits for the site view
+    await envLoad; // its environment checks need the region's data
+    sites.set(site.id, site);
+    placeSite(site, store.get('setup')); // the setup now, not when loading began; checks it
+  }
+
+  // A region's sites checked on entry (up to DEFER_SITE_BYTES each) and the larger ones deferred to their first open.
+  function splitDeferred(region) {
+    const upfront = region.sites.filter((s) => siteBytes(catalog, s.id) <= DEFER_SITE_BYTES);
+    const deferred = region.sites.filter((s) => !upfront.includes(s)).map((s) => s.id);
+    return { upfront, deferred, deferredBytes: Object.fromEntries(deferred.map((id) => [id, siteBytes(catalog, id)])) };
+  }
+
+  // First entry to a region: load its sites of up to DEFER_SITE_BYTES, place and check each as it arrives (the list
+  // shows it, unranked), and rank them once all are in. The loading status carries done (site ids) and bytes; the
+  // ready status lists the deferred (larger, unchecked, never ranked) sites, which load when opened (loadLate).
+  function ensureRegion(regionId) {
+    if (regionLoads.has(regionId)) return regionLoads.get(regionId);
+    const region = regionById(regionId);
+    if (!region) return Promise.reject(new Error('unknown region ' + regionId));
+    const { upfront, deferred, deferredBytes } = splitDeferred(region);
+    const done = [], totalBytes = regionSiteBytes(catalog, regionId, upfront.map((s) => s.id));
+    let bytes = 0, shownAt = 0;
+    const progress = (now) => {
+      if (!now && Date.now() - shownAt < 250) return;
+      shownAt = Date.now();
+      const st = store.get('regions').get(regionId);
+      if (!st || st.state === 'loading') setRegionStatus(regionId, { state: 'loading', done: [...done], bytes, totalBytes, deferred, deferredBytes });
+    };
+    progress(true);
+    const p = (async () => {
+      const envLoad = loadEnvironment(catalog, regionId).catch((e) => ({ errors: { environment: errText(e) }, themis: {}, ids: {} }))
+        .then((env) => { envByRegion.set(regionId, env); });
+      const onBytes = (n) => { bytes += n; progress(false); };
+      await Promise.all(upfront.map(async (s) => {
+        await loadAndCheck(s, onBytes, envLoad);
+        done.push(s.id);
+        progress(true);
+      }));
+      ranked.set(regionId, new Set(upfront.map((s) => s.id)));
+      reprioritize(regionId);
+      setRegionStatus(regionId, { state: 'ready', deferred, deferredBytes });
+    })();
+    p.catch((e) => setRegionStatus(regionId, { state: 'failed', error: errText(e) }));
+    regionLoads.set(regionId, p);
+    return p;
+  }
+
+  // A deferred site, on its first open: load, place and check it, then rerank its region with it included. The ready
+  // status names it as checking meanwhile, and drops it from deferred once it is in.
+  function loadLate(regionId, siteId) {
+    if (sites.has(siteId)) return Promise.resolve();
+    if (lateLoads.has(siteId)) return lateLoads.get(siteId);
+    const status = (fn) => { const st = store.get('regions').get(regionId) || {}; setRegionStatus(regionId, { ...st, ...fn(st) }); };
+    status(() => ({ checking: siteId }));
+    const p = (async () => {
+      await loadAndCheck(regionById(regionId).sites.find((s) => s.id === siteId), null, envByRegion.get(regionId));
+      ranked.get(regionId).add(siteId);
+      reprioritize(regionId);
+      status((st) => ({ deferred: (st.deferred || []).filter((id) => id !== siteId) }));
+    })().finally(() => { lateLoads.delete(siteId); status(() => ({ checking: null })); });
+    lateLoads.set(siteId, p);
+    return p;
+  }
+
+  // The facility is the one calculated from the brief (briefSetup), set when the brief is done. Setting it re-sizes the
+  // footprints and puts every loaded site's layout back on its best spot; the layout listener then rechecks and reranks.
+  // An open site's camera follows its layout to the new spot.
+  function setSetup(setup) {
+    store.set('setup', setup);
+    for (const site of sites.values()) placeSite(site, setup);
+    const id = store.get('openSiteId');
+    if (view && id) flyToLayout(id, 1200);
+  }
+
+  // Test-only (__map.applySetup): a reference facility {loadKw, power}.
+  function applySetup(setup) { setSetup({ loadKw: setup.loadKw, power: setup.power }); }
+
+  function disposeView() {
+    if (view) view.dispose(); // before anything else changes, so it hears nothing more
+    view = null;
+    window.__map.siteView = null;
+  }
+
+  // Above the layout's bounding-box centre (on the drawn ground), facing north, from the look's camera (R33): the
+  // Diorama's oblique 700 m (SITE_FLY), the Survey sheet's near top-down view, the HUD's low view across the layout.
+  // The fly-in itself always ends at SITE_FLY, so the layout is readable on arrival; a look's own camera is flown to when
+  // the look is chosen.
+  function flyToLayout(siteId, ms, cam = SITE_FLY) {
+    const t = view.flyTarget();
+    return globe.flyTo(t.lon, t.lat, cam.altM, ms, { tiltDeg: cam.tiltDeg, targetAltM: t.targetAltM });
+  }
+  store.subscribe('look', () => { if (view && store.get('openSiteId')) flyToLayout(store.get('openSiteId'), 900, LOOKS[store.get('look')].camera); });
+
+  // Open a site: its region is loaded and ranked first, so the card has its priority. Resolves to the SiteView after
+  // the fly-in, or to null when a later open or close superseded this one while loading. Rejects, leaving the open
+  // view alone, when the site has no elevation grid to draw.
+  async function openSiteById(siteId, { flyMs = SITE_FLY.ms } = {}) {
+    const ticket = ++opening;
+    const region = regionOf(catalog, siteId);
+    if (!region) throw new Error('unknown site ' + siteId);
+    await ensureRegion(region.id);
+    await loadLate(region.id, siteId); // a deferred (large) site loads and joins the ranking on its first open
+    await loadTripArea(catalog, sites.get(siteId)); // only the site view draws it, so it loads on the first open
+    if (ticket !== opening) return null;
+    const site = sites.get(siteId);
+    assertOpenable(site);
+    disposeView();
+    const v = openSite(globe, site, { layoutStore });
+    view = v;
+    window.__map.siteView = v;
+    v.onProblems((list) => store.set('problems', list));
+    store.set('problems', v.problems);
+    pins.setHidden(true);
+    store.set('selectedSite', siteId);
+    store.set('openSiteId', siteId);
+    if (store.get('stage') !== 'explore') store.set('stage', 'explore'); // the site card is the working panel now
+    const compound = ((layoutStore.get(siteId) || {}).footprints || []).find((f) => f.id === 'compound');
+    const side = compound ? Math.max(compound.w, compound.h) : REFERENCE_COMPOUND_M; // the module block's longer side
+    const altM = Math.max(MIN_ARRIVAL_ALT_M, SITE_FLY.altM * Math.min(1, side / REFERENCE_COMPOUND_M));
+    await flyToLayout(siteId, flyMs, { ...SITE_FLY, altM }); // the arrival only; the looks and a setup change keep SITE_FLY
+    return ticket === opening ? v : null;
+  }
+
+  // Close the open site and fly back up to its region.
+  function closeSite({ flyMs = 1600 } = {}) {
+    ++opening;
+    const id = store.get('openSiteId');
+    disposeView();
+    pins.setHidden(false);
+    store.set('problems', []);
+    store.set('openSiteId', null);
+    store.set('view', null); // factor views are the open site's (R33)
+    if (!id) return Promise.resolve();
+    const { lon, lat } = regionCentre(regionOf(catalog, id));
+    return globe.flyTo(lon, lat, REGION_FLY_ALT_M, flyMs);
+  }
+
+  // Region the camera is over (R13), checked a few times a second; first entry starts the loading.
+  const dir = new THREE.Vector3();
+  let lastCheck = -Infinity, target = null;
+  globe.onFrame((dt, now) => {
+    if (now - lastCheck < REGION_CHECK_MS) return;
+    lastCheck = now;
+    globe.camera.getWorldDirection(dir);
+    target = cameraTarget(globe.camera.position, dir, R);
+    const r = regionInView(catalog, target, globe.altitude());
+    const id = r ? r.id : null;
+    if (id !== store.get('region')) {
+      store.set('region', id);
+      if (id) ensureRegion(id).catch(() => {}); // a failure is shown in the list
+    }
+  });
+
+  // Dataset ids drawn right now (the photo layers and the open site's data), for the References page.
+  function onScreen() {
+    const ids = ['imagery_viking'];
+    if (globe.overlays.relief.opacity > 0) ids.push('relief_mola');
+    for (const k of ['imagery_ctx', 'imagery_hirise_gray']) {
+      const b = catalog.byId.get(k) && catalog.byId.get(k).coverage && catalog.byId.get(k).coverage.bounds;
+      if (b && target && target.lon > b[0] - 3 && target.lon < b[2] + 3 && target.lat > b[1] - 3 && target.lat < b[3] + 3) ids.push(k);
+    }
+    if (view) {
+      const site = view.site;
+      for (const d of catalog.raw.datasets) if (d.coverage && d.coverage.area === site.id && (d.files || []).length) ids.push(d.id);
+      if (site.tripArea) ids.push(site.tripArea.datasetId);
+      const env = envByRegion.get(site.regionId);
+      if (env) ids.push(...Object.values(env.ids)); // the environment metrics' data (Task 12)
+      if (view.debug.drape().mode === 'hirise' && !ids.includes('imagery_hirise_gray')) ids.push('imagery_hirise_gray');
+    }
+    return ids;
+  }
+
+  // A record change: the named sites checked again (their field records apply in computeResults) and their regions reranked.
+  function recheck(siteIds) {
+    for (const id of siteIds) {
+      if (!sites.has(id) || !layoutStore.get(id)) continue;
+      computeResults(id, true);
+      const r = regionOf(catalog, id);
+      if (r) reprioritize(r.id);
+    }
+  }
+
+  let pins = null;
+  const setPins = (p) => { pins = p; };
+  return {
+    sites, ensureRegion, recheck, openSiteById, closeSite, setSetup, applySetup, onScreen, setPins, env: (regionId) => envByRegion.get(regionId) || null,
+    get view() { return view; },
+    results: (siteId) => (store.get('results').get(siteId) || null),
+  };
+}
+
+// The ARES header: the outlined wordmark and what the app is, and the base context at the right.
+function createHeader(el) {
+  const brand = document.createElement('div');
+  brand.className = 'brand';
+  const word = document.createElement('span');
+  word.className = 'wordmark';
+  word.textContent = 'ARES';
+  const tag = document.createElement('span');
+  tag.className = 'tagline';
+  tag.textContent = 'Mars data center explorer';
+  brand.append(word, tag);
+  const ctx = document.createElement('p');
+  ctx.className = 'base-context';
+  el.replaceChildren(brand, ctx);
+  return { setContext(text) { if (ctx.textContent !== text) ctx.textContent = text; } };
+}
+
+// "Gale crater base · Demo" for the region in view; every base when none is, the established Gale base first.
+const CONTEXT_ORDER = ['gale', 'jezero', 'arcadia'];
+const contextRank = (r) => { const i = CONTEXT_ORDER.indexOf(r.id); return i < 0 ? CONTEXT_ORDER.length : i; };
+function baseContext(catalog, region) {
+  if (region) return region.name + ' base · Demo';
+  const names = catalog.regions.filter((r) => r.base).sort((a, b) => contextRank(a) - contextRank(b)).map((r) => r.name.split(' ')[0]);
+  const list = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0] || 'Your';
+  return list + (names.length > 1 ? ' bases' : ' base') + ' · Demo';
+}
+
+// The header's context while the construction is planned (steps 1 and 2); then the base context.
+const PLANNING_CONTEXT = 'Gale crater · Construction planning';
+const PLANNING = new Set(['brief', 'facility']);
+
+async function boot() {
+  const store = createStore({
+    stage: 'landing', brief: DEFAULT_BRIEF, setup: FIXED_SETUP, layouts: new Map(), results: new Map(), priority: new Map(),
+    records: [], openSiteId: null, selectedSite: null, region: null, regions: new Map(), problems: [], view: null, look: 'diorama',
+  });
+  window.__map.store = store;
+  const header = createHeader($('header'));
+  // The navigation lane (src/route/, src/walk/), when its manifest says it is present; ?navstub=1 loads the test stub.
+  const navLoad = loadNavigation(params.get('navstub') ? './tests/fixtures/route-stub/' : './src/');
+  // Field records and simulated tags (localStorage). A field record changes its metric's status through computeResults;
+  // a simulated tag is a SIMULATED note only and never changes a status, the priority or the verdict.
+  const records = createRecords();
+  store.set('records', records.list());
+
+  // The landing, the brief and the facility step work before the catalog arrives. Every brief change goes to the store,
+  // so the stepper, Close and Edit keep the values. "Find area" sizes toSizingBrief(values) with the coefficient bundle
+  // (loaded now; while it loads the brief shows "Sizing in progress", and a failed load is the outcome's reason): sized,
+  // the setup the map places is the facility calculated from it; not sized, the facility step says why and the setup stays.
+  let list = null, app = null, bundle = null, bundleError = null, assessed = () => {}, outcome = null;
+  const size = (b) => (bundle ? sizeBrief(b, bundle) : {
+    status: 'cannot_size', missing: [], options: [], assessed: null, params: {},
+    problems: [{ reason: 'model', tab: 2, message: bundleError ? 'The sizing model failed to load: ' + errText(bundleError) : 'The sizing model is still loading. Try again in a moment.' }],
+  });
+  const setSetup = (s) => (app ? app.setSetup(s) : store.set('setup', s)); // sites load later with the store's setup
+  // Once the coefficients are in, the map's facility is the one sized from the brief as it stands (the defaults are
+  // sized), so a site opened from the landing's pins is never checked against the reference facility.
+  const sizeCurrent = () => {
+    if ((store.get('setup') || {}).source === 'brief') return;
+    const request = toSizingBrief(store.get('brief')), sizing = size(request);
+    if (sizing.status === 'sized') setSetup(briefSetup(sizing, request));
+  };
+  const bundleReady = loadBundle('./sizing/screening-v1.json').then((b) => { bundle = b; sizeCurrent(); }, (e) => { bundleError = e; });
+  const landing = createLanding($('landing'), { onStart: () => go('brief') });
+  const brief = createBrief($('brief'), $('brief-summary'), {
+    onChange: (b) => store.set('brief', b),
+    onClose: () => go('landing'),
+    pending: () => (bundle || bundleError ? null : bundleReady),
+    onDone: () => {
+      if (store.get('stage') !== 'brief') return; // left while the coefficients loaded
+      const request = toSizingBrief(store.get('brief')), sizing = size(request);
+      outcome = sizing.status === 'sized' ? null : sizing;
+      if (!outcome) setSetup(briefSetup(sizing, request));
+      go('facility');
+    },
+  });
+  const facility = createFacility($('facility'), {
+    setup: () => store.get('setup'), brief: () => (store.get('setup') || {}).brief || null, // what was sized
+    onAssess: () => { go('explore'); assessed(); }, onEdit: () => go('brief'),
+  });
+  // "Back to globe" (brief, facility): the location assessment's whole planet with its region pins; the brief keeps its
+  // entries, and the facility on the map is whatever is sized so far (sizeCurrent, as on the landing).
+  const stepper = createStepper($('stepper'), { onStep: (stage) => (stage === 'globe' ? toGlobe() : go(stage)) });
+  let wholePlanet = () => {};
+  function toGlobe() {
+    go('explore');
+    wholePlanet();
+  }
+  function go(stage) {
+    store.set('stage', stage);
+    if (stage === 'landing') landing.focus();
+    else if (stage === 'brief') brief.open(store.get('brief'));
+    else if (stage === 'facility') facility.open(outcome);
+    else requestAnimationFrame(() => { if (list) list.focus(); });
+  }
+  // One working panel at a time: landing, brief, facility, results, or the site card in the results' place. The old
+  // brief summary beside the panel is no longer shown.
+  function showStage() {
+    const stage = store.get('stage'), open = !!store.get('openSiteId');
+    $('landing').hidden = stage !== 'landing';
+    $('brief').hidden = stage !== 'brief';
+    $('brief-summary').hidden = true;
+    $('facility').hidden = stage !== 'facility';
+    $('panel').hidden = !(stage === 'explore' && !open);
+    $('card').hidden = !(stage === 'explore' && open);
+    stepper.render(stage);
+    if (PLANNING.has(stage)) header.setContext(PLANNING_CONTEXT);
+    document.body.dataset.stage = stage;
+  }
+  for (const k of ['stage', 'openSiteId']) store.subscribe(k, showStage);
+  showStage();
+
+  const [catalog, metrics] = await Promise.all([
+    loadCatalog('./data/'),
+    fetch('./metrics.json').then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status + ' for metrics.json'); return r.json(); }).then((j) => j.metrics),
+  ]);
+  const globe = createGlobe($('app'), catalog, { labelsElement: $('labels') });
+  if (params.get('debug') === '1') showDebug(globe);
+  const layoutStore = createLayoutStore();
+  app = createApp({ store, catalog, metrics, globe, layoutStore });
+  const names = new Map(catalog.sites.map((s) => [s.id, s.name]));
+
+  const toast = $('toast');
+  let toastTimer = 0;
+  const say = (text) => {
+    toast.textContent = text;
+    toast.className = 'panel';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.textContent = ''; }, 9000);
+  };
+  const open = (siteId) => {
+    store.set('selectedSite', siteId); // the card shows its next check while the site opens
+    const p = app.openSiteById(siteId);
+    window.__map.opening = p.catch(() => null);
+    p.catch((e) => say(errText(e)));
+    return p;
+  };
+  const flyToRegion = (r) => { const c = regionCentre(r); return globe.flyTo(c.lon, c.lat, REGION_FLY_ALT_M, 1600); };
+  const pins = addRegionPins(globe, catalog, { onRegion: flyToRegion, onSite: (id) => open(id), keepOut: () => [$('controls'), $('brief-summary')] });
+  const sitePins = addSitePins(globe, catalog, { onSite: (id) => open(id) });
+  const basePins = addBasePins(globe, catalog);
+  app.setPins({ setHidden: (v) => { pins.setHidden(v); sitePins.setHidden(v); } });
+  // The whole planet, Gale in the middle: an open site is closed first, so the region pins and cards show.
+  wholePlanet = () => {
+    if (store.get('openSiteId')) app.closeSite({ flyMs: 0 });
+    return globe.flyTo(START.lon, START.lat, START.alt, 1200);
+  };
+  list = createList($('panel'), { onSite: (id) => open(id), onRegion: flyToRegion, onEdit: () => go('brief'), onAllRegions: () => wholePlanet() });
+  // "Assess locations →" goes to the globe: the whole planet, Gale in the middle, unless a region or a site is in view.
+  assessed = () => { if (!store.get('region') && !store.get('openSiteId')) globe.flyTo(START.lon, START.lat, START.alt, 1200); };
+  // The view control (R32): three looks over the five factor tabs. Terrain is Task 9c's; Task 12's four join below.
+  registerView('BT', terrainView({ catalog, onChange: () => schedule() }));
+  const resultOf = (siteId, id) => { const r = store.get('results').get(siteId); return (r && r.get(id)) || null; };
+  const layoutOf = (siteId) => layoutStore.get(siteId) || null;
+  registerView('GI', groundView({ catalog, onChange: () => schedule(), resultOf }));
+  registerView('SC', solarView({ catalog, onChange: () => schedule(), layoutOf, resultOf }));
+  registerView('TC', thermalView({ catalog, onChange: () => schedule() }));
+  registerView('IR', routesView({ catalog, onChange: () => schedule(), layoutOf, resultOf }));
+  const onView = (id) => store.set('view', id);
+  const bar = createFactorBar($('factors'), { onView, onLook: (id) => store.set('look', id), lookKey: lookKey({ catalog }) });
+  // a factor row's View toggles its view (R33): the row in force shows it, and "Hide factor view" turns it off too
+  const card = createCard($('card'), { onBack: () => app.closeSite(), onView: (id) => store.set('view', store.get('view') === id ? null : id), hasView });
+  // Demo parts: the views that are illustrative here, and the factors whose icon is a simulated estimate
+  const simulatedParts = () => {
+    const id = store.get('openSiteId'), res = id && store.get('results').get(id);
+    if (!res) return [];
+    return FACTORS.map((f) => ({ f, s: factorSentence(f.id, res, metrics, { siteId: id }) })).filter((x) => x.s.simulated)
+      .map(({ f, s }) => ({ id: f.id + ':estimate', name: f.name + ' estimate', text: s.text.split(' · ')[0] + ' (seeded by the site, not data)' }));
+  };
+  attachDiorama({ globe, store, app, metrics, layoutStore }); // the Diorama look's plaque, callouts and profiles (Task 10)
+
+  // ---- field records and the navigation lane (T11) ----
+  const nav = await navLoad; // null: no "Plan route" button
+  const fieldSites = (list) => new Set((list || []).filter((r) => r.kind === 'field').map((r) => r.siteId));
+  // trip: the open site's route plan. lastRoute's ids (route.metrics) are shown under "Route" only: never ranked.
+  const trip = { siteId: null, args: null, route: null, group: null, walking: null };
+  const tripEl = card.tripEl;
+  function resetTrip() {
+    if (trip.group) trip.group.removeFromParent();
+    if (trip.walking) { try { nav.walk.exitWalk(); } catch (e) { /* the walk is ending anyway */ } endWalk(); }
+    Object.assign(trip, { siteId: null, args: null, route: null, group: null });
+    tripEl.replaceChildren();
+  }
+  function plan(args) {
+    const id = store.get('openSiteId'), v = app.view;
+    if (!nav || !id || !v || v.site.id !== id) return;
+    trip.args = { ...args, statuses: replanStatuses(store.get('results').get(id), trip.route) };
+    trip.siteId = id;
+    trip.route = nav.route.planRoute(trip.args);
+    if (trip.group) trip.group.removeFromParent();
+    trip.group = nav.route.drawRoute(trip.route, v.root);
+    nav.route.renderTripPanel(trip.route, tripEl, { onChange: onTripChange });
+    schedule();
+  }
+  const replan = () => { if (trip.args && trip.siteId === store.get('openSiteId')) plan(trip.args); };
+  function planFirst() {
+    const id = store.get('openSiteId'), v = app.view;
+    if (!id || !v) return;
+    const region = regionOf(catalog, id);
+    plan({ site: v.site, layout: layoutStore.get(id), base: (region && region.base) || null, mode: 'walk' });
+  }
+  function onTripChange(change) {
+    if (change && change.action === 'walk') return startWalk();
+    const next = nextPlanArgs(trip.args, change);
+    if (next) plan(next);
+  }
+  // The walk: true-scale ground, the globe's own controls off; onExit puts both back and keeps the walk's tags as
+  // SIMULATED notes (records.addSimTag), which change no status.
+  function startWalk() {
+    const v = app.view;
+    if (!nav || !v || !trip.route || trip.walking) return;
+    trip.walking = { exaggeration: v.root.scale.y, controls: globe.controls.enabled };
+    v.setExaggeration(1);
+    globe.controls.enabled = false;
+    const siteId = v.site.id;
+    nav.walk.enterWalk(trip.route, {
+      renderer: globe.renderer, scene: globe.scene, root: v.root, terrain: v.terrain, tripTerrain: v.tripTerrain, frame: v.frame,
+      hudRoot: $('labels'), site: v.site, onTag: () => {}, // tags are kept once, on exit
+      onExit: (result) => {
+        endWalk();
+        for (const t of (result && result.tags) || []) {
+          if (Number.isFinite(t.lon) && Number.isFinite(t.lat)) records.addSimTag({ siteId, lon: t.lon, lat: t.lat, note: t.note || '' });
+        }
+      },
+    });
+  }
+  function endWalk() {
+    const w = trip.walking;
+    if (!w) return;
+    trip.walking = null;
+    if (app.view) app.view.setExaggeration(w.exaggeration);
+    globe.controls.enabled = w.controls;
+  }
+  records.subscribe((list) => {
+    const changed = new Set([...fieldSites(store.get('records')), ...fieldSites(list)]);
+    store.set('records', list);
+    app.recheck(changed);
+    replan();
+  });
+  // Re-plan on a layout's final change (a drag's end, a key, a setup change re-placing it), never on a route's own ids.
+  layoutStore.onLayoutChange((siteId, layout, { final }) => {
+    if (final && trip.args && siteId === trip.siteId) plan({ ...trip.args, layout });
+  });
+  store.subscribe('openSiteId', () => { if (trip.siteId !== store.get('openSiteId')) resetTrip(); });
+  const routeCtx = (id) => {
+    if (!nav) return null;
+    const statuses = replanStatuses(store.get('results').get(id), trip.siteId === id ? trip.route : null);
+    const checks = [...statuses.values()].filter((r) => r && r.status === 'needs_fieldwork').length;
+    const tags = (store.get('records') || []).filter((r) => r.kind === 'simulated_tag' && r.siteId === id);
+    return { checks, route: trip.siteId === id ? trip.route : null, tags, onPlan: planFirst };
+  };
+  let viewCtx = { globe, siteView: null, site: null, regionId: null };
+  const references = createReferences($('refs'), catalog, {
+    globe, onScreen: () => [...app.onScreen(), ...viewDatasets(bar.active(), viewCtx)], demoParts: () => [...demoParts(undefined, viewCtx), ...simulatedParts()],
+  });
+  createControls($('controls'), { globe, layoutSelected: () => !!(app.view && app.view.selected) });
+
+  // One render per animation frame, whatever changed.
+  let scheduled = false, cardKey = null;
+  const ids = new WeakMap();
+  let nextId = 1;
+  const idOf = (o) => { if (!o) return '-'; if (!ids.has(o)) ids.set(o, nextId++); return ids.get(o); };
+  function render() {
+    scheduled = false;
+    const s = store.get('setup'), results = store.get('results'), priority = store.get('priority'), regions = store.get('regions');
+    const regionId = store.get('region'), region = regionId ? catalog.regions.find((r) => r.id === regionId) : null;
+    const openId = store.get('openSiteId'), stage = store.get('stage');
+    const context = baseContext(catalog, region);
+    header.setContext(PLANNING.has(stage) ? PLANNING_CONTEXT : context);
+    const line = briefLine(store.get('brief'));
+    list.render({
+      region, status: region && regions.get(region.id), rows: region && priority.get(region.id), results, sites: app.sites, metrics,
+      openSiteId: openId, names, context: region ? 'Near ' + context : context, brief: line,
+      regions: catalog.regions, regionStatus: regions, selectedSite: store.get('selectedSite'),
+    });
+    const listShown = stage === 'explore' && !openId;
+    for (const r of catalog.regions) {
+      pins.update(r.id, { status: regions.get(r.id), rows: priority.get(r.id), results, metrics, names, collapsed: listShown && r.id === regionId });
+    }
+    sitePins.update(openId ? null : regionId, region && regions.get(region.id) && regions.get(region.id).state === 'ready' ? priority.get(region.id) : null);
+    basePins.update(openId ? null : regionId);
+    const view = openId ? app.view : null;
+    // the factor bar in the region and site views; it applies the chosen view to whichever of them is on screen
+    viewCtx = { globe, siteView: view, site: view ? view.site : null, regionId };
+    bar.render({ show: stage === 'explore' && !!view, view: store.get('view'), look: store.get('look'), ctx: viewCtx });
+    if (openId && view) {
+      const siteRegion = regionOf(catalog, openId);
+      const rows = priority.get(siteRegion.id) || [];
+      const row = rows.find((x) => x.siteId === openId) || null;
+      const problems = store.get('problems');
+      const routing = routeCtx(openId);
+      const key = [openId, idOf(results.get(openId)), idOf(row), idOf(rows), idOf(s), JSON.stringify(problems), line,
+        idOf(routing && routing.route), idOf(store.get('records'))].join('|');
+      if (key !== cardKey) {
+        cardKey = key;
+        const model = cardModel({ site: view.site, results: results.get(openId), row, metrics, setup: s, catalog, rows, allResults: results, names });
+        card.render(model, { problems, regionName: siteRegion.name, setup: s, names, metrics, brief: line, routing });
+        view.setFootprintStatus(footprintStatus(results.get(openId)));
+      }
+    } else if (cardKey !== null) { card.clear(); cardKey = null; }
+    const active = bar.active();
+    for (const b of $('card').querySelectorAll('.factor .view')) {
+      const on = b.dataset.factor === active;
+      if (b.getAttribute('aria-pressed') !== String(on)) { b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Viewing' : 'View'; }
+    }
+    references.refresh();
+  }
+  const schedule = () => { if (!scheduled) { scheduled = true; requestAnimationFrame(render); } };
+  for (const k of ['stage', 'brief', 'setup', 'layouts', 'results', 'priority', 'records', 'openSiteId', 'selectedSite', 'region', 'regions', 'problems', 'view', 'look']) {
+    store.subscribe(k, schedule);
+  }
+  render(); // the header and panels are filled before ready resolves
+
+  Object.assign(window.__map, {
+    globe, catalog, metrics, layoutStore,
+    openSite: (siteId, { setup: s = null, flyMs } = {}) => { // R15, now the UI's own open
+      const cur = store.get('setup');
+      if (s && (cur.source === 'brief' || s.loadKw !== cur.loadKw || s.power !== cur.power)) app.applySetup(s);
+      const p = app.openSiteById(siteId, flyMs === undefined ? {} : { flyMs });
+      window.__map.opening = p.catch(() => null);
+      return p;
+    },
+    closeSite: () => app.closeSite(),
+    applySetup: (s) => app.applySetup(s), // test-only: the UI offers no load or power choice
+    loadRegion: (id) => app.ensureRegion(id),
+    results: (siteId) => app.results(siteId),
+    site: (siteId) => app.sites.get(siteId) || null,
+    view: (id) => getView(id), // the factor views (their debug hooks)
+    env: (regionId) => app.env(regionId),
+    records, // field records and simulated tags (T11)
+    nav, // the navigation lane's {route, walk}, or null
+    trip: () => ({ siteId: trip.siteId, route: trip.route, walking: !!trip.walking }),
+  });
+}
+
+window.__map = { globe: null, catalog: null, ready: null, siteView: null, store: null, opening: Promise.resolve(null) };
+const ready = boot().catch((e) => {
+  const box = document.createElement('div');
+  box.id = 'boot-error';
+  box.className = 'panel';
+  box.textContent = 'The map could not start: ' + errText(e);
+  document.body.append(box);
+  console.error(e);
+  throw e;
+});
+ready.catch(() => {}); // reported above; awaiting __map.ready still sees the rejection
+window.__map.ready = ready;

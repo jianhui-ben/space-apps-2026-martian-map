@@ -1,0 +1,431 @@
+{
+  "id": "construction-screening-v1",
+  "version": "1.0.0",
+  "evidence_status": "engineering_assumption",
+  "description": "Conditional screening model. No role rates or processing costs have been benchmarked. Solar/radiator fluxes are legacy sensitivity midpoints, not site observations.",
+  "sources": {
+    "repo_reference": {
+      "title": "Legacy reference facility: sensitivity ranges, not calibrated demand",
+      "path": "docs/reference-facility.md",
+      "status": "engineering_assumption"
+    },
+    "repo_scenario": {
+      "title": "Provisional Gale screening limits",
+      "path": "scenario/gale.json",
+      "status": "engineering_assumption"
+    },
+    "screening_design": {
+      "title": "Explicit construction screening assumptions v1; not measured or Mars-qualified",
+      "path": "docs/sizing-model.md",
+      "status": "engineering_assumption"
+    },
+    "mars_day": {
+      "title": "NASA Mars Fact Sheet: mean solar day 24.6597 hours",
+      "url": "https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html",
+      "status": "physical_constant"
+    },
+    "mars_gravity": {
+      "title": "JPL planetary physical parameters: Mars surface gravity",
+      "url": "https://ssd.jpl.nasa.gov/planets/phys_par.html",
+      "status": "physical_constant"
+    },
+    "site_backbone": {
+      "title": "Site data backbone assumption for construction fleets of thousands of robots (integration design 2026-11-15)",
+      "path": "docs/superpowers/specs/2026-11-15-intake-sizing-map-integration-design.md",
+      "status": "engineering_assumption"
+    }
+  },
+  "parameters": {
+    "sol_hours": {
+      "value": 24.6597,
+      "unit": "hour",
+      "source": "mars_day",
+      "status": "physical_constant"
+    },
+    "gravity": {
+      "value": 3.71,
+      "unit": "m/s2",
+      "source": "mars_gravity",
+      "status": "physical_constant"
+    },
+    "rate_survey": {
+      "value": 2,
+      "unit": "GB/active_robot_hour",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "rate_excavation": {
+      "value": 0.1,
+      "unit": "GB/active_robot_hour",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "rate_transport": {
+      "value": 0.05,
+      "unit": "GB/active_robot_hour",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "rate_assembly": {
+      "value": 0.25,
+      "unit": "GB/active_robot_hour",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "rate_inspection": {
+      "value": 1,
+      "unit": "GB/active_robot_hour",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "cost_terrain_map": {
+      "value": 0.05,
+      "unit": "reference_worker_hour/GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "fixed_terrain_map": {
+      "value": 0.1,
+      "unit": "reference_worker_hour/job",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "memory_terrain_map": {
+      "value": 64,
+      "unit": "GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "cost_progress_comparison": {
+      "value": 0.02,
+      "unit": "reference_worker_hour/GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "fixed_progress_comparison": {
+      "value": 0.1,
+      "unit": "reference_worker_hour/job",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "memory_progress_comparison": {
+      "value": 32,
+      "unit": "GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "cost_inspection_analysis": {
+      "value": 0.03,
+      "unit": "reference_worker_hour/GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "fixed_inspection_analysis": {
+      "value": 0.1,
+      "unit": "reference_worker_hour/job",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "memory_inspection_analysis": {
+      "value": 32,
+      "unit": "GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "cost_fleet_plan": {
+      "value": 0,
+      "unit": "reference_worker_hour/GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "fixed_fleet_plan": {
+      "value": 0.05,
+      "unit": "reference_worker_hour/job",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "memory_fleet_plan": {
+      "value": 8,
+      "unit": "GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "precision_coarse_survey": {
+      "value": 0.5,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "precision_earthworks_check": {
+      "value": 1,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "precision_precision_assembly": {
+      "value": 3,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "worker_peak_kw": {
+      "value": 0.5,
+      "unit": "kW",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "worker_idle_kw": {
+      "value": 0.15,
+      "unit": "kW",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "worker_memory_gb": {
+      "value": 128,
+      "unit": "GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "worker_mass_kg": {
+      "value": 25,
+      "unit": "kg",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "max_workers": {
+      "value": 20000,
+      "unit": "count",
+      "source": "site_backbone",
+      "status": "engineering_assumption"
+    },
+    "worker_spares": {
+      "value": 1,
+      "unit": "count",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "storage_unit_tb": {
+      "value": 100,
+      "unit": "TB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "storage_unit_kw": {
+      "value": 0.4,
+      "unit": "kW",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "storage_unit_mass_kg": {
+      "value": 80,
+      "unit": "kg",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "copies": {
+      "value": 2,
+      "unit": "count",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "storage_headroom": {
+      "value": 1.25,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "product_fraction": {
+      "value": 0.1,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "working_days": {
+      "value": 2,
+      "unit": "sol",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "essential_kw": {
+      "value": 0.5,
+      "unit": "kW",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "support_fraction": {
+      "value": 0.3,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "equipment_per_module": {
+      "value": 12,
+      "unit": "count",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "module_empty_mass_kg": {
+      "value": 6000,
+      "unit": "kg",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "module_clearance_m": {
+      "value": 3,
+      "unit": "m",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "support_count": {
+      "value": 6,
+      "unit": "count",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "support_area_m2": {
+      "value": 1,
+      "unit": "m2",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "pressure_allowance_factor": {
+      "value": 1.5,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "radiator_plot_factor": {
+      "value": 1.5,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "battery_usable_fraction": {
+      "value": 0.8,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "battery_efficiency": {
+      "value": 0.9,
+      "unit": "ratio",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "battery_unit_kwh": {
+      "value": 100,
+      "unit": "kWh",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "battery_unit_mass_kg": {
+      "value": 1000,
+      "unit": "kg",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "transfer_gbps": {
+      "value": 100,
+      "unit": "Gbps",
+      "source": "site_backbone",
+      "status": "engineering_assumption"
+    },
+    "max_jobs": {
+      "value": 200000,
+      "unit": "count",
+      "source": "site_backbone",
+      "status": "engineering_assumption"
+    },
+    "corridor_width_m": {
+      "value": 4,
+      "unit": "m",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "vehicle_grade_deg": {
+      "value": 10,
+      "unit": "deg",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    },
+    "module_length_m": {
+      "value": 12,
+      "unit": "m",
+      "source": "repo_reference",
+      "status": "engineering_assumption"
+    },
+    "module_width_m": {
+      "value": 4,
+      "unit": "m",
+      "source": "repo_reference",
+      "status": "engineering_assumption"
+    },
+    "solar_net_mean_w_m2": {
+      "value": 40,
+      "unit": "W/m2",
+      "source": "repo_reference",
+      "status": "engineering_assumption"
+    },
+    "solar_land_coverage": {
+      "value": 0.5,
+      "unit": "ratio",
+      "source": "repo_reference",
+      "status": "engineering_assumption"
+    },
+    "radiator_net_w_m2": {
+      "value": 175,
+      "unit": "W/m2",
+      "source": "repo_reference",
+      "status": "engineering_assumption"
+    },
+    "max_service_distance_m": {
+      "value": 3000,
+      "unit": "m",
+      "source": "repo_reference",
+      "status": "engineering_assumption"
+    },
+    "pad_slope_deg": {
+      "value": 5,
+      "unit": "deg",
+      "source": "repo_scenario",
+      "status": "engineering_assumption"
+    },
+    "local_slope_deg": {
+      "value": 10,
+      "unit": "deg",
+      "source": "repo_scenario",
+      "status": "engineering_assumption"
+    },
+    "roughness_m": {
+      "value": 0.3,
+      "unit": "m",
+      "source": "repo_scenario",
+      "status": "engineering_assumption"
+    },
+    "step_height_m": {
+      "value": 0.2,
+      "unit": "m",
+      "source": "repo_scenario",
+      "status": "engineering_assumption"
+    },
+    "tile_size_gb": {
+      "value": 10,
+      "unit": "GB",
+      "source": "screening_design",
+      "status": "engineering_assumption"
+    }
+  },
+  "job_roles": {
+    "terrain_map": [
+      "survey"
+    ],
+    "progress_comparison": [
+      "survey"
+    ],
+    "inspection_analysis": [
+      "inspection",
+      "assembly"
+    ],
+    "fleet_plan": []
+  }
+}
