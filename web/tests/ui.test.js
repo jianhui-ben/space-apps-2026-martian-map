@@ -236,7 +236,7 @@ test('ui facility: the label is the reference label for the reference facility, 
 
 test('ui facility: the compact line for a brief setup names computers, peak kW and the parts', () => {
   const setup = sizedSetup('example_filled');
-  assertEq(facilityLine(setup), '13 computers, 9.6 kW peak; compound 36 × 10 m, radiator 9 × 9 m, solar 14 × 14 m');
+  assertEq(facilityLine(setup), '11 computers, 8.3 kW peak; compound 18 × 20 m, radiator 8 × 8 m, solar 13 × 13 m'); // 100 Gbps backbone, compact block
   const p = facilityEl(setup, { lead: 'Facility' });
   assert(p.querySelector('.ev-assumption'), 'the assumption chip');
   assertEq(p.querySelector('.illustrative').textContent, SIZED_LABEL);
@@ -250,8 +250,8 @@ test('ui facility step: a brief setup lists the calculated facility, kept for th
   try {
     createFacility(el, { setup: () => sizedSetup('example_filled'), onAssess: () => {} }).open();
     const t = textOf(el);
-    for (const want of ['13 computers', 'Results are kept for the whole project', SIZED_LABEL, '17 TB', '9.6 kW', '3.9 kW', '95.4 kWh', '97 m²', '193 m²', '55 m²', '82 m²',
-      '6.5 kWh', '360 m²', '636 m²', '6.2 kPa']) assert(t.includes(want), 'missing ' + want + ' in: ' + t);
+    for (const want of ['11 computers', 'Results are kept for the whole project', SIZED_LABEL, '17 TB', '8.3 kW', '3.5 kW', '85.8 kWh', '87 m²', '174 m²', '48 m²', '71 m²',
+      '6.5 kWh', '360 m²', '605 m²', '6.2 kPa']) assert(t.includes(want), 'missing ' + want + ' in: ' + t);
     assert(!t.includes(FACILITY_LABEL) && !t.includes('Sizing model: planned'), 'no reference label or planned line');
     assert(el.querySelectorAll('.ev-assumption').length >= 10, 'every value carries the assumption chip');
     assertEq(el.querySelector('#facility-assess').textContent, 'Assess locations →');
@@ -336,7 +336,7 @@ test('intakeError: the shares, each required number, then base power for hybrid 
   assertEq(intakeError(d), null);
   assertEq(intakeError({ ...d, surveyPercent: 60, excPercent: 50 }), { message: 'Survey and excavation shares must add up to 100% or less.', key: 'surveyPercent', defaults: true });
   assertEq(intakeError({ ...d, workType: 'survey', surveyPercent: 60, excPercent: 50 }), null); // survey work ignores the shares
-  assertEq(intakeError({ ...d, robots: 0 }), { message: 'Construction robots: enter a whole number from 1 to 1,000 robots.', key: 'robots', defaults: false });
+  assertEq(intakeError({ ...d, robots: 0 }), { message: 'Construction robots: enter a whole number from 1 to 10,000 robots.', key: 'robots', defaults: false });
   assertEq(intakeError({ ...d, robots: 2.5 }).key, 'robots');
   assertEq(intakeError({ ...d, hours: 25 }), { message: 'Working time: enter a number from 0.1 to 24.65 h / sol.', key: 'hours', defaults: false });
   assertEq(intakeError({ ...d, duration: null }).key, 'duration');
@@ -377,7 +377,7 @@ test('intake panel: the mockup copy, every control labelled, the defaults filled
     assertEq([...el.querySelectorAll('[data-input="workType"] option')].map((o) => [o.value, o.textContent]),
       [['earthworks', 'Site preparation & earthworks'], ['survey', 'Surveying & terrain mapping']]);
     const attrs = (k) => { const i = el.querySelector('[data-input="' + k + '"]'); return [i.min, i.max, i.step, i.value, i.nextElementSibling.textContent]; };
-    assertEq(['robots', 'hours', 'duration', 'deadline'].map(attrs), [['1', '1000', '1', '20', 'robots'], ['0.1', '24.65', 'any', '12', 'h / sol'],
+    assertEq(['robots', 'hours', 'duration', 'deadline'].map(attrs), [['1', '10000', '1', '20', 'robots'], ['0.1', '24.65', 'any', '12', 'h / sol'],
       ['0.1', '10000', 'any', '180', 'sols'], ['0.1', '8760', 'any', '4', 'hours']]);
     const defaults = el.querySelector('details[data-defaults]');
     assert(!defaults.open, 'the planning defaults start closed');
@@ -457,7 +457,7 @@ test('intake panel: a required number out of range is named; the defaults are va
   try {
     p.set('robots', 0);
     p.find();
-    assertEq([p.seen.done, p.el.querySelector('.form-error').textContent], [0, 'Construction robots: enter a whole number from 1 to 1,000 robots.']);
+    assertEq([p.seen.done, p.el.querySelector('.form-error').textContent], [0, 'Construction robots: enter a whole number from 1 to 10,000 robots.']);
     assert(!p.el.querySelector('details[data-defaults]').open, 'a main field keeps the defaults closed');
     p.set('robots', 20);
     p.find();

@@ -13,11 +13,17 @@ function briefSpecs(setup, size) {
   const v = (k) => (assessed.specifications[k].status === 'resolved' ? assessed.specifications[k].value : 0);
   const clr = 2 * params.module_clearance_m;
   const modules = v('modules'), radiator = size ? size.radiatorPlotM2 : v('radiator_plot_m2'), solar = size ? size.solarPlotM2 : v('solar_plot_m2');
+  // The module block from the engine's compact layout (a near-square grid of modules); the row formula for a layout
+  // without block dimensions. The plots sit north and south of the block, GAP metres clear of it.
+  const L = assessed.layout || {};
+  const cw = Number.isFinite(L.block_width_m) ? L.block_width_m : modules * (params.module_length_m + clr);
+  const ch = Number.isFinite(L.block_height_m) ? L.block_height_m : params.module_width_m + clr;
+  const rs = Math.sqrt(radiator), ss = Math.sqrt(solar);
   const specs = [
-    { id: 'compound', w: modules * (params.module_length_m + clr), h: params.module_width_m + clr },
-    { id: 'radiator', w: Math.sqrt(radiator), h: Math.sqrt(radiator) },
+    { id: 'compound', w: cw, h: ch },
+    { id: 'radiator', w: rs, h: rs, dy: ch / 2 + GAP + rs / 2 },
   ];
-  if (setup.power !== 'base_only' && solar > 0) specs.push({ id: 'solar', w: Math.sqrt(solar), h: Math.sqrt(solar) });
+  if (setup.power !== 'base_only' && solar > 0) specs.push({ id: 'solar', w: ss, h: ss, dy: -(ch / 2 + GAP + ss / 2) });
   return specs;
 }
 
@@ -38,6 +44,7 @@ export function footprintSpecs(setup, size = null) {
 
 // Local offset (metres, x east, y north, before rotation) of a footprint centre from the compound centre.
 function localOffset(spec) {
+  if (Number.isFinite(spec.dy)) return [0, spec.dy]; // sized footprints carry their offset from the compound's height
   if (spec.id === 'radiator') return [0, 30 + GAP + spec.h / 2];
   if (spec.id === 'solar') return [0, -(30 + GAP + spec.h / 2)];
   return [0, 0];
@@ -61,7 +68,7 @@ export function placeLayout(specs, placement) {
       return toLL(e, n);
     });
     const [lon, lat] = toLL(ce, cn);
-    return { id: sp.id, w: sp.w, h: sp.h, center: { lon, lat }, rotationDeg, polygon };
+    return { id: sp.id, w: sp.w, h: sp.h, ...(Number.isFinite(sp.dy) ? { dy: sp.dy } : {}), center: { lon, lat }, rotationDeg, polygon };
   });
   return { placement: { centerLon, centerLat, rotationDeg }, footprints };
 }
@@ -153,10 +160,14 @@ export function bestSpot(site, specs) {
   let minY = Infinity, maxY = -Infinity, maxHw = 0;
   for (const r of rects) { minY = Math.min(minY, r.yLo); maxY = Math.max(maxY, r.yHi); maxHw = Math.max(maxHw, r.hw); }
 
+  // the search stays inside both the grid and the site box (clampPlacement's box), so a placed layout is never nudged
+  const sb = site.bounds || grid.bounds;
+  const xLo = Math.max(0, (sb[0] - gw) * kx), xHi = Math.min(totW, (sb[2] - gw) * kx);
+  const yLo = Math.max(0, (sb[1] - gs) * M_PER_DEG), yHi = Math.min(totH, (sb[3] - gs) * M_PER_DEG);
   const STEP = 5;
   let best = null, bestAny = null;
-  for (let y = Math.ceil(-minY / STEP) * STEP; y <= totH - maxY; y += STEP) {
-    for (let x = Math.ceil(maxHw / STEP) * STEP; x <= totW - maxHw; x += STEP) {
+  for (let y = Math.ceil((yLo - minY) / STEP) * STEP; y <= yHi - maxY; y += STEP) {
+    for (let x = Math.ceil((xLo + maxHw) / STEP) * STEP; x <= xHi - maxHw; x += STEP) {
       let bad = 0, steep = 0, ok = true;
       for (const r of rects) {
         // cells whose centres lie in [lo, hi) metres

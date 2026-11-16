@@ -50,7 +50,7 @@ def server_url():
 def _browser():
     with sync_playwright() as p:
         try:
-            browser = p.chromium.launch(args=CHROMIUM_ARGS)
+            browser = p.chromium.launch(args=CHROMIUM_ARGS, channel=os.environ.get("PLAYWRIGHT_CHANNEL") or None)  # e.g. chrome
         except Exception as exc:  # browser not installed or cannot start
             pytest.skip("Chromium will not launch: %s" % str(exc).splitlines()[0])
         yield browser
@@ -310,7 +310,7 @@ def _assert_arrival_alt(page, site_id):
     alt = page.evaluate("__map.globe.altitude()")
     w = page.evaluate("(id) => __map.layoutStore.get(id).footprints.find((f) => f.id === 'compound').w", site_id)
     want = max(250, 700 * min(1, w / 60))
-    assert 0.86 * want < alt < 1.14 * want, (alt, want, w)
+    assert 0.86 * want < alt < 1.2 * want, (alt, want, w)  # sized block layouts frame a little wider
 
 
 def _open_site(page, server_url, site_id=SITE):
@@ -1734,7 +1734,7 @@ def test_brief_intake_and_copy(page, server_url):
     page.locator('#brief [data-input="excPercent"]').fill("50")
     page.locator('#brief [data-input="robots"]').fill("0")
     page.locator("#brief-find").click()
-    assert brief.locator(".form-error").text_content() == "Construction robots: enter a whole number from 1 to 1,000 robots."
+    assert brief.locator(".form-error").text_content() == "Construction robots: enter a whole number from 1 to 10,000 robots."
     assert page.locator('#brief [data-input="robots"]').get_attribute("aria-invalid") == "true"
     assert page.locator('#brief [data-input="surveyPercent"]').get_attribute("aria-invalid") is None
     assert page.evaluate("[__map.store.get('stage'), __map.store.get('setup') === window.__setup0]") == ["brief", True]

@@ -68,16 +68,24 @@ def estimate_facility(ctx,work,deployment):
     if missing:layout['missing_inputs']=sorted(set(missing))
     else:
         l=p('module_length_m')['value'];w=p('module_width_m')['value'];c=p('module_clearance_m')['value']
-        n=int(s['modules']['value']);cursor=0
+        n=int(s['modules']['value'])
+        # A compact block: modules in a near-square grid (cell = module plus clearance on every side), the solar
+        # square east of the block and the radiator square north of it, one clearance apart.
+        cell_x=l+2*c;cell_y=w+2*c
+        cols=max(1,min(n,round(math.sqrt(n*cell_y/cell_x))));rows=math.ceil(n/cols)
         for i in range(n):
-            layout['components'].append({'id':f'module_{i+1}','kind':'module','x_m':cursor+c,'y_m':c,'length_m':l,'width_m':w,'clearance_m':c})
-            cursor+=l+2*c
-        y=w+2*c
+            col,row=i%cols,i//cols
+            layout['components'].append({'id':f'module_{i+1}','kind':'module','x_m':col*cell_x+c,'y_m':row*cell_y+c,'length_m':l,'width_m':w,'clearance_m':c})
+        block_w=cols*cell_x;block_h=rows*cell_y
+        layout.update(block_width_m=block_w,block_height_m=block_h)
+        right=block_w;top=block_h
         for key,kind in [('solar_plot_m2','solar'),('radiator_plot_m2','radiator')]:
             area=s[key]['value']
             if area>0:
-                side=math.sqrt(area);layout['components'].append({'id':kind,'kind':kind,'x_m':0,'y_m':y,'length_m':side,'width_m':side});y+=side
-        layout.update(status='reference_layout',net_allocated_area_m2=s['full_reference_plot_m2']['value'],bounding_width_m=max([cursor]+[x['length_m'] for x in layout['components']]),bounding_height_m=y,
+                side=math.sqrt(area)
+                if kind=='solar':layout['components'].append({'id':kind,'kind':kind,'x_m':block_w+c,'y_m':0,'length_m':side,'width_m':side});right=max(right,block_w+c+side);top=max(top,side)
+                else:layout['components'].append({'id':kind,'kind':kind,'x_m':0,'y_m':block_h+c,'length_m':side,'width_m':side});top=max(top,block_h+c+side);right=max(right,side)
+        layout.update(status='reference_layout',net_allocated_area_m2=s['full_reference_plot_m2']['value'],bounding_width_m=right,bounding_height_m=top,
                       limitations=['Coordinates are local metres, not Mars placements.','Array and radiator areas depend on unvalidated reference fluxes.','External utility corridors, delivery staging, setbacks and future expansion remain unresolved.'])
     if deployment=='base_integrated':
         layout['status']='requires_existing_base_layout';layout['missing_inputs']=['base:available_internal_space_and_support']

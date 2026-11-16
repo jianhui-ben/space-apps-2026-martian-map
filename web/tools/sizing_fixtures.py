@@ -118,6 +118,27 @@ def _cases():
     b['jobs']['inspection'] = True
     cases['inspection_without_robots'] = b
     cases['inside_base'] = filled(deployment='Inside the base')
+    # Large fleets and slack schedules (sizing scale-up, 2026-11-15): thousands of robots, a turnaround longer than the
+    # gap to the next sol, a long working day, and work spilling into a part-sol.
+    def fleet(survey, excavation, transport, active=0.8):
+        return [{'id': 1, 'role': 'Survey', 'count': survey, 'active': survey},
+                {'id': 2, 'role': 'Excavation', 'count': excavation, 'active': int(excavation * active)},
+                {'id': 3, 'role': 'Transport', 'count': transport, 'active': int(transport * active)}]
+    b = filled(fleet=fleet(700, 1750, 1050))
+    _known(b, 'deadline', 4)
+    cases['large_fleet'] = b
+    for hours in (13, 24):
+        b = filled(fleet=fleet(700, 1750, 1050))
+        _known(b, 'deadline', hours)
+        cases['large_fleet_turnaround_%dh' % hours] = b
+    b = filled(fleet=fleet(300, 600, 400))
+    _known(b, 'hours', 22)
+    _known(b, 'deadline', 6)
+    cases['long_working_day'] = b
+    b = filled(fleet=fleet(300, 700, 500))
+    _known(b, 'deadline', 20)
+    _known(b, 'duration', 12.5)
+    cases['spillover_part_sol'] = b
     return cases
 
 

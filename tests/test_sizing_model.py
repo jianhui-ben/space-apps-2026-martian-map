@@ -97,5 +97,9 @@ def test_unknown_cadence_cannot_resolve_storage():
     assert spec(build_requirements(r),'required_storage_tb')['status']=='unresolved'
 
 def test_saturated_link_is_not_fixed_by_more_workers():
+    # A 1 Gbps link (the bundle before the site-backbone assumption) is saturated by 8 survey robots.
+    from martian_map.sizing import load_bundle
+    import copy as _copy
+    bundle=_copy.deepcopy(load_bundle());bundle['parameters']['transfer_gbps']['value']=1;bundle.pop('hash',None)
     r=request();r['fleet'][0]['count']=q(8,'count');r['fleet'][0]['active_count']=q(8,'count')
-    assert spec(build_requirements(r),'workers')['status']=='unresolved'
+    assert spec(build_requirements(r,bundle),'workers')['status']=='unresolved'

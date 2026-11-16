@@ -14,9 +14,9 @@ import { profileLine, renderProfiles } from './ui/profiles.js';
 // then the compound, then the solar plot (south) level with its plot, so all three clear the profile panel below the
 // layout at 1280 x 800 (the solar box used to hang down under it and be culled).
 export const CALLOUTS = [
-  { footprint: 'compound', name: 'Compound', factor: 'BT', priority: 1, dx: 110, dy: -32 },
-  { footprint: 'radiator', name: 'Radiator plot', factor: 'TC', priority: 2, dx: 90, dy: -60 },
-  { footprint: 'solar', name: 'Solar plot', factor: 'SC', priority: 3, dx: 130, dy: 0 },
+  { footprint: 'compound', name: 'Compound', factor: 'BT', priority: 1, dx: 110, dy: -35 },
+  { footprint: 'radiator', name: 'Radiator plot', factor: 'TC', priority: 2, dx: 80, dy: -95 },
+  { footprint: 'solar', name: 'Solar plot', factor: 'SC', priority: 3, dx: 120, dy: 30 },
 ];
 const ICON_CLASS = { '✗': 'bad', '✓': 'ok', '?': 'open', '—': 'none' };
 const DECLUTTER_MS = 120;

@@ -68,8 +68,8 @@ def _in_own_thread(fn, *args):
 def _check_dist(dist_url):
     with sync_playwright() as p:
         try:
-            browser = p.chromium.launch(args=CHROMIUM_ARGS)
-        except Exception as exc:  # browser not installed or cannot start
+            browser = p.chromium.launch(args=CHROMIUM_ARGS, channel=os.environ.get("PLAYWRIGHT_CHANNEL") or None)  # e.g. chrome
+        except Exception as exc:
             pytest.skip("Chromium will not launch: %s" % str(exc).splitlines()[0])
         try:
             page = browser.new_page()

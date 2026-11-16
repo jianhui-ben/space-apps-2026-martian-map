@@ -28,6 +28,11 @@
       "title": "JPL planetary physical parameters: Mars surface gravity",
       "url": "https://ssd.jpl.nasa.gov/planets/phys_par.html",
       "status": "physical_constant"
+    },
+    "site_backbone": {
+      "title": "Site data backbone assumption for construction fleets of thousands of robots (integration design 2026-11-15)",
+      "path": "docs/superpowers/specs/2026-11-15-intake-sizing-map-integration-design.md",
+      "status": "engineering_assumption"
     }
   },
   "parameters": {
@@ -188,9 +193,9 @@
       "status": "engineering_assumption"
     },
     "max_workers": {
-      "value": 256,
+      "value": 20000,
       "unit": "count",
-      "source": "screening_design",
+      "source": "site_backbone",
       "status": "engineering_assumption"
     },
     "worker_spares": {
@@ -320,15 +325,15 @@
       "status": "engineering_assumption"
     },
     "transfer_gbps": {
-      "value": 1,
+      "value": 100,
       "unit": "Gbps",
-      "source": "screening_design",
+      "source": "site_backbone",
       "status": "engineering_assumption"
     },
     "max_jobs": {
-      "value": 10000,
+      "value": 200000,
       "unit": "count",
-      "source": "screening_design",
+      "source": "site_backbone",
       "status": "engineering_assumption"
     },
     "corridor_width_m": {

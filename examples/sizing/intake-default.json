@@ -1,0 +1,20 @@
+{
+  "name": "Gale landing pad & access road",
+  "base": "gale",
+  "workType": "earthworks",
+  "robots": 3500,
+  "hours": 12,
+  "duration": 180,
+  "deadline": 4,
+  "surveyPercent": 20,
+  "excPercent": 50,
+  "surveyActive": 100,
+  "otherActive": 80,
+  "cadence": "Once per sol",
+  "precision": "Earthworks check",
+  "rawRetention": 30,
+  "productRetention": 180,
+  "backup": 12,
+  "basePower": 0,
+  "power": "Solar + storage"
+}

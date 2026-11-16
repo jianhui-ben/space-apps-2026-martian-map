@@ -1,12 +1,12 @@
 {
   "schema_version": "construction-sizing/1",
-  "request_id": "test",
+  "request_id": "example-default-intake",
   "project_revision": 1,
   "project": {
-    "id": "gale_build",
-    "name": "Landing pad",
+    "id": "intake_project",
+    "name": "Gale landing pad & access road",
     "structure_types": [
-      "landing_pad"
+      "other"
     ],
     "duration": {
       "state": "specified",
@@ -14,9 +14,7 @@
       "unit": "sol"
     },
     "survey_area": {
-      "state": "specified",
-      "value": 20000,
-      "unit": "m2"
+      "state": "unknown"
     }
   },
   "fleet": [
@@ -25,12 +23,40 @@
       "role": "survey",
       "count": {
         "state": "specified",
-        "value": 4,
+        "value": 700,
         "unit": "count"
       },
       "active_count": {
         "state": "specified",
-        "value": 4,
+        "value": 700,
+        "unit": "count"
+      }
+    },
+    {
+      "id": "excavation",
+      "role": "excavation",
+      "count": {
+        "state": "specified",
+        "value": 1750,
+        "unit": "count"
+      },
+      "active_count": {
+        "state": "specified",
+        "value": 1400,
+        "unit": "count"
+      }
+    },
+    {
+      "id": "transport",
+      "role": "transport",
+      "count": {
+        "state": "specified",
+        "value": 1050,
+        "unit": "count"
+      },
+      "active_count": {
+        "state": "specified",
+        "value": 840,
         "unit": "count"
       }
     }
@@ -50,7 +76,27 @@
       "cadence": "once_per_sol",
       "deadline": {
         "state": "specified",
-        "value": 1,
+        "value": 4,
+        "unit": "hour"
+      }
+    },
+    {
+      "id": "progress",
+      "type": "progress_comparison",
+      "cadence": "once_per_sol",
+      "deadline": {
+        "state": "specified",
+        "value": 4,
+        "unit": "hour"
+      }
+    },
+    {
+      "id": "plan",
+      "type": "fleet_plan",
+      "cadence": "once_per_sol",
+      "deadline": {
+        "state": "specified",
+        "value": 4,
         "unit": "hour"
       }
     }

@@ -17,7 +17,7 @@ const TEXT_KEYS = new Set(['name', 'workType', 'power', 'precision', 'cadence'])
 
 // The number fields in panel order, with the mockup's labels, units and limits; defaults: inside "Planning defaults".
 const NUMBERS = [
-  { key: 'robots', label: 'Construction robots', unit: 'robots', min: 1, max: 1000, whole: true },
+  { key: 'robots', label: 'Construction robots', unit: 'robots', min: 1, max: 10000, whole: true },
   { key: 'hours', label: 'Working time', unit: 'h / sol', min: 0.1, max: SOL_HOURS },
   { key: 'duration', label: 'Project duration', unit: 'sols', min: 0.1, max: 10000 },
   { key: 'deadline', label: 'Results needed within', unit: 'hours', min: 0.1, max: 8760 },

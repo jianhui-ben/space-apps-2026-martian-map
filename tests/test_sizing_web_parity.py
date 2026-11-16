@@ -33,7 +33,7 @@ def test_fixture_cases_present():
 def test_example_filled_values():
     case = next(c for c in json.loads(FIXTURE.read_text()) if c['name'] == 'example_filled')
     spec = next(o for o in case['options'] if o['id'] == 'owner_case_dedicated')['specifications']
-    assert spec['workers']['value'] == 13
+    assert spec['workers']['value'] == 11  # with the 100 Gbps site data backbone (was 13 at 1 Gbps)
     assert spec['modules']['value'] == 2
-    assert round(spec['full_reference_plot_m2']['value'], 2) == 635.89
-    assert round(spec['facility_peak_kw']['value'], 2) == 9.62
+    assert round(spec['full_reference_plot_m2']['value'], 2) == 605.25
+    assert round(spec['facility_peak_kw']['value'], 2) == 8.32

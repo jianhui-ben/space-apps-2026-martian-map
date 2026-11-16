@@ -182,11 +182,11 @@ const sizingBundle = await loadBundle(new URL('../sizing/screening-v1.json', imp
 const sizingCases = Object.fromEntries((await (await fetch(new URL('./fixtures/sizing.json', import.meta.url))).json()).map((c) => [c.name, c]));
 const sizedSetup = (name) => { const b = sizingCases[name].brief; return briefSetup(sizeBrief(b, sizingBundle), b); };
 
-test('specs from a brief setup: modules in a row, radiator and solar squares of the plots', () => {
+test('specs from a brief setup: the module block, radiator and solar squares of the plots', () => {
   const setup = sizedSetup('example_filled');
   const a = setup.sizing.assessed.specifications;
   const s = byId(footprintSpecs(setup));
-  assertEq([s.compound.w, s.compound.h], [36, 10]);
+  assertEq([s.compound.w, s.compound.h], [18, 20]); // two 12 x 4 m modules (3 m clearance) stacked in a compact block
   assertClose(s.radiator.w, Math.sqrt(a.radiator_plot_m2.value), 1e-9);
   assertClose(s.radiator.h, Math.sqrt(a.radiator_plot_m2.value), 1e-9);
   assertClose(s.solar.w, Math.sqrt(a.solar_plot_m2.value), 1e-9);
@@ -202,4 +202,19 @@ test('specs from a brief setup: a base connection has no solar part', () => {
   const setup = sizedSetup('base_connection');
   assertEq(setup.power, 'base_only');
   assertEq(footprintSpecs(setup).map((x) => x.id), ['compound', 'radiator']);
+});
+
+test('specs from a brief setup: thousands of robots give a compact block, and the plots clear it', () => {
+  const setup = sizedSetup('large_fleet');
+  const L = setup.sizing.assessed.layout;
+  const s = byId(footprintSpecs(setup));
+  assertEq([s.compound.w, s.compound.h], [L.block_width_m, L.block_height_m]);
+  assert(Math.max(s.compound.w, s.compound.h) / Math.min(s.compound.w, s.compound.h) <= 3, JSON.stringify(s.compound));
+  const lay = placeLayout(footprintSpecs(setup), { centerLon: 137.44, centerLat: -4.57, rotationDeg: 0 });
+  const box = (f) => { const xs = f.polygon.map((p) => p[0]), ys = f.polygon.map((p) => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+  const fps = lay.footprints.map(box);
+  for (let i = 0; i < fps.length; i++) for (let j = i + 1; j < fps.length; j++) {
+    const [a, b] = [fps[i], fps[j]];
+    assert(a[2] <= b[0] || b[2] <= a[0] || a[3] <= b[1] || b[3] <= a[1], lay.footprints[i].id + ' overlaps ' + lay.footprints[j].id);
+  }
 });

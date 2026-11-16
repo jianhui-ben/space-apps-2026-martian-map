@@ -4,6 +4,14 @@ import { calc, known, unknown } from './quantity.js';
 const sum = (v) => v.reduce((a, b) => a + b, 0);
 const unique = (items) => [...new Set(items)].sort();
 
+// Python's round(): halves go to the even neighbour.
+function pyRound(x) {
+  const f = Math.floor(x), d = x - f;
+  if (d > 0.5) return f + 1;
+  if (d < 0.5) return f;
+  return f % 2 === 0 ? f : f + 1;
+}
+
 export function estimateFacility(ctx, work, deployment) {
   const r = ctx.request, p = ctx.param, a = ctx.answer, s = {};
   const put = (key, unit, inputs, fn) => (s[key] = calc(unit, inputs, fn));
@@ -76,23 +84,34 @@ export function estimateFacility(ctx, work, deployment) {
   else {
     const l = p('module_length_m').value, w = p('module_width_m').value, c = p('module_clearance_m').value;
     const n = Math.trunc(s.modules.value);
-    let cursor = 0;
+    // A compact block: modules in a near-square grid (cell = module plus clearance on every side), the solar square
+    // east of the block and the radiator square north of it, one clearance apart.
+    const cellX = l + 2 * c, cellY = w + 2 * c;
+    const cols = Math.max(1, Math.min(n, pyRound(Math.sqrt(n * cellY / cellX)))), rows = Math.ceil(n / cols);
     for (let i = 0; i < n; i++) {
-      layout.components.push({ id: `module_${i + 1}`, kind: 'module', x_m: cursor + c, y_m: c, length_m: l, width_m: w, clearance_m: c });
-      cursor += l + 2 * c;
+      const col = i % cols, row = Math.floor(i / cols);
+      layout.components.push({ id: `module_${i + 1}`, kind: 'module', x_m: col * cellX + c, y_m: row * cellY + c, length_m: l, width_m: w, clearance_m: c });
     }
-    let y = w + 2 * c;
+    const blockW = cols * cellX, blockH = rows * cellY;
+    layout.block_width_m = blockW;
+    layout.block_height_m = blockH;
+    let right = blockW, top = blockH;
     for (const [key, kind] of [['solar_plot_m2', 'solar'], ['radiator_plot_m2', 'radiator']]) {
       const area = s[key].value;
       if (area > 0) {
         const side = Math.sqrt(area);
-        layout.components.push({ id: kind, kind, x_m: 0, y_m: y, length_m: side, width_m: side });
-        y += side;
+        if (kind === 'solar') {
+          layout.components.push({ id: kind, kind, x_m: blockW + c, y_m: 0, length_m: side, width_m: side });
+          right = Math.max(right, blockW + c + side); top = Math.max(top, side);
+        } else {
+          layout.components.push({ id: kind, kind, x_m: 0, y_m: blockH + c, length_m: side, width_m: side });
+          top = Math.max(top, blockH + c + side); right = Math.max(right, side);
+        }
       }
     }
     Object.assign(layout, {
       status: 'reference_layout', net_allocated_area_m2: s.full_reference_plot_m2.value,
-      bounding_width_m: Math.max(cursor, ...layout.components.map((x) => x.length_m)), bounding_height_m: y,
+      bounding_width_m: right, bounding_height_m: top,
       limitations: ['Coordinates are local metres, not Mars placements.', 'Array and radiator areas depend on unvalidated reference fluxes.',
         'External utility corridors, delivery staging, setbacks and future expansion remain unresolved.'],
     });

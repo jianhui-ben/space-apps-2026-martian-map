@@ -30,6 +30,13 @@ Exit code `0` means a result was produced, not that a site is feasible.
 Exit code `2` means invalid input; the error and field-level issues are
 printed as JSON on stderr.
 
+From the app's intake form state (see `examples/sizing/intake-default.json`):
+
+```python
+from martian_map.sizing import build_requirements, from_intake
+result = build_requirements(from_intake(state))
+```
+
 From Python:
 
 ```python
@@ -49,7 +56,7 @@ output.
 |---|---|
 | `__init__.py` | Public API: `build_requirements`, `from_guided_brief`, `load_bundle` |
 | `pipeline.py` | Runs the steps for each scenario and deployment option, and builds the 72 metric records |
-| `validation.py` | Checks requests against the schema and rules such as "active robots ≤ total"; converts Guided brief state |
+| `validation.py` | Checks requests against the schema and rules such as "active robots ≤ total"; converts Guided brief and intake form state (`from_intake`) |
 | `contracts.py` | Quantity values (known, range or unknown) and their provenance; unknown never becomes zero |
 | `profiles.py` | Loads and checks a coefficient bundle: units, sources, evidence status, value ranges |
 | `workloads.py` | Robot data streams, job scheduling against deadlines, and compute worker count |
@@ -62,10 +69,10 @@ output.
 ## Calculation steps
 
 1. **Streams:** active robots × operating hours × retained data rate, by robot role.
-2. **Jobs:** split each job into tiles and schedule them on compute workers to meet each deadline.
+2. **Jobs:** split each job into tiles and schedule them on compute workers to meet each deadline, over one representative sol when sols are independent.
 3. **Storage:** retained raw data and products, replicated, plus working space and headroom.
 4. **Power and heat:** peak and average electricity; peak electricity is the heat to reject.
-5. **Layout:** module count, core area, and reference solar and radiator areas.
+5. **Layout:** module count, core area, and reference solar and radiator areas, drawn as a compact block.
 6. **Support load:** the ground bearing pressure the supports would need.
 
 If a workload can't meet its deadlines within the worker limit, the result

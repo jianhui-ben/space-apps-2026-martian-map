@@ -87,7 +87,7 @@ test('sizeBrief: the filled example is sized', () => {
   const s = sizeBrief(caseBrief('example_filled'), bundle);
   assertEq(s.status, 'sized');
   assertEq(s.missing, []);
-  assertEq(s.assessed.specifications.workers.value, 13);
+  assertEq(s.assessed.specifications.workers.value, 11); // with the 100 Gbps site data backbone
   assertEq(s.params.module_length_m, 12);
   assertEq(s.params.solar_land_coverage, 0.5);
 });
@@ -96,7 +96,7 @@ test('sizeBrief: an impossible deadline cannot be sized', () => {
   const s = sizeBrief(caseBrief('deadline_impossible'), bundle);
   assertEq(s.status, 'cannot_size');
   assertEq(s.problems[0].reason, 'equipment:worker_search_limit');
-  assertEq(s.problems[0].message, "The results can't be ready within 0.01 hours with up to 256 computers. Allow more time or process less often.");
+  assertEq(s.problems[0].message, "The results can't be ready within 0.01 hours with up to 20000 computers. Allow more time or process less often.");
   assertEq(s.problems[0].tab, 2);
 });
 
@@ -110,7 +110,7 @@ test('sizeBrief: inspection reports without inspection robots', () => {
 test('sizeBrief: base power below the facility peak', () => {
   const s = sizeBrief(caseBrief('base_too_small'), bundle);
   assertEq(s.status, 'cannot_size');
-  assertEq(s.problems[0].message, "Available base power (5.0 kW) is below the facility's 9.6 kW peak. Raise it, or choose Hybrid or Solar + storage.");
+  assertEq(s.problems[0].message, "Available base power (5.0 kW) is below the facility's 8.3 kW peak. Raise it, or choose Hybrid or Solar + storage.");
   assertEq(s.problems[0].tab, 2);
 });
 
